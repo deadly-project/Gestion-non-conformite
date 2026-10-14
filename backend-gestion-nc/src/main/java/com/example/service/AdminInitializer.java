@@ -1,6 +1,6 @@
 package com.example.service;
 
-import com.example.entity.Utilisateur;
+import com.example.entity.Users;
 import com.example.repository.UtilisateurRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,14 +36,14 @@ public class AdminInitializer implements ApplicationRunner {
             log.warn("Administrateur initial non créé : définir ADMIN_EMAIL, ADMIN_PASSWORD et ADMIN_MATRICULE dans .env.");
             return;
         }
-        if (password.length() < 12) {
+        if (password.length() < 8) {
             throw new IllegalStateException("ADMIN_PASSWORD doit contenir au moins 12 caractères.");
         }
         if (repository.existsByEmailIgnoreCase(email) || repository.existsByMatriculeIgnoreCase(matricule)) {
             log.info("Le compte administrateur initial existe déjà; aucun mot de passe n'a été modifié.");
             return;
         }
-        Utilisateur admin = Utilisateur.builder()
+        Users admin = Users.builder()
                 .nom(nom).prenom(prenom).email(email.trim().toLowerCase())
                 .matricule(matricule.trim()).motDePasse(encoder.encode(password))
                 .role("ADMINISTRATEUR").actif(true).build();

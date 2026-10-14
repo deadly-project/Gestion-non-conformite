@@ -1,6 +1,6 @@
 package com.example.security;
 
-import com.example.entity.Utilisateur;
+import com.example.entity.Users;
 import com.example.repository.UtilisateurRepository;
 import io.jsonwebtoken.Claims;
 import org.springframework.messaging.Message;
@@ -36,7 +36,7 @@ public class JwtStompChannelInterceptor implements ChannelInterceptor {
             }
             try {
                 Claims claims = jwtService.parseClaims(header.substring(7));
-                Utilisateur user = utilisateurRepository.findByEmailIgnoreCase(claims.getSubject())
+                Users user = utilisateurRepository.findByEmailIgnoreCase(claims.getSubject())
                         .filter(u -> Boolean.TRUE.equals(u.getActif()))
                         .filter(u -> jwtService.isTokenValidFor(header.substring(7), u.getEmail()))
                         .orElseThrow(() -> new AccessDeniedException("Utilisateur invalide ou inactif."));

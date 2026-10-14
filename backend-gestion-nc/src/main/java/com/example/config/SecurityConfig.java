@@ -1,9 +1,12 @@
+
 package com.example.config;
 
 import com.example.security.JwtAuthenticationFilter;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -12,9 +15,14 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 
 import java.util.Arrays;
 import java.util.List;
@@ -22,35 +30,128 @@ import java.util.List;
 @Configuration
 @EnableMethodSecurity
 public class SecurityConfig {
-    @Bean
-    PasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(12); }
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtFilter) throws Exception {
-        return http
-                .csrf(csrf -> csrf.disable())
-                .cors(Customizer.withDefaults())
-                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/login", "/ws", "/ws/**", "/error").permitAll()
-                        .requestMatchers("/api/auth/me").authenticated()
-                        .anyRequest().authenticated())
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
-                .build();
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder(12);
     }
 
     @Bean
-    CorsConfigurationSource corsConfigurationSource(@Value("${app.frontend-urls:http://localhost:5173}") String frontendUrls) {
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http,
+            JwtAuthenticationFilter jwtFilter
+    ) throws Exception {
+        CookieCsrfTokenRepository csrfRepo = CookieCsrfTokenRepository.withHttpOnlyFalse();
+        csrfRepo.setHeaderName("X-CSRF-TOKEN");
+
+        return http
+                .csrf(csrf -> csrf
+                        .csrfTokenRepository(csrfRepo)
+                        .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
+                )
+                .cors(Customizer.withDefaults())
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .authorizeHttpRequests(auth -> auth
+
+                        // Routes publiques
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/auth/csrf"
+                        ).permitAll()
+
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/auth/login",
+                                "/api/auth/logout"
+                        ).permitAll()
+
+                        .requestMatchers("/error").permitAll()
+
+                        // Le handshake WebSocket est public.
+                        // L'authentification STOMP est vérifiée séparément.
+                        .requestMatchers("/ws", "/ws/**").permitAll()
+
+                        // Profil utilisateur
+                        .requestMatchers("/api/auth/me").authenticated()
+
+                        // Administration
+                        .requestMatchers("/api/admin/**")
+                        .hasRole("ADMINISTRATEUR")
+
+                        .requestMatchers("/api/utilisateurs/**")
+                        .hasRole("ADMINISTRATEUR")
+
+                        // Non-conformités
+                        .requestMatchers("/api/non-conformites/**")
+                        .hasAnyRole(
+                                "DECLARANT",
+                                "RESPONSABLE_QUALITE",
+                                "ADMINISTRATEUR"
+                        )
+
+                        // Audits
+                        .requestMatchers("/api/audits/**")
+                        .hasAnyRole(
+                                "AUDITEUR",
+                                "RESPONSABLE_QUALITE",
+                                "ADMINISTRATEUR"
+                        )
+
+                        // Actions correctives et préventives
+                        .requestMatchers("/api/capa/**")
+                        .hasAnyRole(
+                                "RESPONSABLE_QUALITE",
+                                "ADMINISTRATEUR"
+                        )
+
+                        // Toutes les autres routes nécessitent une connexion.
+                        .anyRequest().authenticated()
+                )
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(
+                                new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)
+                        )
+                )
+                .httpBasic(basic -> basic.disable())
+                .formLogin(form -> form.disable())
+                .addFilterBefore(
+                        jwtFilter,
+                        UsernamePasswordAuthenticationFilter.class
+                )
+                .build();
+
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource(
+            @Value("${app.frontend-urls:http://localhost:5173}")
+            String frontendUrls
+    ) {
         List<String> origins = Arrays.stream(frontendUrls.split(","))
-                .map(String::trim).filter(s -> !s.isBlank()).toList();
+                .map(String::trim)
+                .filter(origin -> !origin.isBlank())
+                .toList();
+
         CorsConfiguration config = new CorsConfiguration();
+
         config.setAllowedOrigins(origins);
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
-        config.setExposedHeaders(List.of("Authorization"));
-        config.setAllowCredentials(false); // JWT transmis dans Authorization, pas dans un cookie.
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        config.setAllowedMethods(List.of(
+                "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"
+        ));
+        config.setAllowedHeaders(List.of(
+                "Content-Type",
+                "Accept",
+                "X-CSRF-TOKEN"
+        ));
+        config.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source =
+                new UrlBasedCorsConfigurationSource();
+
         source.registerCorsConfiguration("/**", config);
+
         return source;
     }
 }

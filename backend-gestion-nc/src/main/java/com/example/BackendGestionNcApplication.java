@@ -1,4 +1,5 @@
-package com.example.backend_gestion_nc;
+
+package com.example;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -9,5 +10,4 @@ public class BackendGestionNcApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(BackendGestionNcApplication.class, args);
 	}
-
 }

@@ -1,6 +1,6 @@
 package com.example.security;
 
-import com.example.entity.Utilisateur;
+import com.example.entity.Users;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
@@ -28,7 +28,7 @@ public class JwtService {
         this.expirationMs = expirationMs;
     }
 
-    public String generateToken(Utilisateur utilisateur) {
+    public String generateToken(Users utilisateur) {
         Instant now = Instant.now();
         return Jwts.builder()
                 .subject(utilisateur.getEmail())

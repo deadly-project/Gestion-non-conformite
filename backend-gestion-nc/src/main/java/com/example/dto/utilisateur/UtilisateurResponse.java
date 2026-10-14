@@ -1,19 +1,36 @@
+
 package com.example.dto.utilisateur;
 
-import com.example.entity.Utilisateur;
+import com.example.entity.Users;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 public record UtilisateurResponse(
         UUID id,
         String nom,
         String prenom,
+        LocalDate dateNaissance,
         String email,
         String matricule,
         String role,
-        boolean actif
+        boolean actif,
+        LocalDateTime dateCreation,
+        LocalDateTime dateModification
 ) {
-    public static UtilisateurResponse from(Utilisateur u) {
-        return new UtilisateurResponse(u.getId(), u.getNom(), u.getPrenom(), u.getEmail(),
-                u.getMatricule(), u.getRole(), Boolean.TRUE.equals(u.getActif()));
+    public static UtilisateurResponse from(Users u) {
+        return new UtilisateurResponse(
+                u.getId(),
+                u.getNom(),
+                u.getPrenom(),
+                u.getDateNaissance(),
+                u.getEmail(),
+                u.getMatricule(),
+                u.getRole(),
+                Boolean.TRUE.equals(u.getActif()),
+                u.getDateCreation(),
+                u.getDateModification()
+        );
     }
 }

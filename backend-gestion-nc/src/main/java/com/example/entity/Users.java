@@ -9,7 +9,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "users")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class Utilisateur {
+public class Users {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id", nullable = false, updatable = false)
@@ -23,7 +23,9 @@ public class Utilisateur {
     @Column(name="matricule", nullable=false, unique=true, length=50) private String matricule;
     @Column(name="mot_de_passe", nullable=false, length=255) private String motDePasse;
     @Column(name="role", nullable=false, length=20) private String role;
-    @Column(name="actif", nullable=false) private Boolean actif = true;
+    @Builder.Default
+    @Column(name="actif", nullable=false)
+    private Boolean actif = true;
     @Column(name="date_creation", nullable=false, updatable=false) private LocalDateTime dateCreation;
 
     @PrePersist

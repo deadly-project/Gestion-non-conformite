@@ -3,7 +3,7 @@ package com.example.service;
 import com.example.dto.auth.LoginRequest;
 import com.example.dto.auth.LoginResponse;
 import com.example.dto.utilisateur.UtilisateurResponse;
-import com.example.entity.Utilisateur;
+import com.example.entity.Users;
 import com.example.repository.UtilisateurRepository;
 import com.example.security.JwtService;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -25,7 +25,7 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public LoginResponse login(LoginRequest request) {
-        Utilisateur user = repository.findByEmailIgnoreCase(request.email().trim())
+        Users user = repository.findByEmailIgnoreCase(request.email().trim())
                 .filter(u -> Boolean.TRUE.equals(u.getActif()))
                 .filter(u -> passwordEncoder.matches(request.motDePasse(), u.getMotDePasse()))
                 .orElseThrow(() -> new BadCredentialsException("Email ou mot de passe incorrect."));
