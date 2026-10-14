@@ -66,6 +66,7 @@ export default function Login({ onLogin }) {
                 <button type="submit" disabled={chargement}>
                     {chargement ? "Connexion..." : "Se connecter"}
                 </button>
+                <a href="">Mot de passe oublié</a>
             </form>
         </main>
     );

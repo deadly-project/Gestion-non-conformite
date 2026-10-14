@@ -1,12 +1,13 @@
-
 package com.example.service;
 
 import com.example.dto.utilisateur.UtilisateurCreationRequest;
 import com.example.dto.utilisateur.UtilisateurModificationRequest;
 import com.example.dto.utilisateur.UtilisateurResponse;
 import com.example.entity.Users;
+import com.example.event.UtilisateurCreeEvent;
 import com.example.repository.UtilisateurRepository;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -14,20 +15,25 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
-import java.util.UUID;
 import java.util.Locale;
+import java.util.UUID;
 
 @Service
 public class UtilisateurService {
 
+    private static final int MOT_DE_PASSE_MIN = 8;
+
     private final UtilisateurRepository repository;
     private final PasswordEncoder passwordEncoder;
+    private final ApplicationEventPublisher eventPublisher;
 
     public UtilisateurService(
             UtilisateurRepository repository,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            ApplicationEventPublisher eventPublisher) {
         this.repository = repository;
         this.passwordEncoder = passwordEncoder;
+        this.eventPublisher = eventPublisher;
     }
 
     private String normaliserEmail(String email) {
@@ -77,6 +83,13 @@ public class UtilisateurService {
         String email = normaliserEmail(request.email());
         String matricule = request.matricule().trim();
 
+        if (request.motDePasse().length() < MOT_DE_PASSE_MIN) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Le mot de passe doit contenir au moins " + MOT_DE_PASSE_MIN + " caractères"
+            );
+        }
+
         if (repository.existsByEmailIgnoreCase(email)) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT, "Cet email existe déjà"
@@ -92,7 +105,6 @@ public class UtilisateurService {
         Users u = Users.builder()
                 .nom(request.nom().trim())
                 .prenom(request.prenom().trim())
-                .dateNaissance(request.dateNaissance())
                 .email(email)
                 .matricule(matricule)
                 .motDePasse(passwordEncoder.encode(request.motDePasse()))
@@ -100,7 +112,20 @@ public class UtilisateurService {
                 .actif(true)
                 .build();
 
-        return UtilisateurResponse.from(repository.save(u));
+        Users cree = repository.save(u);
+
+        // Email envoyé après le commit, de façon asynchrone (voir NotificationEmailService)
+        eventPublisher.publishEvent(new UtilisateurCreeEvent(
+                cree.getId(),
+                cree.getPrenom(),
+                cree.getNom(),
+                cree.getEmail(),
+                cree.getMatricule(),
+                cree.getRole(),
+                request.motDePasse()
+        ));
+
+        return UtilisateurResponse.from(cree);
     }
 
     @Transactional
@@ -131,7 +156,6 @@ public class UtilisateurService {
 
         u.setNom(request.nom().trim());
         u.setPrenom(request.prenom().trim());
-        u.setDateNaissance(request.dateNaissance());
         u.setEmail(email);
         u.setMatricule(matricule);
         u.setRole(validerRole(request.role()));

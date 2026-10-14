@@ -5,7 +5,6 @@ import { apiRequest } from "../api/api";
 const formulaireInitial = {
     nom: "",
     prenom: "",
-    dateNaissance: "",
     email: "",
     matricule: "",
     motDePasse: "",
@@ -83,18 +82,6 @@ export default function CreationUtilisateur({ onCreated }) {
                 </div>
 
                 <div>
-                    <label htmlFor="dateNaissance">Date de naissance</label>
-                    <input
-                        id="dateNaissance"
-                        type="date"
-                        value={formulaire.dateNaissance}
-                        onChange={(e) =>
-                            modifier("dateNaissance", e.target.value)
-                        }
-                    />
-                </div>
-
-                <div>
                     <label htmlFor="email">Email</label>
                     <input
                         id="email"
@@ -122,7 +109,7 @@ export default function CreationUtilisateur({ onCreated }) {
                     <input
                         id="motDePasse"
                         type="password"
-                        minLength={12}
+                        minLength={8}
                         maxLength={72}
                         autoComplete="new-password"
                         value={formulaire.motDePasse}

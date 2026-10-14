@@ -37,7 +37,7 @@ public class AdminInitializer implements ApplicationRunner {
             return;
         }
         if (password.length() < 8) {
-            throw new IllegalStateException("ADMIN_PASSWORD doit contenir au moins 12 caractères.");
+            throw new IllegalStateException("ADMIN_PASSWORD doit contenir au moins 8 caractères.");
         }
         if (repository.existsByEmailIgnoreCase(email) || repository.existsByMatriculeIgnoreCase(matricule)) {
             log.info("Le compte administrateur initial existe déjà; aucun mot de passe n'a été modifié.");

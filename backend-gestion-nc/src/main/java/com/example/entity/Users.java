@@ -2,7 +2,6 @@ package com.example.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -18,7 +17,6 @@ public class Users {
 
     @Column(name="nom", nullable=false, length=100) private String nom;
     @Column(name="prenom", nullable=false, length=100) private String prenom;
-    @Column(name="date_naissance") private LocalDate dateNaissance;
     @Column(name="email", nullable=false, unique=true, length=255) private String email;
     @Column(name="matricule", nullable=false, unique=true, length=50) private String matricule;
     @Column(name="mot_de_passe", nullable=false, length=255) private String motDePasse;

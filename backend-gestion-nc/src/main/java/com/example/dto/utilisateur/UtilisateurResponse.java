@@ -3,7 +3,6 @@ package com.example.dto.utilisateur;
 
 import com.example.entity.Users;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -11,7 +10,6 @@ public record UtilisateurResponse(
         UUID id,
         String nom,
         String prenom,
-        LocalDate dateNaissance,
         String email,
         String matricule,
         String role,
@@ -24,7 +22,6 @@ public record UtilisateurResponse(
                 u.getId(),
                 u.getNom(),
                 u.getPrenom(),
-                u.getDateNaissance(),
                 u.getEmail(),
                 u.getMatricule(),
                 u.getRole(),

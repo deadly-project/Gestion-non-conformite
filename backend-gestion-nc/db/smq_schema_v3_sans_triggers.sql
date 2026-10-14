@@ -1,5 +1,5 @@
 -- =====================================================================
---  SMQ - Modèle de données v3 (PostgreSQL 13+)
+--  SMQ - Modèle de données v3.1 (PostgreSQL 13+)
 --  SANS triggers ni fonctions : le SQL ne contient que la structure
 --  (tables, clés, contraintes déclaratives, index, vues).
 --
@@ -18,23 +18,22 @@
 --    - catégories de NC et processus = référentiels gérés par l'administrateur
 --    - CAPA : responsable, échéance, statut, vérification d'efficacité
 --    - constat d'audit -> plan de traitement (CAPA) et/ou NC d'origine
---    - 4 profils : DECLARANT, RESPONSABLE, AUDITEUR, ADMINISTRATEUR
+--    - 4 profils : DECLARANT, RESPONSABLE_QUALITE, AUDITEUR, ADMINISTRATEUR
 --      (tout employé peut déclarer : règle appliquée dans le backend)
 -- =====================================================================
 
 -- ---------------------------------------------------------------------
--- 1. users (un seul rôle par utilisateur)
+-- 1. users (un seul rôle par utilisateur ; date_naissance supprimée en v3.1)
 -- ---------------------------------------------------------------------
 CREATE TABLE users (
     id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     nom                VARCHAR(100) NOT NULL,
     prenom             VARCHAR(100) NOT NULL,
-    date_naissance     DATE,
     email              VARCHAR(255) NOT NULL UNIQUE,
     matricule          VARCHAR(50)  NOT NULL UNIQUE,
     mot_de_passe       VARCHAR(255) NOT NULL,              -- hash BCrypt
     role               VARCHAR(20)  NOT NULL
-                       CHECK (role IN ('DECLARANT','RESPONSABLE','AUDITEUR','ADMINISTRATEUR')),
+                       CHECK (role IN ('DECLARANT','RESPONSABLE_QUALITE','AUDITEUR','ADMINISTRATEUR')),
     actif              BOOLEAN NOT NULL DEFAULT TRUE,      -- désactiver plutôt que supprimer
     date_creation      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     date_modification  TIMESTAMP

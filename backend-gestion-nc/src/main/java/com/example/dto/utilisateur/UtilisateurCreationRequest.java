@@ -6,7 +6,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
-import java.time.LocalDate;
 
 public record UtilisateurCreationRequest(
         @NotBlank
@@ -27,7 +26,7 @@ public record UtilisateurCreationRequest(
         String matricule,
 
         @NotBlank
-        @Size(min = 12, max = 72)
+        @Size(min = 8, max = 72,message = "Le mot de passe doit contenir entre 8 et 72 caractères")
         String motDePasse,
 
         @NotBlank
@@ -35,7 +34,12 @@ public record UtilisateurCreationRequest(
                 regexp = "DECLARANT|AUDITEUR|RESPONSABLE_QUALITE",
                 message = "Le rôle doit être DECLARANT, AUDITEUR ou RESPONSABLE_QUALITE"
         )
-        String role,
+        String role
 
-        LocalDate dateNaissance
-) {}
+) {
+        /** Évite que le mot de passe apparaisse dans un log ou une trace. */
+        @Override
+        public String toString() {
+                return "UtilisateurCreationRequest[email=" + email + ", matricule=" + matricule + ", role=" + role + "]";
+        }
+}
