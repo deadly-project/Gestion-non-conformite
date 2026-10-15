@@ -1,13 +1,13 @@
 package com.example.service;
 
 import com.example.dto.utilisateur.UtilisateurCreationRequest;
+import com.example.dto.utilisateur.UtilisateurCreationResponse;
 import com.example.dto.utilisateur.UtilisateurModificationRequest;
 import com.example.dto.utilisateur.UtilisateurResponse;
 import com.example.entity.Users;
 import com.example.event.UtilisateurCreeEvent;
 import com.example.repository.UtilisateurRepository;
 
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -25,15 +25,15 @@ public class UtilisateurService {
 
     private final UtilisateurRepository repository;
     private final PasswordEncoder passwordEncoder;
-    private final ApplicationEventPublisher eventPublisher;
+    private final NotificationEmailService notificationEmailService;
 
     public UtilisateurService(
             UtilisateurRepository repository,
             PasswordEncoder passwordEncoder,
-            ApplicationEventPublisher eventPublisher) {
+            NotificationEmailService notificationEmailService) {
         this.repository = repository;
         this.passwordEncoder = passwordEncoder;
-        this.eventPublisher = eventPublisher;
+        this.notificationEmailService = notificationEmailService;
     }
 
     private String normaliserEmail(String email) {
@@ -42,33 +42,18 @@ public class UtilisateurService {
 
     private String validerRole(String role) {
         if (role == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST, "Rôle obligatoire"
-            );
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Rôle obligatoire");
         }
-
         String valeur = role.trim().toUpperCase(Locale.ROOT);
-
-        if (!List.of(
-                "DECLARANT",
-                "AUDITEUR",
-                "RESPONSABLE_QUALITE"
-        ).contains(valeur)) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Rôle non autorisé pour cette opération"
-            );
+        if (!List.of("DECLARANT", "AUDITEUR", "RESPONSABLE_QUALITE").contains(valeur)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Rôle non autorisé pour cette opération");
         }
-
         return valeur;
     }
 
     @Transactional(readOnly = true)
     public List<UtilisateurResponse> lister() {
-        return repository.findAll()
-                .stream()
-                .map(UtilisateurResponse::from)
-                .toList();
+        return repository.findAll().stream().map(UtilisateurResponse::from).toList();
     }
 
     @Transactional(readOnly = true)
@@ -77,9 +62,7 @@ public class UtilisateurService {
     }
 
     @Transactional
-    public UtilisateurResponse creer(
-            UtilisateurCreationRequest request) {
-
+    public UtilisateurCreationResponse creer(UtilisateurCreationRequest request) {
         String email = normaliserEmail(request.email());
         String matricule = request.matricule().trim();
 
@@ -91,15 +74,11 @@ public class UtilisateurService {
         }
 
         if (repository.existsByEmailIgnoreCase(email)) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT, "Cet email existe déjà"
-            );
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cet email existe déjà dans le système.");
         }
 
         if (repository.existsByMatriculeIgnoreCase(matricule)) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT, "Ce matricule existe déjà"
-            );
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Ce matricule existe déjà dans le système.");
         }
 
         Users u = Users.builder()
@@ -114,8 +93,7 @@ public class UtilisateurService {
 
         Users cree = repository.save(u);
 
-        // Email envoyé après le commit, de façon asynchrone (voir NotificationEmailService)
-        eventPublisher.publishEvent(new UtilisateurCreeEvent(
+        UtilisateurCreeEvent event = new UtilisateurCreeEvent(
                 cree.getId(),
                 cree.getPrenom(),
                 cree.getNom(),
@@ -123,35 +101,43 @@ public class UtilisateurService {
                 cree.getMatricule(),
                 cree.getRole(),
                 request.motDePasse()
-        ));
+        );
 
-        return UtilisateurResponse.from(cree);
+        String statutEmail;
+        String messageSucces = "L'utilisateur a été créé avec succès.";
+
+        try {
+            notificationEmailService.envoyerEmailCreation(event);
+            statutEmail = "E-mail de notification envoyé avec succès à " + email;
+        } catch (IllegalStateException e) {
+            statutEmail = "Attention : Aucun serveur SMTP configuré. L'e-mail n'a pas pu être envoyé.";
+        } catch (Exception e) {
+            statutEmail = "Attention : Échec de l'envoi de l'e-mail (Port SMTP fermé, mauvais identifiants ou réseau inaccessible) : " + e.getMessage();
+        }
+
+        return new UtilisateurCreationResponse(
+                UtilisateurResponse.from(cree),
+                messageSucces,
+                statutEmail
+        );
     }
 
     @Transactional
-    public UtilisateurResponse modifier(
-            UUID id,
-            UtilisateurModificationRequest request) {
-
+    public UtilisateurResponse modifier(UUID id, UtilisateurModificationRequest request) {
         Users u = rechercher(id);
-
         String email = normaliserEmail(request.email());
         String matricule = request.matricule().trim();
 
         repository.findByEmailIgnoreCase(email)
                 .filter(existant -> !existant.getId().equals(id))
                 .ifPresent(existant -> {
-                    throw new ResponseStatusException(
-                            HttpStatus.CONFLICT, "Cet email existe déjà"
-                    );
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Cet email existe déjà");
                 });
 
         repository.findByMatriculeIgnoreCase(matricule)
                 .filter(existant -> !existant.getId().equals(id))
                 .ifPresent(existant -> {
-                    throw new ResponseStatusException(
-                            HttpStatus.CONFLICT, "Ce matricule existe déjà"
-                    );
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Ce matricule existe déjà");
                 });
 
         u.setNom(request.nom().trim());
@@ -172,9 +158,6 @@ public class UtilisateurService {
 
     private Users rechercher(UUID id) {
         return repository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Utilisateur introuvable"
-                ));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Utilisateur introuvable"));
     }
 }

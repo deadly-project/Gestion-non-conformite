@@ -13,13 +13,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-/**
- * Notifications par email.
- *
- * <p>Principes : envoi après commit, en tâche asynchrone, et un échec d'envoi
- * n'annule jamais la création du compte (il est seulement journalisé).
- * Email en texte brut : pas de risque d'injection HTML via le nom ou le prénom.</p>
- */
 @Service
 public class NotificationEmailService {
 
@@ -41,13 +34,15 @@ public class NotificationEmailService {
         this.inclureMotDePasse = inclureMotDePasse;
     }
 
-    @Async
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void onUtilisateurCree(UtilisateurCreeEvent event) {
+    /**
+     * Envoie l'e-mail de manière synchrone (ou gérée) si l'on souhaite récupérer le statut immédiat,
+     * ou conservez @Async si vous préférez du non-bloquant. Ici, pour retourner un retour précis dans l'API,
+     * on peut lever une exception spécifique ou retourner un statut.
+     */
+    public void envoyerEmailCreation(UtilisateurCreeEvent event) {
         JavaMailSender sender = mailSenderProvider.getIfAvailable();
         if (sender == null) {
-            log.warn("Email de création de compte non envoyé : aucun serveur SMTP configuré (spring.mail.host).");
-            return;
+            throw new IllegalStateException("Aucun serveur SMTP configuré (spring.mail.host manquant ou inactif).");
         }
         try {
             SimpleMailMessage message = new SimpleMailMessage();
@@ -56,10 +51,12 @@ public class NotificationEmailService {
             message.setSubject("Votre compte SMQ a été créé");
             message.setText(construireMessage(event));
             sender.send(message);
-            log.info("Email de création de compte envoyé à {}", event.email());
+            log.info("Email de création de compte envoyé avec succès à {}", event.email());
         } catch (MailException e) {
-            log.error("Échec de l'envoi de l'email de création de compte à {} : {}",
-                    event.email(), e.getMessage());
+            log.error("Échec de l'envoi de l'email à {} : {}", event.email(), e.getMessage());
+            // Détection basique pour affiner le message d'erreur (port fermé, connexion refusée, etc.)
+            String cause = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
+            throw new RuntimeException("Erreur de connexion SMTP (port fermé ou serveur injoignable) : " + cause);
         }
     }
 
@@ -67,18 +64,17 @@ public class NotificationEmailService {
         StringBuilder sb = new StringBuilder();
         sb.append("Bonjour ").append(e.prenom()).append(' ').append(e.nom()).append(",\n\n");
         sb.append("Votre compte sur la plateforme SMQ (Système de Gestion de la Qualité) vient d'être créé.\n\n");
-        sb.append("Identifiant de connexion : ").append(e.email()).append('\n');
         sb.append("Matricule : ").append(e.matricule()).append('\n');
+        sb.append("Identifiant / Email : ").append(e.email()).append('\n');
         sb.append("Rôle : ").append(libelleRole(e.role())).append("\n\n");
 
         if (inclureMotDePasse && e.motDePasseTemporaire() != null) {
             sb.append("Mot de passe temporaire : ").append(e.motDePasseTemporaire()).append('\n');
             sb.append("Pour votre sécurité, changez-le dès votre première connexion.\n\n");
         } else {
-            sb.append("Votre mot de passe vous sera communiqué par l'administrateur.\n\n");
+            sb.append("Votre mot de passe vous a été communiqué séparément.\n\n");
         }
 
-        //sb.append("Accès à la plateforme : ").append(urlApplication).append("\n\n");
         sb.append("Si vous n'êtes pas concerné(e) par ce message, merci de ne pas en tenir compte.\n\n");
         sb.append("L'équipe Qualité");
         return sb.toString();

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { apiRequest } from "../api/api";
 
@@ -14,7 +13,8 @@ const formulaireInitial = {
 export default function CreationUtilisateur({ onCreated }) {
     const [formulaire, setFormulaire] = useState(formulaireInitial);
     const [erreur, setErreur] = useState("");
-    const [message, setMessage] = useState("");
+    const [messageSucces, setMessageSucces] = useState("");
+    const [statutEmail, setStatutEmail] = useState("");
     const [chargement, setChargement] = useState(false);
 
     function modifier(champ, valeur) {
@@ -27,7 +27,8 @@ export default function CreationUtilisateur({ onCreated }) {
     async function handleSubmit(event) {
         event.preventDefault();
         setErreur("");
-        setMessage("");
+        setMessageSucces("");
+        setStatutEmail("");
         setChargement(true);
 
         const payload = {
@@ -36,16 +37,18 @@ export default function CreationUtilisateur({ onCreated }) {
         };
 
         try {
-            await apiRequest("/api/utilisateurs", {
+            const resultat = await apiRequest("/api/utilisateurs", {
                 method: "POST",
                 body: JSON.stringify(payload),
             });
 
-            setMessage("Utilisateur créé avec succès.");
+            // resultat contient { utilisateur, messageSucces, statutEmail }
+            setMessageSucces(resultat.messageSucces || "Utilisateur créé avec succès.");
+            setStatutEmail(resultat.statutEmail || "");
             setFormulaire(formulaireInitial);
             onCreated?.();
         } catch (error) {
-            setErreur(error.message);
+            setErreur(error.message || "Erreur lors de la création de l'utilisateur.");
         } finally {
             setChargement(false);
         }
@@ -135,8 +138,23 @@ export default function CreationUtilisateur({ onCreated }) {
                     </select>
                 </div>
 
-                {erreur && <p role="alert">{erreur}</p>}
-                {message && <p role="status">{message}</p>}
+                {erreur && (
+                    <p role="alert" style={{ color: "red", fontWeight: "bold" }}>
+                        ❌ {erreur}
+                    </p>
+                )}
+
+                {messageSucces && (
+                    <p role="status" style={{ color: "green", fontWeight: "bold" }}>
+                        ✅ {messageSucces}
+                    </p>
+                )}
+
+                {statutEmail && (
+                    <p role="status" style={{ color: statutEmail.includes("succès") ? "green" : "orange" }}>
+                        📧 {statutEmail}
+                    </p>
+                )}
 
                 <button type="submit" disabled={chargement}>
                     {chargement ? "Création..." : "Créer l'utilisateur"}

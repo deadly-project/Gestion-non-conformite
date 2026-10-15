@@ -1,7 +1,7 @@
-
 package com.example.controller;
 
 import com.example.dto.utilisateur.UtilisateurCreationRequest;
+import com.example.dto.utilisateur.UtilisateurCreationResponse;
 import com.example.dto.utilisateur.UtilisateurModificationRequest;
 import com.example.dto.utilisateur.UtilisateurResponse;
 import com.example.service.UtilisateurService;
@@ -38,7 +38,7 @@ public class UtilisateurController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public UtilisateurResponse creer(
+    public UtilisateurCreationResponse creer(
             @Valid @RequestBody UtilisateurCreationRequest request) {
         return service.creer(request);
     }
