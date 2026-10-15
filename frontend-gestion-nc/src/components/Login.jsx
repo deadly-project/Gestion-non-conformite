@@ -1,9 +1,8 @@
-
 import { useState } from "react";
 import { apiRequest } from "../api/api";
 
 export default function Login({ onLogin }) {
-    const [email, setEmail] = useState("");
+    const [matricule, setMatricule] = useState("");
     const [motDePasse, setMotDePasse] = useState("");
     const [erreur, setErreur] = useState("");
     const [chargement, setChargement] = useState(false);
@@ -17,13 +16,11 @@ export default function Login({ onLogin }) {
             const resultat = await apiRequest("/api/auth/login", {
                 method: "POST",
                 body: JSON.stringify({
-                    email: email.trim(),
+                    matricule: matricule.trim(),
                     motDePasse,
                 }),
             });
 
-            // Le JWT reste dans le cookie HttpOnly.
-            // Le frontend ne reçoit que le profil utilisateur.
             onLogin(resultat.utilisateur);
         } catch (error) {
             setErreur(error.message || "Connexion impossible.");
@@ -38,12 +35,12 @@ export default function Login({ onLogin }) {
 
             <form onSubmit={handleSubmit}>
                 <div>
-                    <label htmlFor="email">Adresse email</label>
+                    <label htmlFor="matricule">Matricule</label>
                     <input
-                        id="email"
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        id="matricule"
+                        type="text"
+                        value={matricule}
+                        onChange={(e) => setMatricule(e.target.value)}
                         autoComplete="username"
                         required
                     />

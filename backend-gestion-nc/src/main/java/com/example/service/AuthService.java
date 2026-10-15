@@ -25,10 +25,10 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public LoginResponse login(LoginRequest request) {
-        Users user = repository.findByEmailIgnoreCase(request.email().trim())
+        Users user = repository.findByMatriculeIgnoreCase(request.matricule().trim())
                 .filter(u -> Boolean.TRUE.equals(u.getActif()))
                 .filter(u -> passwordEncoder.matches(request.motDePasse(), u.getMotDePasse()))
-                .orElseThrow(() -> new BadCredentialsException("Email ou mot de passe incorrect."));
+                .orElseThrow(() -> new BadCredentialsException("Matricule ou mot de passe incorrect."));
         String token = jwtService.generateToken(user);
         return new LoginResponse(token, "Bearer", jwtService.getExpirationMs(), UtilisateurResponse.from(user));
     }
