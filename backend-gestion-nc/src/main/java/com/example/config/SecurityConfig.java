@@ -48,6 +48,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(csrfRepo)
                         .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
+                        .ignoringRequestMatchers("/ws/**")
                 )
                 .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session
@@ -64,7 +65,8 @@ public class SecurityConfig {
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/auth/login",
-                                "/api/auth/logout"
+                                "/api/auth/logout",
+                                "/api/auth/mot-de-passe-oublie"
                         ).permitAll()
 
                         .requestMatchers("/error").permitAll()

@@ -5,6 +5,7 @@ const liensParRole = {
     ADMINISTRATEUR: [
         { to: "/admin/utilisateurs", label: "Utilisateurs" },
         { to: "/admin/dashboard", label: "Administration" },
+        { to: "/admin/reinitialisations", label: "Demande de reinitialisation" },
     ],
 
     DECLARANT: [

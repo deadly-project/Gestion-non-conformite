@@ -1,0 +1,27 @@
+package com.example.repository;
+
+import com.example.entity.DemandeReinitialisation;
+import com.example.entity.enums.StatutDemande;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+public interface DemandeReinitialisationRepository extends JpaRepository<DemandeReinitialisation, UUID> {
+
+    boolean existsByUtilisateurIdAndStatut(UUID utilisateurId, StatutDemande statut);
+
+    @EntityGraph(attributePaths = "utilisateur")
+    List<DemandeReinitialisation> findByStatutOrderByDateDemandeAsc(StatutDemande statut);
+
+    /** Verrou d'écriture : deux administrateurs ne peuvent pas traiter la même demande. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select d from DemandeReinitialisation d where d.id = :id")
+    Optional<DemandeReinitialisation> findByIdForUpdate(@Param("id") UUID id);
+}

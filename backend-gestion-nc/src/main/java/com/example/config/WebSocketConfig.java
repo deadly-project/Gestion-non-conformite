@@ -1,6 +1,8 @@
 package com.example.config;
 
+import com.example.security.AdminTopicSubscriptionInterceptor;
 import com.example.security.JwtStompChannelInterceptor;
+import com.example.config.JwtCookieHandshakeInterceptor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
@@ -16,17 +18,25 @@ import java.util.Arrays;
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     private final String[] frontendOrigins;
     private final JwtStompChannelInterceptor jwtInterceptor;
+    private final AdminTopicSubscriptionInterceptor adminTopicInterceptor;
+    private final JwtCookieHandshakeInterceptor cookieHandshakeInterceptor;
 
     public WebSocketConfig(@Value("${app.frontend-urls:http://localhost:5173}") String frontendUrls,
-                           JwtStompChannelInterceptor jwtInterceptor) {
+                           JwtStompChannelInterceptor jwtInterceptor,
+                           AdminTopicSubscriptionInterceptor adminTopicInterceptor, JwtCookieHandshakeInterceptor cookieHandshakeInterceptor) {
         this.frontendOrigins = Arrays.stream(frontendUrls.split(","))
                 .map(String::trim).filter(s -> !s.isBlank()).toArray(String[]::new);
         this.jwtInterceptor = jwtInterceptor;
+        this.adminTopicInterceptor = adminTopicInterceptor;
+        this.cookieHandshakeInterceptor = cookieHandshakeInterceptor;
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/ws").setAllowedOrigins(frontendOrigins).withSockJS();
+        registry.addEndpoint("/ws")
+                .addInterceptors(cookieHandshakeInterceptor)
+                .setAllowedOrigins(frontendOrigins)
+                .withSockJS();
     }
 
     @Override
@@ -38,6 +48,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
-        registration.interceptors(jwtInterceptor);
+        // Ordre important : d'abord l'authentification, ensuite le contrôle des canaux
+        registration.interceptors(jwtInterceptor, adminTopicInterceptor);
     }
 }

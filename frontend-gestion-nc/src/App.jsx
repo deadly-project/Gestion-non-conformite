@@ -12,7 +12,9 @@ import {
 import Login from "./components/Login";
 import Nav from "./components/Nav";
 import ProtectedRoute from "./components/ProtectedRoute";
-import CreationUtilisateur from "./components/CreationUtilisateur";
+import CreationUtilisateur from "./components/admin/CreationUtilisateur";
+import MotDePasseOublie from "./components/MotDePasseOublie";
+import ReinitialisationsAdmin from "./components/admin/ReinitialisationsAdmin";
 import { apiRequest } from "./api/api";
 import './App.css'
 
@@ -121,6 +123,14 @@ function Application() {
             />
 
             <Route
+                path="/mot-de-passe-oublie"
+                element={
+                    utilisateur
+                        ? <Navigate to="/" replace />
+                        : <MotDePasseOublie />
+                }
+            />
+            <Route
                 path="/unauthorized"
                 element={
                     <main>
@@ -161,6 +171,10 @@ function Application() {
                         <Route
                             path="/admin/utilisateurs"
                             element={<CreationUtilisateur onCreated={() => {}} />}
+                        />
+                        <Route
+                            path="/admin/reinitialisations"
+                            element={<ReinitialisationsAdmin />}
                         />
                     </Route>
 

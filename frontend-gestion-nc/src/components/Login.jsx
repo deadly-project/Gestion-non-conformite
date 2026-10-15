@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { apiRequest } from "../api/api";
+import "./Login.css";
 
 export default function Login({ onLogin }) {
     const [matricule, setMatricule] = useState("");
@@ -63,7 +65,7 @@ export default function Login({ onLogin }) {
                 <button type="submit" disabled={chargement}>
                     {chargement ? "Connexion..." : "Se connecter"}
                 </button>
-                <a href="">Mot de passe oublié</a>
+                <Link to="/mot-de-passe-oublie">Mot de passe oublié</Link>
             </form>
         </main>
     );

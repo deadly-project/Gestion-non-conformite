@@ -1,5 +1,5 @@
 -- =====================================================================
---  SMQ - Modèle de données v3.1 (PostgreSQL 13+)
+--  SMQ - Modèle de données v3.2 (PostgreSQL 13+)
 --  SANS triggers ni fonctions : le SQL ne contient que la structure
 --  (tables, clés, contraintes déclaratives, index, vues).
 --
@@ -337,3 +337,24 @@ INSERT INTO categories_nc (code, libelle) VALUES
 
 INSERT INTO nc_compteurs (annee, dernier_numero)
 VALUES (EXTRACT(YEAR FROM CURRENT_DATE)::int, 0);
+
+-- ---------------------------------------------------------------------
+-- 14. Demandes de réinitialisation de mot de passe (v3.2)
+-- ---------------------------------------------------------------------
+
+CREATE TABLE demandes_reinitialisation (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id         UUID NOT NULL REFERENCES users(id),
+    statut          VARCHAR(10) NOT NULL DEFAULT 'EN_ATTENTE'
+                    CHECK (statut IN ('EN_ATTENTE','VALIDEE','REFUSEE')),
+    date_demande    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    date_traitement TIMESTAMP,
+    traite_par      UUID REFERENCES users(id),
+    CHECK (statut = 'EN_ATTENTE' OR date_traitement IS NOT NULL)
+);
+
+-- Une seule demande en attente par utilisateur (garantie même en cas de requêtes simultanées)
+CREATE UNIQUE INDEX uq_demande_reinit_en_attente
+    ON demandes_reinitialisation(user_id) WHERE statut = 'EN_ATTENTE';
+
+CREATE INDEX idx_demande_reinit_statut ON demandes_reinitialisation(statut, date_demande);
