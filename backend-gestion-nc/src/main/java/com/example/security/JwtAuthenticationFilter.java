@@ -1,14 +1,13 @@
-
 package com.example.security;
 
 import com.example.entity.Users;
 import com.example.repository.UtilisateurRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,8 +17,17 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * Authentifie chaque requête à partir de l'en-tête « Authorization: Bearer <jwt> ».
+ *
+ * Le jeton est propre à chaque onglet du navigateur (sessionStorage côté React) :
+ * c'est ce qui permet d'avoir plusieurs utilisateurs connectés en même temps dans
+ * le même navigateur. Aucun cookie d'authentification n'est lu.
+ */
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    private static final String PREFIXE_BEARER = "Bearer ";
 
     private final JwtService jwtService;
     private final UtilisateurRepository utilisateurRepository;
@@ -33,19 +41,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private String extraireToken(HttpServletRequest request) {
-        Cookie[] cookies = request.getCookies();
+        String header = request.getHeader(HttpHeaders.AUTHORIZATION);
 
-        if (cookies == null) {
+        if (header == null || !header.startsWith(PREFIXE_BEARER)) {
             return null;
         }
 
-        for (Cookie cookie : cookies) {
-            if (AuthCookie.TOKEN_COOKIE.equals(cookie.getName())) {
-                return cookie.getValue();
-            }
-        }
-
-        return null;
+        return header.substring(PREFIXE_BEARER.length()).trim();
     }
 
     @Override
@@ -63,7 +65,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String token = extraireToken(request);
 
-        // Sans cookie, on laisse Spring Security décider si la route est publique.
+        // Sans jeton, on laisse Spring Security décider si la route est publique.
         if (token == null || token.isBlank()) {
             filterChain.doFilter(request, response);
             return;
@@ -92,8 +94,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
 
         } catch (RuntimeException exception) {
-            // Token invalide ou expiré :
-            // la route protégée sera refusée par Spring Security.
+            // Jeton invalide ou expiré : la route protégée sera refusée (401).
             SecurityContextHolder.clearContext();
         }
 

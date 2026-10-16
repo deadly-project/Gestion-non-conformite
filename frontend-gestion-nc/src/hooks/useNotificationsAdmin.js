@@ -1,21 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
+import { lireToken } from "../api/auth";
 
-// Adaptez si votre api.js utilise une autre variable pour l'URL du backend
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8080";
 
 /**
  * Abonnement temps réel (STOMP sur SockJS) à un canal /topic/admin/...
+ * L'identité est celle de l'ONGLET : le jeton est lu dans le sessionStorage et envoyé
+ * dans l'en-tête Authorization de la trame CONNECT.
  *
- * @param topic          canal à écouter
- * @param onMessage      appelé à chaque message (objet JSON déjà décodé)
- * @param connectHeaders en-têtes envoyés au CONNECT STOMP. Si votre
- *                       JwtStompChannelInterceptor lit le jeton dans l'en-tête
- *                       « Authorization », passez-le ici.
  * @returns true si la connexion temps réel est active
  */
-export function useNotificationsAdmin({ topic, onMessage, connectHeaders = {} }) {
+export function useNotificationsAdmin({ topic, onMessage }) {
     const [connecte, setConnecte] = useState(false);
     const onMessageRef = useRef(onMessage);
 
@@ -26,8 +23,13 @@ export function useNotificationsAdmin({ topic, onMessage, connectHeaders = {} })
     useEffect(() => {
         const client = new Client({
             webSocketFactory: () => new SockJS(`${BASE_URL}/ws`),
-            connectHeaders: {},
             reconnectDelay: 5000,
+            // Exécuté avant CHAQUE connexion et reconnexion : le jeton est toujours à jour
+            beforeConnect: () => {
+                client.connectHeaders = {
+                    Authorization: `Bearer ${lireToken() ?? ""}`,
+                };
+            },
             onConnect: () => {
                 setConnecte(true);
                 client.subscribe(topic, (frame) => {
@@ -39,9 +41,12 @@ export function useNotificationsAdmin({ topic, onMessage, connectHeaders = {} })
                 });
             },
             onWebSocketClose: () => setConnecte(false),
+            // Erreur renvoyée par le serveur (jeton refusé, accès interdit...) :
+            // on arrête, sinon la reconnexion automatique referait la même erreur toutes les 5 s
             onStompError: (frame) => {
                 console.error("Erreur STOMP :", frame.headers?.message);
                 setConnecte(false);
+                client.deactivate();
             },
         });
 
@@ -49,8 +54,6 @@ export function useNotificationsAdmin({ topic, onMessage, connectHeaders = {} })
         return () => {
             client.deactivate();
         };
-        // connectHeaders volontairement exclu : la connexion ne doit pas être recréée à chaque rendu
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [topic]);
 
     return connecte;

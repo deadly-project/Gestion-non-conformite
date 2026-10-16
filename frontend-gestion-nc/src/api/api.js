@@ -1,45 +1,30 @@
+import { lireToken, effacerToken, SESSION_EXPIREE } from "./auth";
 
 const API_URL =
     import.meta.env.VITE_API_URL || "http://localhost:8080";
 
-let csrfToken = null;
-
-async function obtenirCsrfToken(forcer = false) {
-  if (csrfToken && !forcer) return csrfToken;
-
-  const response = await fetch(`${API_URL}/api/auth/csrf`, {
-    credentials: "include",
-  });
-  if (!response.ok) throw new Error("Impossible d'obtenir le jeton CSRF.");
-
-  csrfToken = (await response.json()).token;
-  return csrfToken;
-}
-
-export async function apiRequest(path, options = {}, dejaRetente = false) {
+export async function apiRequest(path, options = {}) {
     const method = (options.method || "GET").toUpperCase();
-    const methodProtege = ["POST", "PUT", "PATCH", "DELETE"].includes(method);
-    
+    const token = lireToken();
+
     const headers = {
-      ...(options.body ? { "Content-Type": "application/json" } : {}),
-      ...options.headers,
+        ...(options.body ? { "Content-Type": "application/json" } : {}),
+        // Le jeton de CET onglet : c'est lui qui détermine l'utilisateur connecté
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...options.headers,
     };
-  
-    if (methodProtege) {
-      headers["X-CSRF-TOKEN"] = await obtenirCsrfToken();
-    }
-  
+
+    // Pas de cookies : l'identité ne passe que par l'en-tête Authorization
     const response = await fetch(`${API_URL}${path}`, {
-      ...options,
-      method,
-      headers,
-      credentials: "include",
+        ...options,
+        method,
+        headers,
     });
-  
-    // Token expiré ou invalide : on le renouvelle et on réessaie une fois
-    if (response.status === 403 && methodProtege && !dejaRetente) {
-      csrfToken = null;
-      return apiRequest(path, options, true);
+
+    // Jeton refusé : on efface la session de l'onglet et on prévient l'application
+    if (response.status === 401 && token && path !== "/api/auth/login") {
+        effacerToken();
+        window.dispatchEvent(new Event(SESSION_EXPIREE));
     }
 
     if (response.status === 204) {
@@ -58,10 +43,6 @@ export async function apiRequest(path, options = {}, dejaRetente = false) {
                 || "Une erreur est survenue.";
 
         throw new Error(message);
-    }
-
-    if (path === "/api/auth/logout") {
-        csrfToken = null;
     }
 
     return data;

@@ -2,7 +2,6 @@ package com.example.config;
 
 import com.example.security.AdminTopicSubscriptionInterceptor;
 import com.example.security.JwtStompChannelInterceptor;
-import com.example.config.JwtCookieHandshakeInterceptor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
@@ -19,24 +18,20 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     private final String[] frontendOrigins;
     private final JwtStompChannelInterceptor jwtInterceptor;
     private final AdminTopicSubscriptionInterceptor adminTopicInterceptor;
-    private final JwtCookieHandshakeInterceptor cookieHandshakeInterceptor;
 
     public WebSocketConfig(@Value("${app.frontend-urls:http://localhost:5173}") String frontendUrls,
                            JwtStompChannelInterceptor jwtInterceptor,
-                           AdminTopicSubscriptionInterceptor adminTopicInterceptor, JwtCookieHandshakeInterceptor cookieHandshakeInterceptor) {
+                           AdminTopicSubscriptionInterceptor adminTopicInterceptor) {
         this.frontendOrigins = Arrays.stream(frontendUrls.split(","))
                 .map(String::trim).filter(s -> !s.isBlank()).toArray(String[]::new);
         this.jwtInterceptor = jwtInterceptor;
         this.adminTopicInterceptor = adminTopicInterceptor;
-        this.cookieHandshakeInterceptor = cookieHandshakeInterceptor;
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/ws")
-                .addInterceptors(cookieHandshakeInterceptor)
-                .setAllowedOrigins(frontendOrigins)
-                .withSockJS();
+        // Plus d'intercepteur de handshake lié aux cookies : l'identité vient du CONNECT STOMP
+        registry.addEndpoint("/ws").setAllowedOrigins(frontendOrigins).withSockJS();
     }
 
     @Override

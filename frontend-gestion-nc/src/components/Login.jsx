@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { apiRequest } from "../api/api";
+import { enregistrerToken } from "../api/auth";
 import "./Login.css";
 
 export default function Login({ onLogin }) {
@@ -23,6 +24,8 @@ export default function Login({ onLogin }) {
                 }),
             });
 
+            // Le jeton reste dans CET onglet (sessionStorage)
+            enregistrerToken(resultat.accessToken);
             onLogin(resultat.utilisateur);
         } catch (error) {
             setErreur(error.message || "Connexion impossible.");

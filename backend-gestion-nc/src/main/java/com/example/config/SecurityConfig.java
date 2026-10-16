@@ -1,4 +1,3 @@
-
 package com.example.config;
 
 import com.example.security.JwtAuthenticationFilter;
@@ -15,8 +14,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
-import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -41,15 +38,11 @@ public class SecurityConfig {
             HttpSecurity http,
             JwtAuthenticationFilter jwtFilter
     ) throws Exception {
-        CookieCsrfTokenRepository csrfRepo = CookieCsrfTokenRepository.withHttpOnlyFalse();
-        csrfRepo.setHeaderName("X-CSRF-TOKEN");
 
         return http
-                .csrf(csrf -> csrf
-                        .csrfTokenRepository(csrfRepo)
-                        .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
-                        .ignoringRequestMatchers("/ws/**")
-                )
+                // L'authentification passe par l'en-tête Authorization (jamais par un cookie) :
+                // le navigateur n'envoie rien automatiquement, donc il n'y a pas d'attaque CSRF.
+                .csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
@@ -57,11 +50,6 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
 
                         // Routes publiques
-                        .requestMatchers(
-                                HttpMethod.GET,
-                                "/api/auth/csrf"
-                        ).permitAll()
-
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/auth/login",
@@ -72,7 +60,7 @@ public class SecurityConfig {
                         .requestMatchers("/error").permitAll()
 
                         // Le handshake WebSocket est public.
-                        // L'authentification STOMP est vérifiée séparément.
+                        // L'authentification STOMP est vérifiée séparément (JwtStompChannelInterceptor).
                         .requestMatchers("/ws", "/ws/**").permitAll()
 
                         // Profil utilisateur
@@ -123,7 +111,6 @@ public class SecurityConfig {
                         UsernamePasswordAuthenticationFilter.class
                 )
                 .build();
-
     }
 
     @Bean
@@ -145,7 +132,7 @@ public class SecurityConfig {
         config.setAllowedHeaders(List.of(
                 "Content-Type",
                 "Accept",
-                "X-CSRF-TOKEN"
+                "Authorization"
         ));
         config.setAllowCredentials(true);
 

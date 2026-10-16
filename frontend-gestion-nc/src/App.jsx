@@ -16,6 +16,7 @@ import CreationUtilisateur from "./components/admin/CreationUtilisateur";
 import MotDePasseOublie from "./components/MotDePasseOublie";
 import ReinitialisationsAdmin from "./components/admin/ReinitialisationsAdmin";
 import { apiRequest } from "./api/api";
+import { lireToken, effacerToken, SESSION_EXPIREE } from "./api/auth";
 import './App.css'
 
 function Page({ titre }) {
@@ -71,6 +72,10 @@ function Application() {
 
         async function verifierSession() {
             try {
+                if (!lireToken()) {
+                    throw new Error("Aucune session dans cet onglet");
+                }
+
                 const user = await apiRequest("/api/auth/me");
 
                 if (actif) {
@@ -94,6 +99,17 @@ function Application() {
         };
     }, []);
 
+    // Le serveur a refusé le jeton de cet onglet (expiré, compte désactivé...)
+    useEffect(() => {
+        function surSessionExpiree() {
+            setUtilisateur(null);
+            navigate("/login", { replace: true });
+        }
+
+        window.addEventListener(SESSION_EXPIREE, surSessionExpiree);
+        return () => window.removeEventListener(SESSION_EXPIREE, surSessionExpiree);
+    }, [navigate]);
+
     async function deconnexion() {
         try {
             await apiRequest("/api/auth/logout", {
@@ -102,6 +118,7 @@ function Application() {
         } catch (error) {
             console.error("Erreur lors de la déconnexion :", error);
         } finally {
+            effacerToken();
             setUtilisateur(null);
             navigate("/login", { replace: true });
         }
