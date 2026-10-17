@@ -66,6 +66,9 @@ public class SecurityConfig {
                         // Profil utilisateur
                         .requestMatchers("/api/auth/me").authenticated()
 
+                        //Modification compte perso
+                        .requestMatchers("/api/compte/**").authenticated()
+
                         // Administration
                         .requestMatchers("/api/admin/**")
                         .hasRole("ADMINISTRATEUR")

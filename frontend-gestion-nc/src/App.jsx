@@ -17,6 +17,8 @@ import MotDePasseOublie from "./components/MotDePasseOublie";
 import ReinitialisationsAdmin from "./components/admin/ReinitialisationsAdmin";
 import { apiRequest } from "./api/api";
 import { lireToken, effacerToken, SESSION_EXPIREE } from "./api/auth";
+import Parametres from "./components/compte/Parametres";
+import GestionUtilisateurs from "./components/admin/GestionUtilisateurs";
 import './App.css'
 
 function Page({ titre }) {
@@ -173,6 +175,22 @@ function Application() {
                         element={<RoleAccueil utilisateur={utilisateur} />}
                     />
 
+                    {/* ROUTE COMMUNE À TOUS LES UTILISATEURS CONNECTÉS */}
+                    <Route
+                        path="/parametres"
+                        element={
+                            <Parametres
+                                utilisateur={utilisateur}
+                                onUtilisateurModifie={(profil) =>
+                                    setUtilisateur((ancien) => ({
+                                        ...ancien,
+                                        ...profil,
+                                    }))
+                                }
+                            />
+                        }
+                    />
+
                     <Route
                         element={
                             <ProtectedRoute
@@ -186,9 +204,15 @@ function Application() {
                             element={<Page titre="Administration du SMQ" />}
                         />
                         <Route
-                            path="/admin/utilisateurs"
+                            path="/admin/utilisateurs/nouveau"
                             element={<CreationUtilisateur onCreated={() => {}} />}
                         />
+
+                        <Route
+                            path="/admin/utilisateurs"
+                            element={<GestionUtilisateurs />}
+                        />
+
                         <Route
                             path="/admin/reinitialisations"
                             element={<ReinitialisationsAdmin />}
@@ -225,6 +249,7 @@ function Application() {
                             path="/auditeur/audits"
                             element={<Page titre="Mes audits" />}
                         />
+
                         <Route
                             path="/auditeur/constats"
                             element={<Page titre="Constats d'audit" />}
@@ -281,12 +306,11 @@ function RoleAccueil({ utilisateur }) {
 }
 
 function App() {
-
   return (
     <BrowserRouter>
       <Application />
     </BrowserRouter>
-  )
+  );
 }
 
-export default App
+export default App;

@@ -133,4 +133,18 @@ public class NotificationEmailService {
             default -> role;
         };
     }
+
+    public void envoyerNotificationChangementMotDePasse(
+            String email, String prenom, String nom) {
+
+        String texte = "Bonjour " + prenom + " " + nom + ",\n\n"
+                + "Le mot de passe de votre compte SMQ vient d'être modifié.\n\n"
+                + "Si vous êtes à l'origine de cette modification, "
+                + "vous pouvez ignorer ce message.\n"
+                + "Si vous n'êtes pas à l'origine de cette modification, "
+                + "contactez immédiatement l'administrateur.\n\n"
+                + "L'équipe Qualité";
+
+        envoyer(email, "SMQ : modification du mot de passe", texte);
+    }
 }

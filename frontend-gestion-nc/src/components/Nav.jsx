@@ -3,7 +3,8 @@ import { NavLink } from "react-router-dom";
 
 const liensParRole = {
     ADMINISTRATEUR: [
-        { to: "/admin/utilisateurs", label: "Utilisateurs" },
+        { to: "/admin/utilisateurs", label: "Liste des Utilisateurs" },
+        { to: "/admin/utilisateurs/nouveau", label: "Créer un Utilisateurs" },
         { to: "/admin/dashboard", label: "Administration" },
         { to: "/admin/reinitialisations", label: "Demande de reinitialisation" },
     ],
@@ -11,17 +12,20 @@ const liensParRole = {
     DECLARANT: [
         { to: "/declarant/non-conformites", label: "Mes déclarations" },
         { to: "/declarant/non-conformites/nouvelle", label: "Déclarer une non-conformité" },
+        { to: "/parametres", label: "parametres" },
     ],
 
     AUDITEUR: [
         { to: "/auditeur/audits", label: "Mes audits" },
         { to: "/auditeur/constats", label: "Constats d'audit" },
+        { to: "/parametres", label: "parametres" },
     ],
 
     RESPONSABLE_QUALITE: [
         { to: "/responsable/non-conformites", label: "Non-conformités" },
         { to: "/responsable/capa", label: "Actions correctives (CAPA)" },
         { to: "/responsable/audits", label: "Planification des audits" },
+        { to: "/parametres", label: "parametres" },
     ],
 };
 

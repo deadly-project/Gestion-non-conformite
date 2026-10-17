@@ -34,3 +34,12 @@ MAIL_FROM=email_envoyeur@gmail.com
 MAIL_USERNAME=email_envoyeur@gmail.com
 MAIL_PASSWORD=mot_de_passe_application_16_caractère
 ```
+
+``
+cd /frontend-gestion-nc/  
+nano .env
+``
+ajouter dedans  
+``
+VITE_API_URL=http://localhost:8080
+``

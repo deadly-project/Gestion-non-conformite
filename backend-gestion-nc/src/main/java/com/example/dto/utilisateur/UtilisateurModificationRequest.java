@@ -26,7 +26,5 @@ public record UtilisateurModificationRequest(
                 regexp = "DECLARANT|AUDITEUR|RESPONSABLE_QUALITE",
                 message = "Le rôle doit être DECLARANT, AUDITEUR ou RESPONSABLE_QUALITE"
         )
-        String role,
-
-        LocalDate dateNaissance
+        String role
 ) {}
