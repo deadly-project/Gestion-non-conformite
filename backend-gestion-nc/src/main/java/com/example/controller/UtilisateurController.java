@@ -55,4 +55,10 @@ public class UtilisateurController {
     public void desactiver(@PathVariable UUID id) {
         service.desactiver(id);
     }
+
+    @PatchMapping("/{id}/activer")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void activer(@PathVariable UUID id) {
+        service.activer(id);
+    }
 }

@@ -160,4 +160,11 @@ public class UtilisateurService {
         return repository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Utilisateur introuvable"));
     }
+
+    @Transactional
+    public void activer(UUID id) {
+        Users u = rechercher(id);
+        u.setActif(true);
+        repository.save(u);
+    }
 }
