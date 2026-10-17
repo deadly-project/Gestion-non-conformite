@@ -8,7 +8,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/admin/reinitialisations")
@@ -28,12 +27,12 @@ public class ReinitialisationAdminController {
     }
 
     @PostMapping("/{id}/valider")
-    public DemandeReinitialisationResponse valider(@PathVariable UUID id, Authentication authentication) {
+    public DemandeReinitialisationResponse valider(@PathVariable Long id, Authentication authentication) {
         return service.valider(id, authentication);
     }
 
     @PostMapping("/{id}/refuser")
-    public DemandeReinitialisationResponse refuser(@PathVariable UUID id, Authentication authentication) {
+    public DemandeReinitialisationResponse refuser(@PathVariable Long id, Authentication authentication) {
         return service.refuser(id, authentication);
     }
 }

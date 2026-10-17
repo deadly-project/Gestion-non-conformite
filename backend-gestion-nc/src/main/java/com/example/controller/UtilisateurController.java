@@ -13,7 +13,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/utilisateurs")
@@ -32,7 +31,7 @@ public class UtilisateurController {
     }
 
     @GetMapping("/{id}")
-    public UtilisateurResponse trouver(@PathVariable UUID id) {
+    public UtilisateurResponse trouver(@PathVariable Long id) {
         return service.trouver(id);
     }
 
@@ -45,20 +44,20 @@ public class UtilisateurController {
 
     @PutMapping("/{id}")
     public UtilisateurResponse modifier(
-            @PathVariable UUID id,
+            @PathVariable Long id,
             @Valid @RequestBody UtilisateurModificationRequest request) {
         return service.modifier(id, request);
     }
 
     @PatchMapping("/{id}/desactiver")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void desactiver(@PathVariable UUID id) {
+    public void desactiver(@PathVariable Long id) {
         service.desactiver(id);
     }
 
     @PatchMapping("/{id}/activer")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void activer(@PathVariable UUID id) {
+    public void activer(@PathVariable Long id) {
         service.activer(id);
     }
 }

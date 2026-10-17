@@ -26,11 +26,11 @@
 -- 1. users (un seul rôle par utilisateur ; date_naissance supprimée en v3.1)
 -- ---------------------------------------------------------------------
 CREATE TABLE users (
-    id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id                 BIGSERIAL PRIMARY KEY,
     nom                VARCHAR(100) NOT NULL,
     prenom             VARCHAR(100) NOT NULL,
     email              VARCHAR(255) NOT NULL UNIQUE,
-    matricule          VARCHAR(50)  NOT NULL UNIQUE,
+    matricule          INT          NOT NULL UNIQUE,
     mot_de_passe       VARCHAR(255) NOT NULL,              -- hash BCrypt
     role               VARCHAR(20)  NOT NULL
                        CHECK (role IN ('DECLARANT','RESPONSABLE_QUALITE','AUDITEUR','ADMINISTRATEUR')),
@@ -43,7 +43,7 @@ CREATE TABLE users (
 -- 2. Référentiels gérés par l'administrateur
 -- ---------------------------------------------------------------------
 CREATE TABLE processus (
-    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id          BIGSERIAL PRIMARY KEY,
     code        VARCHAR(30)  NOT NULL UNIQUE,
     libelle     VARCHAR(150) NOT NULL UNIQUE,
     description TEXT,
@@ -51,7 +51,7 @@ CREATE TABLE processus (
 );
 
 CREATE TABLE categories_nc (
-    id      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id      BIGSERIAL PRIMARY KEY,
     code    VARCHAR(30)  NOT NULL UNIQUE,
     libelle VARCHAR(150) NOT NULL UNIQUE,
     actif   BOOLEAN NOT NULL DEFAULT TRUE
@@ -68,11 +68,11 @@ CREATE TABLE nc_compteurs (
 -- 3. Audits, constats et commentaires
 -- ---------------------------------------------------------------------
 CREATE TABLE audits (
-    id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id                 BIGSERIAL PRIMARY KEY,
     titre              VARCHAR(200) NOT NULL,
-    processus_id       UUID NOT NULL REFERENCES processus(id),
+    processus_id       BIGINT NOT NULL REFERENCES processus(id),
     type_audit         VARCHAR(10)  NOT NULL CHECK (type_audit IN ('INTERNE','EXTERNE')),
-    auditeur_id        UUID NOT NULL REFERENCES users(id),
+    auditeur_id        BIGINT NOT NULL REFERENCES users(id),
     date_planifiee     DATE NOT NULL,
     date_realisation   DATE,
     statut             VARCHAR(10) NOT NULL DEFAULT 'PLANIFIE'
@@ -82,19 +82,19 @@ CREATE TABLE audits (
 );
 
 CREATE TABLE constats_audit (
-    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    audit_id            UUID NOT NULL REFERENCES audits(id) ON DELETE CASCADE,
+    id                  BIGSERIAL PRIMARY KEY,
+    audit_id            BIGINT NOT NULL REFERENCES audits(id) ON DELETE CASCADE,
     type_constat        VARCHAR(15) NOT NULL
                         CHECK (type_constat IN ('ECART','POINT_FORT','REMARQUE')),
     description_constat TEXT NOT NULL,
-    auteur_id           UUID NOT NULL REFERENCES users(id),
+    auteur_id           BIGINT NOT NULL REFERENCES users(id),
     date_constat        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE commentaires_constats (
-    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    constat_id       UUID NOT NULL REFERENCES constats_audit(id) ON DELETE CASCADE,
-    auteur_id        UUID NOT NULL REFERENCES users(id),
+    id               BIGSERIAL PRIMARY KEY,
+    constat_id       BIGINT NOT NULL REFERENCES constats_audit(id) ON DELETE CASCADE,
+    auteur_id        BIGINT NOT NULL REFERENCES users(id),
     commentaire      TEXT NOT NULL,
     date_commentaire TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -105,13 +105,13 @@ CREATE TABLE commentaires_constats (
 --    Responsable : gravité retenue, catégorie, responsable, auditeur, délai
 -- ---------------------------------------------------------------------
 CREATE TABLE non_conformites (
-    id                           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id                           BIGSERIAL PRIMARY KEY,
     reference                    VARCHAR(20) NOT NULL UNIQUE,     -- NC-2025-007 (backend)
     titre                        VARCHAR(200) NOT NULL,
     date_detection               DATE NOT NULL,
-    declarant_id                 UUID NOT NULL REFERENCES users(id),
-    processus_id                 UUID NOT NULL REFERENCES processus(id),
-    categorie_id                 UUID REFERENCES categories_nc(id), -- fixée à la qualification
+    declarant_id                 BIGINT NOT NULL REFERENCES users(id),
+    processus_id                 BIGINT NOT NULL REFERENCES processus(id),
+    categorie_id                 BIGINT REFERENCES categories_nc(id), -- fixée à la qualification
     description_detaillee        TEXT NOT NULL,
     gravite_declaree             VARCHAR(10) NOT NULL
                                  CHECK (gravite_declaree IN ('MINEURE','MAJEURE','CRITIQUE')),
@@ -120,9 +120,9 @@ CREATE TABLE non_conformites (
     statut                       VARCHAR(20) NOT NULL DEFAULT 'EN_ATTENTE'
                                  CHECK (statut IN ('EN_ATTENTE','OUVERT','EN_COURS_D_ANALYSE',
                                                    'EN_TRAITEMENT','CLOTUREE')),
-    responsable_id               UUID REFERENCES users(id),       -- responsable de traitement
-    auditeur_id                  UUID REFERENCES users(id),       -- auditeur attribué
-    constat_origine_id           UUID REFERENCES constats_audit(id),
+    responsable_id               BIGINT REFERENCES users(id),       -- responsable de traitement
+    auditeur_id                  BIGINT REFERENCES users(id),       -- auditeur attribué
+    constat_origine_id           BIGINT REFERENCES constats_audit(id),
     delais_jours                 INT CHECK (delais_jours > 0),
     date_echeance                DATE,                            -- ouverture + délai (backend)
     date_ouverture               TIMESTAMP,
@@ -136,12 +136,12 @@ CREATE TABLE non_conformites (
 
 -- Historique des statuts (alimenté par le backend) : base du calcul exact des KPIs
 CREATE TABLE nc_statut_historique (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    nc_id           UUID NOT NULL REFERENCES non_conformites(id) ON DELETE CASCADE,
+    id              BIGSERIAL PRIMARY KEY,
+    nc_id           BIGINT NOT NULL REFERENCES non_conformites(id) ON DELETE CASCADE,
     ancien_statut   VARCHAR(20),
     nouveau_statut  VARCHAR(20) NOT NULL,
     commentaire     TEXT,                                  -- motif (obligatoire à la réouverture)
-    auteur_id       UUID REFERENCES users(id),
+    auteur_id       BIGINT REFERENCES users(id),
     date_changement TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -149,14 +149,14 @@ CREATE TABLE nc_statut_historique (
 -- 5. Pièces jointes (fichiers hors base ; limites contrôlées par le backend)
 -- ---------------------------------------------------------------------
 CREATE TABLE nc_attachments (
-    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    nc_id         UUID NOT NULL REFERENCES non_conformites(id) ON DELETE CASCADE,
-    file_url      VARCHAR(500) NOT NULL,     -- clé relative : nc/<nc_id>/<uuid>.jpg
+    id            BIGSERIAL PRIMARY KEY,
+    nc_id         BIGINT NOT NULL REFERENCES non_conformites(id) ON DELETE CASCADE,
+    file_url      VARCHAR(500) NOT NULL,     -- clé relative : nc/<nc_id>/<fichier>.jpg
     nom_original  VARCHAR(255),
     file_type     VARCHAR(5)   NOT NULL CHECK (file_type IN ('PHOTO','PDF')),
     mime_type     VARCHAR(100) NOT NULL,
     taille_octets BIGINT NOT NULL CHECK (taille_octets > 0),
-    uploaded_by   UUID REFERENCES users(id),
+    uploaded_by   BIGINT REFERENCES users(id),
     date_creation TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -164,8 +164,8 @@ CREATE TABLE nc_attachments (
 -- 6. Analyse des causes : Ishikawa (5M) x 5 Pourquoi
 -- ---------------------------------------------------------------------
 CREATE TABLE ishikawa_analyses (
-    id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    nc_id                UUID NOT NULL REFERENCES non_conformites(id) ON DELETE CASCADE,
+    id                   BIGSERIAL PRIMARY KEY,
+    nc_id                BIGINT NOT NULL REFERENCES non_conformites(id) ON DELETE CASCADE,
     branche              VARCHAR(15) NOT NULL
                          CHECK (branche IN ('MATIERE','MATERIEL','MAIN_D_OEUVRE','METHODE','MILIEU')),
     pourquoi_1           TEXT,
@@ -174,7 +174,7 @@ CREATE TABLE ishikawa_analyses (
     pourquoi_4           TEXT,
     pourquoi_5           TEXT,
     cause_racine_validee TEXT,
-    auteur_id            UUID REFERENCES users(id),
+    auteur_id            BIGINT REFERENCES users(id),
     date_modification    TIMESTAMP,
     UNIQUE (nc_id, branche)
 );
@@ -184,18 +184,18 @@ CREATE TABLE ishikawa_analyses (
 --    Rattachée à une NC et/ou à un constat d'audit (plan de traitement)
 -- ---------------------------------------------------------------------
 CREATE TABLE actions_capa (
-    id                     UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    nc_id                  UUID REFERENCES non_conformites(id) ON DELETE CASCADE,
-    constat_id             UUID REFERENCES constats_audit(id) ON DELETE CASCADE,
+    id                     BIGSERIAL PRIMARY KEY,
+    nc_id                  BIGINT REFERENCES non_conformites(id) ON DELETE CASCADE,
+    constat_id             BIGINT REFERENCES constats_audit(id) ON DELETE CASCADE,
     type_action            VARCHAR(10) NOT NULL CHECK (type_action IN ('CORRECTIVE','PREVENTIVE')),
     description            TEXT NOT NULL,
-    responsable_action_id  UUID NOT NULL REFERENCES users(id),
+    responsable_action_id  BIGINT NOT NULL REFERENCES users(id),
     statut_action          VARCHAR(10) NOT NULL DEFAULT 'A_FAIRE'
                            CHECK (statut_action IN ('A_FAIRE','EN_COURS','TERMINEE','VERIFIEE')),
     date_echeance          DATE NOT NULL,
     date_realisation       DATE,
     date_verification      TIMESTAMP,
-    verificateur_id        UUID REFERENCES users(id),
+    verificateur_id        BIGINT REFERENCES users(id),
     efficace               BOOLEAN,
     commentaire_efficacite TEXT,
     date_creation          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -209,12 +209,12 @@ CREATE TABLE actions_capa (
 -- 8. Gestion documentaire qualité
 -- ---------------------------------------------------------------------
 CREATE TABLE documents_qualite (
-    id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id                BIGSERIAL PRIMARY KEY,
     code              VARCHAR(50)  NOT NULL UNIQUE,            -- ex : PR-PROD-001
     titre             VARCHAR(255) NOT NULL,
     type_document     VARCHAR(15)  NOT NULL
                       CHECK (type_document IN ('PROCEDURE','INSTRUCTION','ENREGISTREMENT')),
-    processus_id      UUID NOT NULL REFERENCES processus(id),
+    processus_id      BIGINT NOT NULL REFERENCES processus(id),
     statut            VARCHAR(12)  NOT NULL DEFAULT 'EN_VIGUEUR'
                       CHECK (statut IN ('EN_VIGUEUR','EN_REVISION','OBSOLETE')),
     version           VARCHAR(10)  NOT NULL DEFAULT '1.0',
@@ -222,7 +222,7 @@ CREATE TABLE documents_qualite (
     nom_original      VARCHAR(255),
     mime_type         VARCHAR(100),
     taille_octets     BIGINT,
-    auteur_id         UUID NOT NULL REFERENCES users(id),
+    auteur_id         BIGINT NOT NULL REFERENCES users(id),
     date_application  DATE,
     date_creation     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     date_modification TIMESTAMP
@@ -232,14 +232,14 @@ CREATE TABLE documents_qualite (
 -- 9. Notifications
 -- ---------------------------------------------------------------------
 CREATE TABLE notifications (
-    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id       UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    id            BIGSERIAL PRIMARY KEY,
+    user_id       BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     type          VARCHAR(30) NOT NULL
                   CHECK (type IN ('ASSIGNATION','ECHEANCE_PROCHE','ECHEANCE_DEPASSEE',
                                   'CHANGEMENT_STATUT','AUDIT_PLANIFIE','AUTRE')),
     message       TEXT NOT NULL,
     entite        VARCHAR(30),
-    entite_id     UUID,
+    entite_id     BIGINT,
     lue           BOOLEAN NOT NULL DEFAULT FALSE,
     date_creation TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -248,11 +248,11 @@ CREATE TABLE notifications (
 -- 10. Journal des actions (alimenté par le backend)
 -- ---------------------------------------------------------------------
 CREATE TABLE historique_actions (
-    id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    utilisateur_id       UUID REFERENCES users(id),            -- NULL = action système
+    id                   BIGSERIAL PRIMARY KEY,
+    utilisateur_id       BIGINT REFERENCES users(id),            -- NULL = action système
     action_type          VARCHAR(40) NOT NULL,
     entite_concernee     VARCHAR(30) NOT NULL,
-    entite_id            UUID,
+    entite_id            BIGINT,
     details_modification JSONB,                                -- {"avant": {...}, "apres": {...}}
     date_action          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -343,13 +343,13 @@ VALUES (EXTRACT(YEAR FROM CURRENT_DATE)::int, 0);
 -- ---------------------------------------------------------------------
 
 CREATE TABLE demandes_reinitialisation (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id         UUID NOT NULL REFERENCES users(id),
+    id              BIGSERIAL PRIMARY KEY,
+    user_id         BIGINT NOT NULL REFERENCES users(id),
     statut          VARCHAR(10) NOT NULL DEFAULT 'EN_ATTENTE'
                     CHECK (statut IN ('EN_ATTENTE','VALIDEE','REFUSEE')),
     date_demande    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     date_traitement TIMESTAMP,
-    traite_par      UUID REFERENCES users(id),
+    traite_par      BIGINT REFERENCES users(id),
     CHECK (statut = 'EN_ATTENTE' OR date_traitement IS NOT NULL)
 );
 

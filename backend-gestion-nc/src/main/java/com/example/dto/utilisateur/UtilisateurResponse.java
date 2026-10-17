@@ -4,14 +4,13 @@ package com.example.dto.utilisateur;
 import com.example.entity.Users;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 public record UtilisateurResponse(
-        UUID id,
+        Long id,
         String nom,
         String prenom,
         String email,
-        String matricule,
+        Integer matricule,
         String role,
         boolean actif,
         LocalDateTime dateCreation,

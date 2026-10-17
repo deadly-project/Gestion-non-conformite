@@ -1,7 +1,5 @@
 package com.example.dto.reinitialisation;
 
-import java.util.UUID;
-
 /**
  * Message poussé en temps réel aux administrateurs (WebSocket).
  * Champs simples (dates en texte ISO) pour une lecture directe côté React.
@@ -9,8 +7,8 @@ import java.util.UUID;
  */
 public record NotificationTempsReel(
         String type,          // DEMANDE_RECUE, DEMANDE_VALIDEE, DEMANDE_REFUSEE
-        UUID demandeId,
-        String matricule,
+        Long demandeId,
+        Integer matricule,
         String nom,
         String prenom,
         String statut,

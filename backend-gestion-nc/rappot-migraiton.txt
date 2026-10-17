@@ -1,0 +1,147 @@
+====================================================================
+RAPPORT DE MIGRATION - backend-gestion-nc
+Passage des identifiants UUID -> entiers auto-incrémentés (Long/BIGSERIAL)
+et du matricule VARCHAR -> INTEGER
+====================================================================
+
+Date          : 2026-10-17
+Périmètre     : backend-gestion-nc (Spring Boot + PostgreSQL)
+Objectif      : remplacer tous les identifiants UUID par des entiers
+                auto-incrémentés démarrant à 1, et changer le champ
+                `matricule` de VARCHAR en INTEGER (unique).
+Résultat      : migration terminée, compilation Maven OK
+                (mvnw compile et mvnw test-compile sans erreur).
+
+--------------------------------------------------------------------
+1. BASE DE DONNÉES / SCRIPT SQL
+   Fichier : db/smq_schema_v3_sans_triggers.sql
+--------------------------------------------------------------------
+- Toutes les clés primaires :
+    UUID PRIMARY KEY DEFAULT gen_random_uuid()
+      ->  BIGSERIAL PRIMARY KEY   (équivalent BIGINT auto-incrémenté,
+          première valeur = 1)
+  Tables concernées : users, processus, categories_nc, audits,
+  constats_audit, commentaires_constats, non_conformites,
+  nc_statut_historique, nc_attachments, ishikawa_analyses,
+  actions_capa, documents_qualite, notifications, historique_actions,
+  demandes_reinitialisation.
+
+- Toutes les clés étrangères UUID -> BIGINT, notamment :
+    processus_id, auditeur_id, audit_id, auteur_id, constat_id,
+    declarant_id, categorie_id, responsable_id, constat_origine_id,
+    nc_id, uploaded_by, verificateur_id, responsable_action_id,
+    user_id, utilisateur_id, traite_par, entite_id.
+  Les contraintes REFERENCES / ON DELETE CASCADE sont conservées.
+
+- Colonne matricule de la table users :
+    VARCHAR(50) NOT NULL UNIQUE  ->  INT NOT NULL UNIQUE
+
+- Index : conservés (colonnes désormais BIGINT, aucune syntaxe modifiée).
+
+- Vues : conservées sans changement de type (aucune colonne UUID exposée).
+  v_kpi_taux_delais, v_kpi_recurrence_processus, v_kpi_delai_moyen,
+  v_kpi_avancement_audits, v_capa_en_retard.
+
+Note : le choix BIGSERIAL (BIGINT) a été retenu pour être cohérent avec
+le type Java `Long` utilisé côté entités, afin d'éviter tout dépassement
+d'entier à long terme.
+
+--------------------------------------------------------------------
+2. ENTITÉS JPA (com.example.entity)
+--------------------------------------------------------------------
+Pour toutes les entités :
+- @GeneratedValue(strategy = GenerationType.UUID)
+    -> @GeneratedValue(strategy = GenerationType.IDENTITY)
+- `private UUID id;`            -> `private Long id;`
+- champs/clés étrangères `UUID` -> `Long`
+- suppression de l'import `java.util.UUID`.
+
+Entités migrées (id + FK) :
+  ActionCapa, Audit, CategorieNc, CommentaireConstat, ConstatAudit,
+  DemandeReinitialisation, DocumentQualite, HistoriqueAction,
+  IshikawaAnalyse, NcAttachment, NcStatutHistorique, NonConformite,
+  Notification, Processus, Users.
+
+Entité Users :
+    @Column(name="matricule", nullable=false, unique=true, length=50)
+    private String matricule;
+      ->
+    @Column(name="matricule", nullable=false, unique=true)
+    private Integer matricule;
+
+NcCompteur : inchangé (clé primaire `annee` déjà de type Integer).
+
+--------------------------------------------------------------------
+3. REPOSITORIES (com.example.repository)
+--------------------------------------------------------------------
+- UtilisateurRepository
+    JpaRepository<Users, UUID> -> JpaRepository<Users, Long>
+    findByMatriculeIgnoreCase(String)   -> findByMatricule(Integer)
+    existsByMatriculeIgnoreCase(String) -> existsByMatricule(Integer)
+- DemandeReinitialisationRepository
+    JpaRepository<DemandeReinitialisation, UUID> -> ..., Long
+    existsByUtilisateurIdAndStatut(UUID,...) -> (Long,...)
+    findByIdForUpdate(UUID) -> findByIdForUpdate(Long)
+
+--------------------------------------------------------------------
+4. DTO / ÉVÉNEMENTS
+--------------------------------------------------------------------
+- LoginRequest            : matricule String -> Integer (@NotNull) ;
+                            motDePasse conservé en @NotBlank.
+- MotDePasseOublieRequest : matricule String -> Integer (@NotNull).
+- ProfilModificationRequest / UtilisateurCreationRequest /
+  UtilisateurModificationRequest :
+                            matricule String -> Integer (@NotNull),
+                            validations d'origine conservées.
+- UtilisateurResponse      : id UUID -> Long ; matricule -> Integer.
+- DemandeReinitialisationResponse : id/utlisateurId -> Long ;
+                            matricule -> Integer.
+- NotificationTempsReel    : demandeId UUID -> Long ;
+                            matricule -> Integer.
+- UtilisateurCreeEvent     : id UUID -> Long ; matricule -> Integer.
+
+--------------------------------------------------------------------
+5. SERVICES
+--------------------------------------------------------------------
+- AuthService : `findByMatriculeIgnoreCase(request.matricule().trim())`
+                -> `findByMatricule(request.matricule())`.
+- UtilisateurService : UUID -> Long (trouver/modifier/activer/
+                desactiver/rechercher) ; matricule String -> Integer ;
+                existsByMatricule / findByMatricule.
+- ComptePersonnelService : matricule -> Integer ; findByMatricule.
+- ReinitialisationMotDePasseService :
+                demander(String) -> demander(Integer) ;
+                valider/refuser/chargerEnAttente : UUID -> Long ;
+                resoudreActeur : parse Long puis Integer puis email.
+- AdminInitializer : ADMIN_MATRICULE reste fourni en texte via config,
+                converti en Integer (erreur explicite si non numérique).
+- NotificationEmailService : paramètre matricule String -> Integer
+                (simple concaténation, aucun impact fonctionnel).
+
+--------------------------------------------------------------------
+6. CONTRÔLEURS
+--------------------------------------------------------------------
+- UtilisateurController        : @PathVariable UUID -> Long.
+- ReinitialisationAdminController : @PathVariable UUID -> Long.
+- MotDePasseOublieController / AuthController / ComptePersonnelController :
+                aucun changement de type nécessaire (déjà compatibles).
+
+--------------------------------------------------------------------
+7. VÉRIFICATIONS
+--------------------------------------------------------------------
+- `rg "UUID|gen_random_uuid" src/ db/` : aucune occurrence restante.
+- `./mvnw compile -DskipTests`        : SUCCÈS.
+- `./mvnw test-compile -DskipTests`   : SUCCÈS.
+
+--------------------------------------------------------------------
+8. POINTS D'ATTENTION / SUITE
+--------------------------------------------------------------------
+- Le schéma étant recréé (BIGSERIAL), une base existante contenant des
+  données en UUID ne peut pas être migrée par simple ALTER : il faut
+  recréer le schéma ou prévoir une migration de données dédiée.
+- Côté frontend, les identifiants (id de NC, utilisateurs, demandes…)
+  sont désormais des nombres et non plus des chaînes UUID ; vérifier
+  les appels et le typage côté interface.
+- La clé de configuration app.admin.matricule (ADMIN_MATRICULE) doit
+  désormais contenir une valeur entière.
+====================================================================

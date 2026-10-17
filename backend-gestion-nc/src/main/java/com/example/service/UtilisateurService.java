@@ -16,7 +16,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Locale;
-import java.util.UUID;
 
 @Service
 public class UtilisateurService {
@@ -57,14 +56,14 @@ public class UtilisateurService {
     }
 
     @Transactional(readOnly = true)
-    public UtilisateurResponse trouver(UUID id) {
+    public UtilisateurResponse trouver(Long id) {
         return UtilisateurResponse.from(rechercher(id));
     }
 
     @Transactional
     public UtilisateurCreationResponse creer(UtilisateurCreationRequest request) {
         String email = normaliserEmail(request.email());
-        String matricule = request.matricule().trim();
+        Integer matricule = request.matricule();
 
         if (request.motDePasse().length() < MOT_DE_PASSE_MIN) {
             throw new ResponseStatusException(
@@ -74,10 +73,10 @@ public class UtilisateurService {
         }
 
         if (repository.existsByEmailIgnoreCase(email)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cet email existe déjà dans le système.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cet email  existe déjà dans le système.");
         }
 
-        if (repository.existsByMatriculeIgnoreCase(matricule)) {
+        if (repository.existsByMatricule(matricule)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Ce matricule existe déjà dans le système.");
         }
 
@@ -123,18 +122,18 @@ public class UtilisateurService {
     }
 
     @Transactional
-    public UtilisateurResponse modifier(UUID id, UtilisateurModificationRequest request) {
+    public UtilisateurResponse modifier(Long id, UtilisateurModificationRequest request) {
         Users u = rechercher(id);
         String email = normaliserEmail(request.email());
-        String matricule = request.matricule().trim();
+        Integer matricule = request.matricule();
 
         repository.findByEmailIgnoreCase(email)
                 .filter(existant -> !existant.getId().equals(id))
                 .ifPresent(existant -> {
-                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Cet email existe déjà");
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Cet email  existe déjà");
                 });
 
-        repository.findByMatriculeIgnoreCase(matricule)
+        repository.findByMatricule(matricule)
                 .filter(existant -> !existant.getId().equals(id))
                 .ifPresent(existant -> {
                     throw new ResponseStatusException(HttpStatus.CONFLICT, "Ce matricule existe déjà");
@@ -150,19 +149,19 @@ public class UtilisateurService {
     }
 
     @Transactional
-    public void desactiver(UUID id) {
+    public void desactiver(Long id) {
         Users u = rechercher(id);
         u.setActif(false);
         repository.save(u);
     }
 
-    private Users rechercher(UUID id) {
+    private Users rechercher(Long id) {
         return repository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Utilisateur introuvable"));
     }
 
     @Transactional
-    public void activer(UUID id) {
+    public void activer(Long id) {
         Users u = rechercher(id);
         u.setActif(true);
         repository.save(u);

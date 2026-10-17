@@ -11,11 +11,10 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
-public interface DemandeReinitialisationRepository extends JpaRepository<DemandeReinitialisation, UUID> {
+public interface DemandeReinitialisationRepository extends JpaRepository<DemandeReinitialisation, Long> {
 
-    boolean existsByUtilisateurIdAndStatut(UUID utilisateurId, StatutDemande statut);
+    boolean existsByUtilisateurIdAndStatut(Long utilisateurId, StatutDemande statut);
 
     @EntityGraph(attributePaths = "utilisateur")
     List<DemandeReinitialisation> findByStatutOrderByDateDemandeAsc(StatutDemande statut);
@@ -23,5 +22,5 @@ public interface DemandeReinitialisationRepository extends JpaRepository<Demande
     /** Verrou d'écriture : deux administrateurs ne peuvent pas traiter la même demande. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select d from DemandeReinitialisation d where d.id = :id")
-    Optional<DemandeReinitialisation> findByIdForUpdate(@Param("id") UUID id);
+    Optional<DemandeReinitialisation> findByIdForUpdate(@Param("id") Long id);
 }

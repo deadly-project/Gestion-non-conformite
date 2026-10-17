@@ -1,17 +1,15 @@
 package com.example.event;
 
-import java.util.UUID;
-
 /**
  * Publié après la création d'un compte. Traité APRÈS le commit de la transaction,
  * pour ne jamais envoyer d'email concernant un compte finalement annulé.
  */
 public record UtilisateurCreeEvent(
-        UUID id,
+        Long id,
         String prenom,
         String nom,
         String email,
-        String matricule,
+        Integer matricule,
         String role,
         String motDePasseTemporaire
 ) {

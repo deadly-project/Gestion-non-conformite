@@ -58,7 +58,7 @@ export default function GestionUtilisateurs() {
           nom: formulaire.nom.trim(),
           prenom: formulaire.prenom.trim(),
           email: formulaire.email.trim(),
-          matricule: formulaire.matricule.trim(),
+          matricule: formulaire.matricule,
           role: formulaire.role,
         }),
       });

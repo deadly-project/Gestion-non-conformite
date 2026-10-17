@@ -36,7 +36,7 @@ export default function ModifierProfil({ utilisateur, onProfilModifie }) {
           nom: formulaire.nom.trim(),
           prenom: formulaire.prenom.trim(),
           email: formulaire.email.trim(),
-          matricule: formulaire.matricule.trim(),
+          matricule: formulaire.matricule,
         }),
       });
       onProfilModifie?.(resultat);
@@ -60,7 +60,7 @@ export default function ModifierProfil({ utilisateur, onProfilModifie }) {
           <label>Nom<input value={formulaire.nom} maxLength={100} required onChange={(e) => modifier("nom", e.target.value)} autoComplete="family-name" /></label>
           <label>Prénom<input value={formulaire.prenom} maxLength={100} required onChange={(e) => modifier("prenom", e.target.value)} autoComplete="given-name" /></label>
           <label>Adresse e-mail<input type="email" value={formulaire.email} maxLength={255} required onChange={(e) => modifier("email", e.target.value)} autoComplete="email" /></label>
-          <label>Matricule<input value={formulaire.matricule} maxLength={50} required onChange={(e) => modifier("matricule", e.target.value)} /></label>
+          <label>Matricule<input type="number" value={formulaire.matricule} maxLength={50} required onChange={(e) => modifier("matricule", e.target.value)} /></label>
         </div>
         {erreur && <p className="param-alert param-alert--error" role="alert">{erreur}</p>}
         {succes && <p className="param-alert param-alert--success" role="status">{succes}</p>}

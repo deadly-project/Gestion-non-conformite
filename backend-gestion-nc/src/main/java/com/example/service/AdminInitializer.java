@@ -39,13 +39,19 @@ public class AdminInitializer implements ApplicationRunner {
         if (password.length() < 8) {
             throw new IllegalStateException("ADMIN_PASSWORD doit contenir au moins 8 caractères.");
         }
-        if (repository.existsByEmailIgnoreCase(email) || repository.existsByMatriculeIgnoreCase(matricule)) {
+        final Integer matriculeNumerique;
+        try {
+            matriculeNumerique = Integer.parseInt(matricule.trim());
+        } catch (NumberFormatException e) {
+            throw new IllegalStateException("ADMIN_MATRICULE doit être un nombre entier.");
+        }
+        if (repository.existsByEmailIgnoreCase(email) || repository.existsByMatricule(matriculeNumerique)) {
             log.info("Le compte administrateur initial existe déjà; aucun mot de passe n'a été modifié.");
             return;
         }
         Users admin = Users.builder()
                 .nom(nom).prenom(prenom).email(email.trim().toLowerCase())
-                .matricule(matricule.trim()).motDePasse(encoder.encode(password))
+                .matricule(matriculeNumerique).motDePasse(encoder.encode(password))
                 .role("ADMINISTRATEUR").actif(true).build();
         repository.save(admin);
         log.info("Compte administrateur initial créé pour {}.", email);

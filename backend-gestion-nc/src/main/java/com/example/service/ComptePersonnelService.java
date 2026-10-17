@@ -48,7 +48,7 @@ public class ComptePersonnelService {
 
         Users user = utilisateurConnecte(authentication);
         String email = request.email().trim().toLowerCase(Locale.ROOT);
-        String matricule = request.matricule().trim();
+        Integer matricule = request.matricule();
 
         repository.findByEmailIgnoreCase(email)
                 .filter(u -> !u.getId().equals(user.getId()))
@@ -57,7 +57,7 @@ public class ComptePersonnelService {
                             HttpStatus.CONFLICT, "Cet email est déjà utilisé");
                 });
 
-        repository.findByMatriculeIgnoreCase(matricule)
+        repository.findByMatricule(matricule)
                 .filter(u -> !u.getId().equals(user.getId()))
                 .ifPresent(u -> {
                     throw new ResponseStatusException(

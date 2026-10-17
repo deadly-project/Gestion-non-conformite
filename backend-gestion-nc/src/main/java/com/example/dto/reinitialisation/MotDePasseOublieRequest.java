@@ -1,9 +1,8 @@
 package com.example.dto.reinitialisation;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.NotNull;
 
 public record MotDePasseOublieRequest(
-        @NotBlank @Size(max = 50)
-        String matricule
+        @NotNull
+        Integer matricule
 ) {}

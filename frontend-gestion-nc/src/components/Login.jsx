@@ -43,7 +43,7 @@ export default function Login({ onLogin }) {
                     <label htmlFor="matricule">Matricule</label>
                     <input
                         id="matricule"
-                        type="text"
+                        type="number"
                         value={matricule}
                         onChange={(e) => setMatricule(e.target.value)}
                         autoComplete="username"

@@ -55,7 +55,7 @@ public class NotificationEmailService {
 
     /** Email envoyé lorsque l'administrateur valide : matricule + nouveau mot de passe. */
     public void envoyerMotDePasseReinitialise(String email, String prenom, String nom,
-                                              String matricule, String nouveauMotDePasse) {
+                                              Integer matricule, String nouveauMotDePasse) {
         String texte = "Bonjour " + prenom + " " + nom + ",\n\n"
                 + "Votre demande de réinitialisation a été validée par l'administrateur.\n\n"
                 + "Matricule : " + matricule + "\n"

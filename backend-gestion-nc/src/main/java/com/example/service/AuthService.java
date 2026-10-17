@@ -25,7 +25,7 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public LoginResponse login(LoginRequest request) {
-        Users user = repository.findByMatriculeIgnoreCase(request.matricule().trim())
+        Users user = repository.findByMatricule(request.matricule())
                 .filter(u -> Boolean.TRUE.equals(u.getActif()))
                 .filter(u -> passwordEncoder.matches(request.motDePasse(), u.getMotDePasse()))
                 .orElseThrow(() -> new BadCredentialsException("Matricule ou mot de passe incorrect."));

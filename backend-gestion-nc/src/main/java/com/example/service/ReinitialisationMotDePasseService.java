@@ -22,7 +22,6 @@ import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Mot de passe oublié :
@@ -68,10 +67,13 @@ public class ReinitialisationMotDePasseService {
     // 1. Demande (publique) : ne révèle jamais si le matricule existe
     // ------------------------------------------------------------------
     @Transactional
-    public void demander(String matriculeSaisi) {
-        String matricule = matriculeSaisi.trim();
+    public void demander(Integer matricule) {
+        if (matricule == null) {
+            log.warn("Demande de réinitialisation ignorée : matricule absent.");
+            return;
+        }
 
-        Optional<Users> trouve = utilisateurRepository.findByMatriculeIgnoreCase(matricule)
+        Optional<Users> trouve = utilisateurRepository.findByMatricule(matricule)
                 .filter(u -> Boolean.TRUE.equals(u.getActif()));
         if (trouve.isEmpty()) {
             log.info("Demande de réinitialisation ignorée : matricule inconnu ou compte désactivé.");
@@ -109,7 +111,7 @@ public class ReinitialisationMotDePasseService {
     // 3. Validation : nouveau mot de passe aléatoire envoyé par email
     // ------------------------------------------------------------------
     @Transactional
-    public DemandeReinitialisationResponse valider(UUID demandeId, Authentication administrateur) {
+    public DemandeReinitialisationResponse valider(Long demandeId, Authentication administrateur) {
         DemandeReinitialisation demande = chargerEnAttente(demandeId);
         Users utilisateur = demande.getUtilisateur();
 
@@ -150,7 +152,7 @@ public class ReinitialisationMotDePasseService {
     // 4. Refus
     // ------------------------------------------------------------------
     @Transactional
-    public DemandeReinitialisationResponse refuser(UUID demandeId, Authentication administrateur) {
+    public DemandeReinitialisationResponse refuser(Long demandeId, Authentication administrateur) {
         DemandeReinitialisation demande = chargerEnAttente(demandeId);
         Users utilisateur = demande.getUtilisateur();
 
@@ -168,7 +170,7 @@ public class ReinitialisationMotDePasseService {
     // ------------------------------------------------------------------
     // Outils internes
     // ------------------------------------------------------------------
-    private DemandeReinitialisation chargerEnAttente(UUID demandeId) {
+    private DemandeReinitialisation chargerEnAttente(Long demandeId) {
         DemandeReinitialisation demande = demandeRepository.findByIdForUpdate(demandeId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Demande introuvable"));
         if (demande.getStatut() != StatutDemande.EN_ATTENTE) {
@@ -188,7 +190,7 @@ public class ReinitialisationMotDePasseService {
 
     /**
      * Retrouve l'administrateur connecté à partir de authentication.getName().
-     * Selon votre JwtAuthenticationFilter, ce nom est l'id (UUID), le matricule ou l'email :
+     * Selon votre JwtAuthenticationFilter, ce nom est l'id (Long), le matricule ou l'email :
      * les trois cas sont gérés. Si rien ne correspond, « traite_par » reste vide.
      */
     private Users resoudreActeur(Authentication authentification) {
@@ -197,15 +199,22 @@ public class ReinitialisationMotDePasseService {
         }
         String nom = authentification.getName();
         try {
-            Optional<Users> parId = utilisateurRepository.findById(UUID.fromString(nom));
+            Optional<Users> parId = utilisateurRepository.findById(Long.parseLong(nom));
             if (parId.isPresent()) {
                 return parId.get();
             }
-        } catch (IllegalArgumentException ignore) {
-            // le nom n'est pas un UUID
+        } catch (NumberFormatException ignore) {
+            // le nom n'est pas un identifiant numérique
         }
-        return utilisateurRepository.findByMatriculeIgnoreCase(nom)
-                .or(() -> utilisateurRepository.findByEmailIgnoreCase(nom))
+        try {
+            Optional<Users> parMatricule = utilisateurRepository.findByMatricule(Integer.parseInt(nom));
+            if (parMatricule.isPresent()) {
+                return parMatricule.get();
+            }
+        } catch (NumberFormatException ignore) {
+            // le nom n'est pas un matricule numérique
+        }
+        return utilisateurRepository.findByEmailIgnoreCase(nom)
                 .orElse(null);
     }
 }

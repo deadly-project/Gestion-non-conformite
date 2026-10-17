@@ -99,6 +99,7 @@ export default function CreationUtilisateur({ onCreated }) {
                     <label htmlFor="matricule">Matricule</label>
                     <input
                         id="matricule"
+                        type="number"
                         value={formulaire.matricule}
                         onChange={(e) =>
                             modifier("matricule", e.target.value)

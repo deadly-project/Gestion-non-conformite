@@ -2,6 +2,7 @@ package com.example.dto.utilisateur;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record ProfilModificationRequest(
@@ -14,6 +15,6 @@ public record ProfilModificationRequest(
         @NotBlank @Email @Size(max = 255)
         String email,
 
-        @NotBlank @Size(max = 50)
-        String matricule
+        @NotNull
+        Integer matricule
 ) {}
