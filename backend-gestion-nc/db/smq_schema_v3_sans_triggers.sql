@@ -333,7 +333,8 @@ INSERT INTO categories_nc (code, libelle) VALUES
     ('PROCESS',     'Non-conformité processus'),
     ('SECURITE',    'Sécurité / Environnement'),
     ('DOCUMENT',    'Documentaire'),
-    ('FOURNISSEUR', 'Fournisseur');
+    ('FOURNISSEUR', 'Fournisseur'),
+    ('SYSTEME', 'Non-conformité système');
 
 INSERT INTO nc_compteurs (annee, dernier_numero)
 VALUES (EXTRACT(YEAR FROM CURRENT_DATE)::int, 0);

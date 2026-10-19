@@ -78,11 +78,7 @@ public class SecurityConfig {
 
                         // Non-conformités
                         .requestMatchers("/api/non-conformites/**")
-                        .hasAnyRole(
-                                "DECLARANT",
-                                "RESPONSABLE_QUALITE",
-                                "ADMINISTRATEUR"
-                        )
+                        .authenticated()
 
                         // Audits
                         .requestMatchers("/api/audits/**")

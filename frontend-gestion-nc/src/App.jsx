@@ -19,6 +19,9 @@ import { apiRequest } from "./api/api";
 import { lireToken, effacerToken, SESSION_EXPIREE } from "./api/auth";
 import Parametres from "./components/compte/Parametres";
 import GestionUtilisateurs from "./components/admin/GestionUtilisateurs";
+
+import DeclarationNc from "./components/Declarant/DeclarationNc";
+import ListeNonConformites from "./components/responsable_qualite/ListeNonConformites";
 import './App.css'
 
 function Page({ titre }) {
@@ -233,7 +236,7 @@ function Application() {
                         />
                         <Route
                             path="/declarant/non-conformites/nouvelle"
-                            element={<Page titre="Déclarer une non-conformité" />}
+                            element={<DeclarationNc utilisateur={utilisateur} />}
                         />
                     </Route>
 
@@ -266,7 +269,7 @@ function Application() {
                     >
                         <Route
                             path="/responsable/non-conformites"
-                            element={<Page titre="Suivi des non-conformités" />}
+                            element={<ListeNonConformites utilisateur={utilisateur} />}
                         />
                         <Route
                             path="/responsable/capa"
