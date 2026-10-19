@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { apiRequest } from "../../api/api";
 import { STATUTS_NC, GRAVITES, formaterDate } from "../constantes";
+import { useNotificationsAdmin } from "../../hooks/useNotificationsAdmin";
 import TraitementNcModal from "./TraitementNcModal";
 import AvancementNcModal from "./AvancementNcModal";
 import "../Declarant/nc.css";
 
 const TAILLE_PAGE = 10;
 
-/** Liste des non-conformités du responsable qualité, avec les boutons « Actions » et « Avancement ». */
+/** Liste des non-conformités du responsable qualité, avec mise à jour temps réel via WebSocket. */
 export default function ListeNonConformites({ utilisateur }) {
     const [saisie, setSaisie] = useState("");
     const [recherche, setRecherche] = useState("");
@@ -22,6 +23,15 @@ export default function ListeNonConformites({ utilisateur }) {
 
     const [ncTraitee, setNcTraitee] = useState(null);       // id de la NC dans « Actions »
     const [ncAvancement, setNcAvancement] = useState(null); // id de la NC dans « Avancement »
+
+    // Écoute des notifications en temps réel pour actualiser la liste automatiquement
+    useNotificationsAdmin({
+        topic: "/topic/admin/nc",
+        onMessage: (nouvelleNc) => {
+            setInfo(`Nouvelle non-conformité déclarée : ${nouvelleNc.reference}`);
+            setVersion((v) => v + 1); // Déclenche le rechargement des données
+        }
+    });
 
     // La recherche n'est lancée que 350 ms après la dernière frappe
     useEffect(() => {

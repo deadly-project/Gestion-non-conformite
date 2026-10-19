@@ -11,10 +11,14 @@ import com.example.repository.NcStatutHistoriqueRepository;
 import com.example.repository.NonConformiteRepository;
 import com.example.repository.ProcessusRepository;
 import org.springframework.http.HttpStatus;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
+
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -30,17 +34,20 @@ public class NcService {
     private final ProcessusRepository processusRepository;
     private final PieceJointeService pieceJointeService;
     private final JournalActionsService journal;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public NcService(NonConformiteRepository ncRepository,
                      NcStatutHistoriqueRepository statutHistoriqueRepository,
                      ProcessusRepository processusRepository,
                      PieceJointeService pieceJointeService,
-                     JournalActionsService journal) {
+                     JournalActionsService journal,
+                     SimpMessagingTemplate messagingTemplate) {
         this.ncRepository = ncRepository;
         this.statutHistoriqueRepository = statutHistoriqueRepository;
         this.processusRepository = processusRepository;
         this.pieceJointeService = pieceJointeService;
         this.journal = journal;
+        this.messagingTemplate = messagingTemplate;
     }
 
     @Transactional
@@ -56,15 +63,27 @@ public class NcService {
                     "La date de détection ne peut pas être dans le futur");
         }
 
-        // 1. Validation et vérification de l'unicité de la référence saisie manuellement
+        // 1. Validation et génération automatique de la référence au format ANNEE-MOIS-ID (ex: 2026-06-1)
+        String referenceSaisie;
         if (req.reference() == null || req.reference().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La référence est obligatoire");
-        }
-        String referenceSaisie = req.reference().trim();
+            int anneeCourante = LocalDate.now().getYear();
+            int moisCourant = LocalDate.now().getMonthValue();
 
-        // CORRECTION ICI : Utilisation de findByReference(...).isPresent()
-        if (ncRepository.findByReference(referenceSaisie).isPresent()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cette référence existe déjà");
+            long dernierId = ncRepository.count();
+            long prochainId = dernierId + 1;
+
+            referenceSaisie = String.format("%d-%02d-%d", anneeCourante, moisCourant, prochainId);
+
+            // Sécurité en cas de doublon rare
+            while (ncRepository.findByReference(referenceSaisie).isPresent()) {
+                prochainId++;
+                referenceSaisie = String.format("%d-%02d-%d", anneeCourante, moisCourant, prochainId);
+            }
+        } else {
+            referenceSaisie = req.reference().trim();
+            if (ncRepository.findByReference(referenceSaisie).isPresent()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cette référence existe déjà");
+            }
         }
 
         // 2. Gestion du processus : Existant ou création à la volée
@@ -97,7 +116,7 @@ public class NcService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Veuillez sélectionner ou créer un processus");
         }
 
-        // 3. Tous les fichiers sont contrôlés AVANT d'écrire quoi que ce soit
+        // 3. Contrôle des fichiers
         List<PieceJointeService.FichierValide> fichiers = pieceJointeService.valider(images, pdf);
 
         LocalDateTime maintenant = LocalDateTime.now();
@@ -107,7 +126,7 @@ public class NcService {
         nc.setReference(referenceSaisie);
         nc.setTitre(req.titre().trim());
         nc.setDateDetection(req.dateDetection());
-        nc.setDeclarantId(declarant.getId());          // vient de la session, jamais du formulaire
+        nc.setDeclarantId(declarant.getId());
         nc.setProcessusId(processusIdFinal);
         nc.setDescriptionDetaillee(req.descriptionDetaillee().trim());
         nc.setGraviteDeclaree(req.graviteDeclaree().name());
@@ -131,6 +150,31 @@ public class NcService {
         journal.enregistrer(declarant.getId(), "CREATE_NC", "NON_CONFORMITE", nc.getId(),
                 Map.of("reference", nc.getReference(), "piecesJointes", fichiers.size()));
 
+
+        // 8. Notification WebSocket après validation de la transaction
+        Map<String, Object> payloadNotification = Map.of(
+                "id", nc.getId(),
+                "reference", nc.getReference(),
+                "titre", nc.getTitre(),
+                "dateCreation", maintenant.toString()
+        );
+
+        // Préparer les valeurs avant la fin de la méthode
+        final Object payload = payloadNotification;
+
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        messagingTemplate.convertAndSend(
+                                "/topic/admin/nc",
+                                (Object) payload
+                        );
+                    }
+                }
+        );
+
         return new NcCreeResponse(nc.getId(), nc.getReference());
+
     }
 }

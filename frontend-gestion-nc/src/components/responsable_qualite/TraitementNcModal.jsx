@@ -264,7 +264,7 @@ export default function TraitementNcModal({ ncId, utilisateur, onFermer, onEnreg
                     <section className="nc-section" aria-labelledby="t-resume">
                         <h3 id="t-resume">Déclaration</h3>
                         <dl className="nc-resume">
-                            <div><dt>Auteur</dt><dd>{nomComplet(detail.declarant)} (matricule {detail.declarant?.matricule})</dd></div>
+                            <div><dt>Auteur</dt><dd>M°: {detail.declarant?.matricule}: {nomComplet(detail.declarant)}</dd></div>
                             <div><dt>Date de détection</dt><dd>{formaterDate(detail.dateDetection)}</dd></div>
                             <div><dt>Service concerné</dt><dd>{detail.service?.libelle}</dd></div>
                             <div><dt>Gravité déclarée</dt><dd>{GRAVITES[detail.graviteDeclaree] ?? detail.graviteDeclaree}</dd></div>

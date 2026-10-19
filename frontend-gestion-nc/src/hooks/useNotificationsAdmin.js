@@ -44,10 +44,12 @@ export function useNotificationsAdmin({ topic, onMessage }) {
             // Erreur renvoyée par le serveur (jeton refusé, accès interdit...) :
             // on arrête, sinon la reconnexion automatique referait la même erreur toutes les 5 s
             onStompError: (frame) => {
-                console.error("Erreur STOMP :", frame.headers?.message);
-                setConnecte(false);
-                client.deactivate();
-            },
+    console.error("[STOMP] Erreur serveur");
+    console.error("En-têtes :", frame.headers);
+    console.error("Détails :", frame.body);
+
+    setConnecte(false);
+},
         });
 
         client.activate();

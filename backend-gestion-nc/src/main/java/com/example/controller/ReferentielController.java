@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 /** Listes de paramétrage (gérées par l'administrateur), lisibles par tout utilisateur connecté. */
 @RestController
@@ -25,15 +26,20 @@ public class ReferentielController {
         this.categorieRepository = categorieRepository;
     }
 
-    /** « Service concerné » du formulaire de déclaration. */
+    /** « Service concerné » du formulaire de déclaration (avec description). */
     @GetMapping("/processus")
-    public List<ReferentielItem> processus() {
+    public List<Map<String, Object>> processus() {
         return processusRepository.findByActifTrueOrderByLibelleAsc().stream()
-                .map(p -> new ReferentielItem(p.getId(), p.getCode(), p.getLibelle()))
+                .map(p -> Map.of(
+                        "id", (Object) p.getId(),
+                        "code", p.getCode(),
+                        "libelle", p.getLibelle(),
+                        "description", p.getDescription() != null ? p.getDescription() : ""
+                ))
                 .toList();
     }
 
-    /** « Nature » de la non-conformité (produit, processus, système...). */
+    /** « Nature » de la non-conformité. */
     @GetMapping("/categories")
     public List<ReferentielItem> categories() {
         return categorieRepository.findByActifTrueOrderByLibelleAsc().stream()
