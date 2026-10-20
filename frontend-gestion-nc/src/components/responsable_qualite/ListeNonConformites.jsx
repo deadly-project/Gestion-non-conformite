@@ -110,9 +110,7 @@ export default function ListeNonConformites({ utilisateur }) {
                                     <td>
                                         <div className="nc-actions" style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
                                             <button type="button" className="nc-btn nc-btn-secondaire nc-btn-petit" onClick={() => setNcVisualisation(nc.id)}>Visualiser</button>
-                                            <button type="button" className="nc-btn nc-btn-petit" disabled={nc.statut === "CLOTUREE"} onClick={() => setNcTraitement(nc.id)}>Traitement</button>
-                                            <button type="button" className="nc-btn nc-btn-secondaire nc-btn-petit" onClick={() => navigate(`/responsable/nc/${nc.id}/capa`)}>CAPA</button>
-                                            <button type="button" className="nc-btn nc-btn-secondaire nc-btn-petit" onClick={() => navigate(`/responsable/nc/${nc.id}/analyse`)}>Analyse</button>
+                                            <button type="button" className="nc-btn nc-btn-secondaire nc-btn-petit" onClick={() => setNcAvancement(nc.id)}>Avancement</button>
                                         </div>
                                     </td>
                                 </tr>
@@ -122,8 +120,36 @@ export default function ListeNonConformites({ utilisateur }) {
                 </table>
             </div>
 
-            {ncVisualisation && <VisualisationNcModal ncId={ncVisualisation} onFermer={() => setNcVisualisation(null)} />}
-            {ncTraitement && <TraitementNcModal ncId={ncTraitement} utilisateur={utilisateur} onFermer={() => setNcTraitement(null)} onEnregistre={apresTraitement} />}
+            {/* Modale de Visualisation enrichie avec les boutons Traitement, CAPA et Analyse dans le pied */}
+            {/* Modale de Visualisation */}
+            {ncVisualisation && (
+                <VisualisationNcModal 
+                    ncId={ncVisualisation} 
+                    onFermer={() => setNcVisualisation(null)} 
+                    onOuvrirTraitement={(id) => {
+                        setNcVisualisation(null); // Ferme la visualisation
+                        setNcTraitement(id);     // Ouvre le traitement
+                    }}
+                />
+            )}
+
+            {/* Modale d'Avancement */}
+            {ncAvancement && (
+                <AvancementNcModal 
+                    ncId={ncAvancement} 
+                    onFermer={() => setNcAvancement(null)} 
+                />
+            )}
+
+            {/* Modale de Traitement */}
+            {ncTraitement && (
+                <TraitementNcModal 
+                    ncId={ncTraitement} 
+                    utilisateur={utilisateur} 
+                    onFermer={() => setNcTraitement(null)} 
+                    onEnregistre={apresTraitement} 
+                />
+            )}
         </main>
     );
 }

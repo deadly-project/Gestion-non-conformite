@@ -13,7 +13,7 @@ import java.util.List;
 /** Formulaire de traitement d'une NC par le responsable qualité. */
 public record TraitementNcRequest(
         @NotNull Gravite gravite,
-        @NotNull Long categorieId,          // nature : produit / processus / système...
+        Long categorieId,          // nature : produit / processus / système...
         @NotNull StatutNc statut,
         Long auditeurId,
         @NotNull @Min(1) @Max(365) Integer delaisJours,

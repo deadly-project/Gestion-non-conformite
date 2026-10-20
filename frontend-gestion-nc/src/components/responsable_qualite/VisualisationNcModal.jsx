@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { apiBlob, apiRequest } from "../../api/api";
 import Modal from "../Modal";
 import { GRAVITES, STATUTS_NC, formaterDate, formaterTaille, nomComplet } from "../constantes";
 
-export default function VisualisationNcModal({ ncId, onFermer }) {
+export default function VisualisationNcModal({ ncId, onFermer, onOuvrirTraitement}) {
+    const navigate = useNavigate();
     const [detail, setDetail] = useState(null);
     const [chargement, setChargement] = useState(true);
     const [erreur, setErreur] = useState("");
@@ -26,8 +28,44 @@ export default function VisualisationNcModal({ ncId, onFermer }) {
         }
     }
 
+    const piedModal = (
+        <div className="nc-actions" style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+            {detail && (
+                <>
+                    <button 
+                        type="button" 
+                        className="nc-btn" 
+                        disabled={detail.statut === "CLOTUREE"} 
+                        onClick={() => {
+                            if (onOuvrirTraitement) {
+                                onOuvrirTraitement(ncId);
+                            }
+                        }}
+                    >
+                        Traitement
+                    </button>
+                    <button 
+                        type="button" 
+                        className="nc-btn nc-btn-secondaire" 
+                        onClick={() => { onFermer(); navigate(`/responsable/nc/${ncId}/capa`); }}
+                    >
+                        CAPA
+                    </button>
+                    <button 
+                        type="button" 
+                        className="nc-btn nc-btn-secondaire" 
+                        onClick={() => { onFermer(); navigate(`/responsable/nc/${ncId}/analyse`); }}
+                    >
+                        Analyse
+                    </button>
+                </>
+            )}
+            <button type="button" className="nc-btn nc-btn-secondaire" onClick={onFermer}>Fermer</button>
+        </div>
+    );
+
     return (
-        <Modal titre={detail ? `Contexte : ${detail.reference} — ${detail.titre}` : "Visualisation de la non-conformité"} onFermer={onFermer}>
+        <Modal titre={detail ? `Contexte : ${detail.reference} — ${detail.titre}` : "Visualisation de la non-conformité"} onFermer={onFermer} pied={piedModal}>
             {chargement && <p>Chargement...</p>}
             {erreur && <p className="nc-erreur">{erreur}</p>}
             {detail && (

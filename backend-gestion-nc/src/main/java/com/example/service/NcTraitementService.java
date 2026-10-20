@@ -24,7 +24,7 @@ public class NcTraitementService {
 
     /** Statuts proposés par le formulaire. La clôture exige des CAPA vérifiées : autre étape. */
     private static final Set<StatutNc> STATUTS_AUTORISES =
-            EnumSet.of(StatutNc.OUVERT, StatutNc.EN_COURS_D_ANALYSE, StatutNc.EN_TRAITEMENT);
+            EnumSet.of(StatutNc.OUVERT, StatutNc.EN_COURS_D_ANALYSE, StatutNc.EN_TRAITEMENT, StatutNc.EN_ATTENTE);
 
     private final NonConformiteRepository ncRepository;
     private final CategorieNcRepository categorieRepository;
@@ -59,7 +59,6 @@ public class NcTraitementService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Réservé au responsable qualité");
         }
 
-        // Verrou : un seul responsable à la fois sur cette NC
         NonConformite nc = ncRepository.findByIdForUpdate(ncId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Non-conformité introuvable"));
 
@@ -77,11 +76,16 @@ public class NcTraitementService {
                     "Retour en arrière interdit : la NC est déjà « " + statutActuel + " »");
         }
 
-        categorieRepository.findById(req.categorieId())
-                .filter(c -> Boolean.TRUE.equals(c.getActif()))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "Nature (catégorie) introuvable ou inactive"));
+        // Gestion de la catégorie (si non fournie, on garde celle de la NC)
+        Long categorieIdFinal = req.categorieId() != null ? req.categorieId() : nc.getCategorieId();
+        if (categorieIdFinal != null) {
+            categorieRepository.findById(categorieIdFinal)
+                    .filter(c -> Boolean.TRUE.equals(c.getActif()))
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                            "Nature (catégorie) introuvable ou inactive"));
+        }
 
+        // Vérification de l'auditeur uniquement s'il est renseigné
         if (req.auditeurId() != null) {
             utilisateurRepository.findById(req.auditeurId())
                     .filter(u -> Boolean.TRUE.equals(u.getActif()) && "AUDITEUR".equals(u.getRole()))
@@ -92,15 +96,23 @@ public class NcTraitementService {
         LocalDateTime maintenant = LocalDateTime.now();
 
         // --- Champs de qualification ---
-        nc.setGravite(req.gravite().name());
-        nc.setCategorieId(req.categorieId());
-        nc.setAuditeurId(req.auditeurId());
+        if (req.gravite() != null) {
+            nc.setGravite(req.gravite().name());
+        }
+        nc.setCategorieId(categorieIdFinal);
+        if (req.auditeurId() != null) {
+            nc.setAuditeurId(req.auditeurId());
+        }
         nc.setResponsableId(acteur.getId());
-        nc.setDelaisJours(req.delaisJours());
+        if (req.delaisJours() != null) {
+            nc.setDelaisJours(req.delaisJours());
+        }
         if (nc.getDateOuverture() == null) {
             nc.setDateOuverture(maintenant);
         }
-        nc.setDateEcheance(nc.getDateOuverture().toLocalDate().plusDays(req.delaisJours()));
+        if (nc.getDelaisJours() != null) {
+            nc.setDateEcheance(nc.getDateOuverture().toLocalDate().plusDays(nc.getDelaisJours()));
+        }
         if (req.statut() == StatutNc.EN_TRAITEMENT && nc.getDateCommencementTraitement() == null) {
             nc.setDateCommencementTraitement(maintenant);
         }
@@ -131,7 +143,7 @@ public class NcTraitementService {
         journal.enregistrer(acteur.getId(), "TRAITEMENT_NC", "NON_CONFORMITE", nc.getId(), Map.of(
                 "statutAvant", statutActuel.name(),
                 "statutApres", req.statut().name(),
-                "gravite", req.gravite().name(),
+                "gravite", req.gravite() != null ? req.gravite().name() : "",
                 "etapesCapa", req.etapesCapa().size()));
 
         return consultationService.detail(nc.getId());
