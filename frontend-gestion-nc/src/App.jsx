@@ -22,6 +22,11 @@ import GestionUtilisateurs from "./components/admin/GestionUtilisateurs";
 
 import DeclarationNc from "./components/Declarant/DeclarationNc";
 import ListeNonConformites from "./components/responsable_qualite/ListeNonConformites";
+
+import AnalyseCausesPage from "./components/responsable_qualite/AnalyseCausesPage";
+import CapaPage from "./components/responsable_qualite/CapaPage";
+import MesNonConformites from "./components/Declarant/MesNonConformites";
+
 import './App.css'
 
 function Page({ titre }) {
@@ -232,7 +237,7 @@ function Application() {
                     >
                         <Route
                             path="/declarant/non-conformites"
-                            element={<Page titre="Mes non-conformités" />}
+                            element={<MesNonConformites utilisateur={utilisateur} />}
                         />
                         <Route
                             path="/declarant/non-conformites/nouvelle"
@@ -279,6 +284,16 @@ function Application() {
                             path="/responsable/audits"
                             element={<Page titre="Planification des audits" />}
                         />
+
+                        <Route 
+                            path="/responsable/non-conformites" 
+                            element={<ListeNonConformites utilisateur={utilisateur} />} />
+                        <Route 
+                            path="/responsable/nc/:id/analyse" 
+                            element={<AnalyseCausesPage />} />
+                        <Route 
+                            path="/responsable/nc/:id/capa" 
+                            element={<CapaPage />} />
                     </Route>
                 </Route>
             </Route>

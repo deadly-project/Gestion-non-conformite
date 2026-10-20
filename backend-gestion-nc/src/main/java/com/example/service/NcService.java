@@ -10,6 +10,10 @@ import com.example.entity.Users;
 import com.example.repository.NcStatutHistoriqueRepository;
 import com.example.repository.NonConformiteRepository;
 import com.example.repository.ProcessusRepository;
+
+import com.example.dto.nc.NcDetailResponse;
+import com.example.service.NcConsultationService;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -35,19 +39,21 @@ public class NcService {
     private final PieceJointeService pieceJointeService;
     private final JournalActionsService journal;
     private final SimpMessagingTemplate messagingTemplate;
+    private final NcConsultationService consultationService;
 
     public NcService(NonConformiteRepository ncRepository,
                      NcStatutHistoriqueRepository statutHistoriqueRepository,
                      ProcessusRepository processusRepository,
                      PieceJointeService pieceJointeService,
                      JournalActionsService journal,
-                     SimpMessagingTemplate messagingTemplate) {
+                     SimpMessagingTemplate messagingTemplate, NcConsultationService consultationService) {
         this.ncRepository = ncRepository;
         this.statutHistoriqueRepository = statutHistoriqueRepository;
         this.processusRepository = processusRepository;
         this.pieceJointeService = pieceJointeService;
         this.journal = journal;
         this.messagingTemplate = messagingTemplate;
+        this.consultationService =consultationService;
     }
 
     @Transactional
@@ -176,5 +182,45 @@ public class NcService {
 
         return new NcCreeResponse(nc.getId(), nc.getReference());
 
+    }
+
+    @Transactional
+    public NcDetailResponse modifierParDeclarant(Long id, DeclarationNcRequest req, Users declarant) {
+        NonConformite nc = ncRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Non-conformité introuvable"));
+
+        if (!nc.getDeclarantId().equals(declarant.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Vous ne pouvez modifier que vos propres non-conformités");
+        }
+
+        if (!"EN_ATTENTE".equals(nc.getStatut())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "La non-conformité ne peut plus être modifiée car son traitement a débuté");
+        }
+
+        nc.setTitre(req.titre().trim());
+        nc.setDescriptionDetaillee(req.descriptionDetaillee().trim());
+        nc.setGraviteDeclaree(req.graviteDeclaree().name());
+        nc.setDateDetection(req.dateDetection());
+        nc.setDateModification(LocalDateTime.now());
+        ncRepository.save(nc);
+
+        // Notification WebSocket en temps réel
+        Map<String, Object> payloadNotification = Map.of(
+                "id", nc.getId(),
+                "reference", nc.getReference(),
+                "titre", nc.getTitre(),
+                "type", "MODIFICATION_NC"
+        );
+
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        messagingTemplate.convertAndSend("/topic/admin/nc", (Object) payloadNotification);
+                    }
+                }
+        );
+
+        return consultationService.detail(nc.getId());
     }
 }

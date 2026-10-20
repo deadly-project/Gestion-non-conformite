@@ -163,4 +163,27 @@ public class NcConsultationService {
                 .replace("%", " ").replace("_", " ").replace("\\", " ");
         return "%" + propre + "%";
     }
+
+    @Transactional(readOnly = true)
+    public List<NcListeItem> listerParDeclarant(Long declarantId) {
+        return ncRepository.findByDeclarantIdOrderByDateCreationDescIdDesc(declarantId).stream()
+                .map(nc -> {
+                    Processus p = processusRepository.findById(nc.getProcessusId()).orElse(null);
+                    Users u = utilisateurRepository.findById(nc.getDeclarantId()).orElse(null);
+                    return new NcListeItem(
+                            nc.getId(),
+                            nc.getReference(),
+                            nc.getTitre(),
+                            nc.getStatut(),
+                            nc.getDateDetection(),
+                            nc.getDateCreation(),
+                            nc.getGraviteDeclaree(),
+                            nc.getGravite(),
+                            u != null ? u.getNom() : "",
+                            u != null ? u.getPrenom() : "",
+                            p != null ? p.getLibelle() : ""
+                    );
+                })
+                .toList();
+    }
 }

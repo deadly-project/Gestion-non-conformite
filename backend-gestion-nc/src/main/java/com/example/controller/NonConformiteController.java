@@ -17,10 +17,6 @@ import org.springframework.web.server.ResponseStatusException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-/**
- * La sécurité est portée par @PreAuthorize sur chaque méthode
- * (SecurityConfig laisse /api/non-conformites/** à « authenticated »).
- */
 @RestController
 @RequestMapping("/api/non-conformites")
 public class NonConformiteController {
@@ -62,8 +58,14 @@ public class NonConformiteController {
         return consultationService.lister(statut, q, page, taille);
     }
 
+    @GetMapping("/mes-nc")
+    @PreAuthorize("isAuthenticated()")
+    public List<NcListeItem> listerMesNonConformites(Authentication authentication) {
+        return consultationService.listerParDeclarant(utilisateurCourant(authentication).getId());
+    }
+
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('RESPONSABLE_QUALITE')")
+    //@PreAuthorize("hasRole('RESPONSABLE_QUALITE')")
     public NcDetailResponse detail(@PathVariable Long id) {
         return consultationService.detail(id);
     }
@@ -74,6 +76,15 @@ public class NonConformiteController {
                                     @Valid @RequestBody TraitementNcRequest requete,
                                     Authentication authentication) {
         return traitementService.traiter(id, requete, utilisateurCourant(authentication));
+    }
+
+    /** Modification par le déclarant d'une non-conformité à l'état EN_ATTENTE. */
+    @PutMapping("/{id}/declarant")
+    @PreAuthorize("isAuthenticated()")
+    public NcDetailResponse modifierParDeclarant(@PathVariable Long id,
+                                                 @Valid @RequestBody DeclarationNcRequest requete,
+                                                 Authentication authentication) {
+        return ncService.modifierParDeclarant(id, requete, utilisateurCourant(authentication));
     }
 
     /** Recherche d'un auditeur (ou de tout utilisateur) par nom, prénom ou matricule. */

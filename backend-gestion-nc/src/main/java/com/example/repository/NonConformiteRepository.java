@@ -10,12 +10,15 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface NonConformiteRepository extends JpaRepository<NonConformite, Long> {
 
     /** Recherche une non-conformité par sa référence unique. */
     Optional<NonConformite> findByReference(String reference);
+
+    List<NonConformite> findByDeclarantIdOrderByDateCreationDescIdDesc(Long declarantId);
 
     /** Verrou d'écriture : deux responsables ne peuvent pas traiter la même NC en même temps. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
