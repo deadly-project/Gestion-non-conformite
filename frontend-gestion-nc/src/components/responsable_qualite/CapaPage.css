@@ -1,0 +1,162 @@
+/* Page CAPA : classes préfixées "capa-" (remplacent les styles inline de CapaPage.jsx) */
+
+.capa-retour { margin-bottom: 1rem; }
+
+.capa-resume {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    background: #f8fafc;
+}
+
+.capa-resume p { margin: 0.25rem 0; }
+
+/* ----- Mise en page : étapes à gauche, calendrier à droite ----- */
+.capa-espace {
+    display: grid;
+    grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+    gap: 1.5rem;
+    align-items: start;
+}
+
+.capa-colonne {
+    position: sticky;
+    top: 1rem;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+}
+
+.capa-titre-colonne { margin: 0 0 0.25rem; }
+
+.capa-aide {
+    margin: 0 0 0.75rem;
+    font-size: 0.9rem;
+    color: #64748b;
+}
+
+/* ----- Liste compacte des étapes ----- */
+.capa-liste {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.capa-carte {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    cursor: grab;
+}
+
+.capa-carte:active { cursor: grabbing; }
+.capa-carte:hover { border-color: #3b82f6; }
+
+.capa-carte--echue {
+    background: #f8fafc;
+    border-style: dashed;
+    cursor: not-allowed;
+}
+
+.capa-carte--echue:hover { border-color: #cbd5e1; }
+
+.capa-carte-entete {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.capa-carte-entete .nc-badge { margin-left: auto; }
+
+.capa-carte-description {
+    margin: 0;
+    font-size: 0.9rem;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.capa-carte-infos {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    font-size: 0.8rem;
+    color: #64748b;
+}
+
+.capa-carte-planning {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-top: auto;
+}
+
+.capa-aucun-jour { font-size: 0.8rem; color: #94a3b8; }
+
+.capa-jour-tag {
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: #dbeafe;
+    color: #1e40af;
+    font-size: 0.75rem;
+}
+
+.capa-carte-alerte { margin: 0; font-size: 0.8rem; color: #b91c1c; }
+
+/* Type d'action (partagé avec le calendrier) */
+.capa-type {
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: #e2e8f0;
+    color: #334155;
+    font-size: 0.75rem;
+}
+
+.capa-type--CORRECTIVE { background: #fef3c7; color: #92400e; }
+.capa-type--PREVENTIVE { background: #ccfbf1; color: #115e59; }
+
+/* ----- Ajout d'une étape ----- */
+.capa-ajout { margin-top: 1rem; text-align: center; }
+
+.capa-formulaire {
+    margin-top: 1rem;
+    padding: 1.25rem;
+    border: 2px dashed #3b82f6;
+    border-radius: 8px;
+    background: #eff6ff;
+}
+
+.capa-formulaire h3 { margin: 0 0 0.75rem; color: #1e40af; }
+.capa-champ { margin-bottom: 0.6rem; }
+
+.capa-champ select,
+.capa-champ textarea,
+.capa-champ input { width: 100%; padding: 8px; }
+
+.capa-formulaire-actions { display: flex; gap: 0.6rem; }
+
+.capa-carte:focus-visible { outline: 2px solid #1e40af; outline-offset: 2px; }
+
+/* Écrans étroits : les colonnes s'empilent (le formulaire du calendrier remplace le glisser-déposer) */
+@media (max-width: 960px) {
+    .capa-espace { grid-template-columns: minmax(0, 1fr); }
+
+    .capa-colonne {
+        position: static;
+        max-height: none;
+        overflow-y: visible;
+    }
+
+    .capa-liste {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    }
+}

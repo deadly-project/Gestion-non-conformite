@@ -73,6 +73,7 @@ CREATE TABLE audits (
     processus_id       BIGINT NOT NULL REFERENCES processus(id),
     type_audit         VARCHAR(10)  NOT NULL CHECK (type_audit IN ('INTERNE','EXTERNE')),
     auditeur_id        BIGINT NOT NULL REFERENCES users(id),
+    action_capa_id BIGINT REFERENCES actions_capa(id) ON DELETE CASCADE,
     date_planifiee     DATE NOT NULL,
     date_realisation   DATE,
     statut             VARCHAR(10) NOT NULL DEFAULT 'PLANIFIE'
@@ -359,3 +360,9 @@ CREATE UNIQUE INDEX uq_demande_reinit_en_attente
     ON demandes_reinitialisation(user_id) WHERE statut = 'EN_ATTENTE';
 
 CREATE INDEX idx_demande_reinit_statut ON demandes_reinitialisation(statut, date_demande);
+
+CREATE UNIQUE INDEX uq_audits_capa_jour
+    ON audits(action_capa_id, date_planifiee)
+    WHERE action_capa_id IS NOT NULL;
+
+CREATE INDEX idx_audits_action_capa ON audits(action_capa_id);

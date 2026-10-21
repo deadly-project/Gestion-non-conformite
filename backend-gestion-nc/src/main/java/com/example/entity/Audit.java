@@ -14,13 +14,21 @@ public class Audit {
     @Column(name = "id", nullable = false, updatable = false)
     private Long id;
 
-@Column(name="titre", nullable=false, length=200) private String titre;
-@Column(name="processus_id", nullable=false) private Long processusId;
-@Column(name="type_audit", nullable=false, length=10) private String typeAudit;
-@Column(name="auditeur_id", nullable=false) private Long auditeurId;
-@Column(name="date_planifiee", nullable=false) private LocalDate datePlanifiee;
-@Column(name="date_realisation") private LocalDate dateRealisation;
-@Column(name="statut", nullable=false, length=10) private String statut = "PLANIFIE";
-@Column(name="date_creation", nullable=false, updatable=false) private LocalDateTime dateCreation;
-@Column(name="date_modification") private LocalDateTime dateModification;
+    @Column(name="titre", nullable=false, length=200) private String titre;
+    @Column(name="processus_id", nullable=false) private Long processusId;
+    @Column(name="type_audit", nullable=false, length=10) private String typeAudit;
+    @Column(name="auditeur_id", nullable=false) private Long auditeurId;
+    /** Étape CAPA auditée (null pour un audit qui ne porte pas sur une étape CAPA). */
+    @Column(name="action_capa_id") private Long actionCapaId;
+    @Column(name="date_planifiee", nullable=false) private LocalDate datePlanifiee;
+    @Column(name="date_realisation") private LocalDate dateRealisation;
+    @Builder.Default
+    @Column(name="statut", nullable=false, length=10) private String statut = "PLANIFIE";
+    @Column(name="date_creation", nullable=false, updatable=false) private LocalDateTime dateCreation;
+    @Column(name="date_modification") private LocalDateTime dateModification;
+
+    @PrePersist
+    void avantCreation() {
+        if (dateCreation == null) dateCreation = LocalDateTime.now();
+    }
 }

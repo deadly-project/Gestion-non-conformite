@@ -1,0 +1,313 @@
+/* Calendrier d'audits : toutes les classes sont préfixées "cal-" pour éviter les collisions avec nc.css */
+
+.cal { min-width: 0; }
+
+.cal-avertissement {
+    margin: 0 0 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-left: 3px solid #d97706;
+    background: #fffbeb;
+    font-size: 0.85rem;
+    color: #92400e;
+}
+
+.cal h2 { margin: 0 0 0.25rem; }
+
+.cal-aide {
+    margin: 0 0 1rem;
+    max-width: 70ch;
+    font-size: 0.9rem;
+    color: #64748b;
+}
+
+/* ----- Navigation du mois ----- */
+.cal-navigation {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.cal-mois {
+    min-width: 9.5rem;
+    text-align: center;
+    font-size: 1.05rem;
+}
+
+.cal-aujourdhui { margin-left: auto; }
+
+/* ----- Grille ----- */
+.cal-grille {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 1px;
+    background: #e2e8f0;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.cal-entete {
+    padding: 0.4rem 0;
+    background: #f1f5f9;
+    text-align: center;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #475569;
+}
+
+.cal-jour {
+    position: relative;
+    min-height: 6.5rem;
+    padding: 0.3rem;
+    background: #fff;
+    cursor: pointer;
+}
+
+.cal-jour--vide { background: #f8fafc; cursor: default; }
+.cal-jour--passe { background: #f8fafc; cursor: not-allowed; }
+.cal-jour--passe .cal-jour-numero { color: #94a3b8; }
+
+.cal-jour--aujourdhui .cal-jour-numero {
+    background: #1e40af;
+    color: #fff;
+}
+
+.cal-jour--ouvert { box-shadow: inset 0 0 0 2px #3b82f6; }
+
+/* Retour visuel pendant un glisser-déposer */
+.cal-jour--accepte { background: #eff6ff; }
+.cal-jour--refuse { background: #fef2f2; cursor: not-allowed; }
+.cal-jour--survole.cal-jour--accepte { background: #dbeafe; box-shadow: inset 0 0 0 2px #3b82f6; }
+.cal-jour--survole.cal-jour--refuse { box-shadow: inset 0 0 0 2px #dc2626; }
+
+.cal-jour-numero {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.6rem;
+    height: 1.6rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    font: inherit;
+    font-size: 0.85rem;
+    color: #0f172a;
+    cursor: inherit;
+}
+
+.cal-jour-numero:hover { background: #e2e8f0; }
+.cal-jour--aujourdhui .cal-jour-numero:hover { background: #1e3a8a; }
+
+/* ----- Puces d'étapes planifiées ----- */
+.cal-puces {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0.25rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.cal-puce {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2px;
+    padding: 1px 2px 1px 6px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    background: #e2e8f0;
+    color: #334155;
+}
+
+.cal-puce span { overflow: hidden; text-overflow: ellipsis; }
+.cal-puce--CORRECTIVE { background: #fef3c7; color: #92400e; }
+.cal-puce--PREVENTIVE { background: #ccfbf1; color: #115e59; }
+
+.cal-puce-retirer {
+    flex: none;
+    width: 1.2rem;
+    height: 1.2rem;
+    padding: 0;
+    border: 0;
+    border-radius: 3px;
+    background: transparent;
+    color: inherit;
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.cal-puce-retirer:hover { background: rgba(0, 0, 0, 0.12); }
+.cal-puce-plus { padding-left: 6px; font-size: 0.75rem; color: #64748b; }
+
+/* ----- Tiroir de planification (sort par la droite) ----- */
+.cal-voile {
+    position: fixed;
+    inset: 0;
+    z-index: 900;
+    background: rgba(15, 23, 42, 0.4);
+}
+
+.cal-tiroir {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 901;
+    display: flex;
+    flex-direction: column;
+    width: min(440px, 100%);
+    background: #fff;
+    box-shadow: -8px 0 24px rgba(15, 23, 42, 0.18);
+    animation: cal-tiroir-entree 0.2s ease-out;
+}
+
+.cal-tiroir:focus { outline: none; }
+
+@keyframes cal-tiroir-entree {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+}
+
+.cal-tiroir-entete {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.cal-tiroir-entete h3 { margin: 0; color: #1e40af; font-size: 1.1rem; }
+
+.cal-tiroir-fermer {
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: #475569;
+    cursor: pointer;
+}
+
+.cal-tiroir-fermer:hover { background: #f1f5f9; }
+
+.cal-tiroir-formulaire {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.cal-tiroir-corps {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem 1.25rem;
+}
+
+.cal-champ { margin-bottom: 1rem; }
+.cal-champ select { width: 100%; padding: 8px; }
+
+.cal-groupe { margin: 0; padding: 0; border: 0; }
+.cal-groupe legend { margin-bottom: 0.5rem; padding: 0; font-weight: 600; }
+
+.cal-deja { margin-bottom: 1rem; }
+.cal-deja h4 { margin: 0 0 0.4rem; font-size: 0.9rem; color: #475569; }
+
+.cal-deja ul {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.cal-deja li {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    background: #f1f5f9;
+}
+
+.cal-deja-type { font-size: 0.8rem; color: #64748b; }
+
+.cal-choix {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.cal-choix li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: #fff;
+}
+
+.cal-choix input { margin-top: 0.25rem; }
+.cal-choix label { flex: 1; min-width: 0; cursor: pointer; }
+.cal-choix--desactive { background: #f8fafc; opacity: 0.65; }
+.cal-choix--desactive label { cursor: not-allowed; }
+
+.cal-description {
+    display: block;
+    margin-top: 0.15rem;
+    font-size: 0.9rem;
+    color: #475569;
+    overflow-wrap: anywhere;
+}
+
+.cal-motif {
+    display: block;
+    margin-top: 0.15rem;
+    font-size: 0.8rem;
+    font-style: normal;
+    color: #b91c1c;
+}
+
+.cal-actions {
+    display: flex;
+    gap: 0.6rem;
+    padding: 0.9rem 1.25rem;
+    border-top: 1px solid #e2e8f0;
+    background: #f8fafc;
+}
+
+/* ----- Accessibilité ----- */
+.cal-jour-numero:focus-visible,
+.cal-tiroir-fermer:focus-visible,
+.cal-puce-retirer:focus-visible,
+.cal-choix input:focus-visible {
+    outline: 2px solid #1e40af;
+    outline-offset: 1px;
+}
+
+/* ----- Petits écrans ----- */
+@media (max-width: 640px) {
+    .cal-jour { min-height: 4.5rem; padding: 0.15rem; }
+    .cal-puce { font-size: 0.68rem; padding-left: 3px; }
+    .cal-mois { min-width: 0; flex: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cal-tiroir { animation: none; }
+}
