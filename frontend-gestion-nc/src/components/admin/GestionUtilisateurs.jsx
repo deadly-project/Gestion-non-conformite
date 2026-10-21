@@ -1,6 +1,23 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import {
+  FiSearch,
+  FiRefreshCw,
+  FiPlus,
+  FiEdit2,
+  FiRotateCcw,
+  FiUserCheck,
+  FiUserX,
+  FiX,
+  FiCheck,
+  FiMail,
+  FiShield,
+  FiHash,
+  FiAlertTriangle,
+  FiInfo
+} from "react-icons/fi";
 import { apiRequest } from "../../api/api";
+import "./GestionUtilisateurs.css";
 
 const roles = [
   { valeur: "DECLARANT", libelle: "Déclarant" },
@@ -13,6 +30,17 @@ function libelleRole(role) {
   return roles.find((r) => r.valeur === role)?.libelle ?? role ?? "—";
 }
 
+function couleurRole(role) {
+  switch (role) {
+    case "RESPONSABLE_QUALITE":
+      return { bg: "linear-gradient(135deg, #8b5cf6, #6d28d9)", class: "role-qualite" };
+    case "AUDITEUR":
+      return { bg: "linear-gradient(135deg, #f59e0b, #d97706)", class: "role-auditeur" };
+    default:
+      return { bg: "linear-gradient(135deg, #38bdf8, #1e6fd9)", class: "role-declarant" };
+  }
+}
+
 export default function GestionUtilisateurs() {
   const [utilisateurs, setUtilisateurs] = useState([]);
   const [chargement, setChargement] = useState(true);
@@ -22,6 +50,10 @@ export default function GestionUtilisateurs() {
   const [recherche, setRecherche] = useState("");
   const [edition, setEdition] = useState(null);
   const [formulaire, setFormulaire] = useState(formulaireVide);
+
+  // Modales personnalisées (remplaçant window.confirm)
+  const [modalStatut, setModalStatut] = useState(null); // Objet utilisateur ciblé pour changement de statut
+  const [modalReinit, setModalReinit] = useState(null); // Objet utilisateur ciblé pour réinitialisation MDP
 
   const charger = useCallback(async () => {
     setChargement(true);
@@ -36,11 +68,19 @@ export default function GestionUtilisateurs() {
     }
   }, []);
 
-  useEffect(() => { charger(); }, [charger]);
+  useEffect(() => {
+    charger();
+  }, [charger]);
 
   function commencerEdition(user) {
     setEdition(user);
-    setFormulaire({ nom: user.nom ?? "", prenom: user.prenom ?? "", email: user.email ?? "", matricule: user.matricule ?? "", role: user.role ?? "DECLARANT" });
+    setFormulaire({
+      nom: user.nom ?? "",
+      prenom: user.prenom ?? "",
+      email: user.email ?? "",
+      matricule: user.matricule ?? "",
+      role: user.role ?? "DECLARANT",
+    });
     setErreur("");
     setMessage("");
   }
@@ -72,22 +112,21 @@ export default function GestionUtilisateurs() {
     }
   }
 
-  // Basculer l'état Actif / Désactivé du compte
-  async function basculerStatut(user) {
+  // Confirmation et exécution du changement de statut (Désactivation / Réactivation)
+  async function confirmerChangementStatut() {
+    if (!modalStatut) return;
+    const user = modalStatut;
     const actionTexte = user.actif ? "désactiver" : "réactiver";
-    const confirmationMessage = user.actif
-      ? `Désactiver le compte de ${user.prenom} ${user.nom} (${user.matricule}) ? Cette action empêchera sa prochaine connexion.`
-      : `Voulez-vous réactiver le compte de ${user.prenom} ${user.nom} (${user.matricule}) ?`;
-
-    if (!window.confirm(confirmationMessage)) return;
 
     setEnCours(user.id);
     setErreur("");
     setMessage("");
+    setModalStatut(null);
+
     try {
       if (user.actif) {
         await apiRequest(`/api/utilisateurs/${user.id}/desactiver`, { method: "PATCH" });
-        setMessage(`Le compte de ${user.prenom} ${user.nom} a été désactivé.`);
+        setMessage(`Le compte de ${user.prenom} ${user.nom} a été désactivé avec succès.`);
       } else {
         await apiRequest(`/api/utilisateurs/${user.id}/activer`, { method: "PATCH" });
         setMessage(`Le compte de ${user.prenom} ${user.nom} a été réactivé avec succès.`);
@@ -100,42 +139,33 @@ export default function GestionUtilisateurs() {
     }
   }
 
-  // Réinitialisation directe du mot de passe sans redirection
-  async function reinitialiser(user) {
-    if (!user.actif) {
-      setErreur("Impossible de réinitialiser le mot de passe d'un compte désactivé.");
-      return;
-    }
-    const confirme = window.confirm(
-      `Voulez-vous réinitialiser le mot de passe de ${user.prenom} ${user.nom} (${user.matricule}) ?\n\n` +
-      "Un nouveau mot de passe aléatoire sera généré et envoyé directement par e-mail à l'utilisateur."
-    );
-    if (!confirme) return;
+  // Confirmation et exécution de la réinitialisation MDP
+  async function confirmerReinitialisation() {
+    if (!modalReinit) return;
+    const user = modalReinit;
 
     setEnCours(user.id);
     setErreur("");
     setMessage("");
+    setModalReinit(null);
+
     try {
-      // Étape 1 : Créer la demande
       const demande = await apiRequest("/api/auth/mot-de-passe-oublie", {
         method: "POST",
         body: JSON.stringify({ matricule: user.matricule }),
       });
 
-      // Récupération de l'ID de la demande créée (gérant les différentes structures de réponse possibles)
       const demandeId = demande?.id || demande?.demande?.id;
 
       if (demandeId) {
-        // Étape 2 : Valider immédiatement la demande pour déclencher l'envoi du mail et la mise à jour du mot de passe
         await apiRequest(`/api/admin/reinitialisations/${demandeId}/valider`, {
           method: "POST",
         });
         setMessage(`Le mot de passe de ${user.prenom} ${user.nom} a été réinitialisé et envoyé par e-mail.`);
       } else {
-        // Fallback si l'API de création ne renvoie pas l'objet complet : récupération des demandes en attente
         const enAttente = await apiRequest("/api/admin/reinitialisations?statut=EN_ATTENTE");
         const trouveDemande = enAttente.find((d) => d.matricule === user.matricule);
-        
+
         if (trouveDemande) {
           await apiRequest(`/api/admin/reinitialisations/${trouveDemande.id}/valider`, {
             method: "POST",
@@ -155,53 +185,310 @@ export default function GestionUtilisateurs() {
   }
 
   const filtre = recherche.trim().toLocaleLowerCase("fr");
-  const visibles = utilisateurs.filter((u) => [u.nom, u.prenom, u.email, u.matricule, u.role].some((v) => String(v ?? "").toLocaleLowerCase("fr").includes(filtre)));
+  const visibles = utilisateurs.filter((u) =>
+    [u.nom, u.prenom, u.email, u.matricule, u.role].some((v) =>
+      String(v ?? "").toLocaleLowerCase("fr").includes(filtre)
+    )
+  );
 
   return (
     <main className="admin-users-page">
       <header className="admin-users-header">
-        <div><span className="admin-users-eyebrow">ADMINISTRATION DU SMQ</span><h1>Gestion des utilisateurs</h1><p>Consultez les comptes, modifiez leurs informations et gérez leur accès.</p></div>
-        <Link className="admin-users-primary" to="/admin/utilisateurs/nouveau">+ Créer un utilisateur</Link>
+        <div className="admin-users-header__text">
+          <span className="admin-users-eyebrow">ADMINISTRATION DU SMQ</span>
+          <h1>Gestion des utilisateurs</h1>
+          <p>Consultez les comptes, modifiez leurs informations et gérez leur accès.</p>
+        </div>
+        <Link className="admin-users-primary" to="/admin/utilisateurs/nouveau">
+          <FiPlus /> Créer un utilisateur
+        </Link>
       </header>
-      {erreur && <p className="admin-users-alert admin-users-alert--error" role="alert">{erreur}</p>}
-      {message && <p className="admin-users-alert admin-users-alert--success" role="status">{message}</p>}
 
-      {edition && <section className="admin-users-panel">
-        <div className="admin-users-panel__header"><h2>Modifier {edition.prenom} {edition.nom}</h2><button type="button" className="admin-users-secondary" onClick={() => setEdition(null)}>Annuler</button></div>
-        <form className="admin-users-form" onSubmit={enregistrerEdition}>
-          <label>Nom<input required maxLength={100} value={formulaire.nom} onChange={(e) => setFormulaire({ ...formulaire, nom: e.target.value })} /></label>
-          <label>Prénom<input required maxLength={100} value={formulaire.prenom} onChange={(e) => setFormulaire({ ...formulaire, prenom: e.target.value })} /></label>
-          <label>E-mail<input required type="email" maxLength={255} value={formulaire.email} onChange={(e) => setFormulaire({ ...formulaire, email: e.target.value })} /></label>
-          <label>Matricule<input required maxLength={50} value={formulaire.matricule} onChange={(e) => setFormulaire({ ...formulaire, matricule: e.target.value })} /></label>
-          <label>Rôle<select value={formulaire.role} onChange={(e) => setFormulaire({ ...formulaire, role: e.target.value })}>{roles.map((r) => <option key={r.valeur} value={r.valeur}>{r.libelle}</option>)}</select></label>
-          <div className="admin-users-form__actions"><button className="admin-users-primary" disabled={enCours === edition.id}>{enCours === edition.id ? "Enregistrement…" : "Enregistrer"}</button><button type="button" className="admin-users-secondary" onClick={() => setEdition(null)}>Annuler</button></div>
-        </form>
-      </section>}
+      {erreur && (
+        <div className="admin-users-alert admin-users-alert--error" role="alert">
+          <FiX /> {erreur}
+        </div>
+      )}
+      {message && (
+        <div className="admin-users-alert admin-users-alert--success" role="status">
+          <FiCheck /> {message}
+        </div>
+      )}
 
-      <section className="admin-users-panel">
-        <div className="admin-users-toolbar"><div><h2>Comptes enregistrés</h2><p>{utilisateurs.length} compte(s) au total</p></div><div className="admin-users-toolbar__actions"><input aria-label="Rechercher un utilisateur" placeholder="Rechercher nom, matricule, rôle…" value={recherche} onChange={(e) => setRecherche(e.target.value)} /><button type="button" className="admin-users-secondary" onClick={charger}>Actualiser</button></div></div>
-        {chargement ? <p>Chargement des utilisateurs…</p> : visibles.length === 0 ? <p>Aucun utilisateur ne correspond à la recherche.</p> : <div className="admin-users-table-wrap"><table className="admin-users-table"><thead><tr><th>Utilisateur</th><th>Matricule</th><th>Rôle</th><th>Statut</th><th>Actions</th></tr></thead><tbody>{visibles.map((u) => <tr key={u.id}>
-          <td><strong>{u.prenom} {u.nom}</strong><small>{u.email}</small></td><td>{u.matricule}</td><td>{libelleRole(u.role)}</td><td><span className={`admin-users-status ${u.actif ? "is-active" : "is-inactive"}`}>{u.actif ? "Actif" : "Désactivé"}</span></td>
-          <td>
-            <div className="admin-users-row-actions">
-              <button type="button" className="admin-users-secondary" onClick={() => commencerEdition(u)}>Modifier</button>
-              <button type="button" className="admin-users-secondary" disabled={!u.actif || enCours === u.id} onClick={() => reinitialiser(u)}>{enCours === u.id ? "Traitement…" : "Réinitialiser MDP"}</button>
-              <button 
-                type="button" 
-                className={u.actif ? "admin-users-danger" : "admin-users-secondary"} 
-                disabled={enCours === u.id} 
-                onClick={() => basculerStatut(u)}
-              >
-                {enCours === u.id ? "Traitement…" : (u.actif ? "Désactiver" : "Activer")}
+      {/* 1. MODALE D'ÉDITION DE PROFIL */}
+      {edition && (
+        <div className="admin-modal-overlay" onClick={() => setEdition(null)}>
+          <div className="admin-modal-container" onClick={(e) => e.stopPropagation()}>
+            <div className="admin-users-panel__header">
+              <div>
+                <h2>
+                  Modifier <span className="edit-name">{edition.prenom} {edition.nom}</span>
+                </h2>
+                <p className="edit-subtitle">Mettez à jour les informations du collaborateur.</p>
+              </div>
+              <button type="button" className="admin-users-secondary btn-icon" onClick={() => setEdition(null)} title="Fermer">
+                <FiX />
               </button>
             </div>
-          </td>
-        </tr>)}</tbody></table></div>}
+            <form className="admin-users-form" onSubmit={enregistrerEdition}>
+              <label>
+                Nom
+                <input
+                  required
+                  maxLength={100}
+                  value={formulaire.nom}
+                  onChange={(e) => setFormulaire({ ...formulaire, nom: e.target.value })}
+                />
+              </label>
+              <label>
+                Prénom
+                <input
+                  required
+                  maxLength={100}
+                  value={formulaire.prenom}
+                  onChange={(e) => setFormulaire({ ...formulaire, prenom: e.target.value })}
+                />
+              </label>
+              <label>
+                E-mail
+                <input
+                  required
+                  type="email"
+                  maxLength={255}
+                  value={formulaire.email}
+                  onChange={(e) => setFormulaire({ ...formulaire, email: e.target.value })}
+                />
+              </label>
+              <label>
+                Matricule
+                <input
+                  required
+                  maxLength={50}
+                  value={formulaire.matricule}
+                  onChange={(e) => setFormulaire({ ...formulaire, matricule: e.target.value })}
+                />
+              </label>
+              <label className="full-width">
+                Rôle
+                <select
+                  value={formulaire.role}
+                  onChange={(e) => setFormulaire({ ...formulaire, role: e.target.value })}
+                >
+                  {roles.map((r) => (
+                    <option key={r.valeur} value={r.valeur}>
+                      {r.libelle}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="admin-users-form__actions full-width">
+                <button className="admin-users-primary" disabled={enCours === edition.id}>
+                  <FiCheck /> {enCours === edition.id ? "Enregistrement…" : "Enregistrer"}
+                </button>
+                <button type="button" className="admin-users-secondary" onClick={() => setEdition(null)}>
+                  Annuler
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 2. MODALE DE CHANGEMENT DE STATUT (DÉSACTIVATION OU RÉACTIVATION) */}
+      {modalStatut && (
+        <div className="admin-modal-overlay" onClick={() => setModalStatut(null)}>
+          <div className="admin-modal-container confirmation-modal" onClick={(e) => e.stopPropagation()}>
+            <div className={`status-modal-icon ${modalStatut.actif ? "danger" : "success"}`}>
+              {modalStatut.actif ? <FiAlertTriangle /> : <FiUserCheck />}
+            </div>
+
+            <h2 className="confirmation-title">
+              {modalStatut.actif ? "Désactiver le compte ?" : "Réactiver le compte ?"}
+            </h2>
+
+            <div className="confirmation-user-card">
+              <strong>{modalStatut.prenom} {modalStatut.nom}</strong>
+              <span>Matricule : <code>{modalStatut.matricule}</code> • {libelleRole(modalStatut.role)}</span>
+            </div>
+
+            {modalStatut.actif ? (
+              <p className="confirmation-description">
+                L'utilisateur sera immédiatement déconnecté de la plateforme et ses accès seront suspendus jusqu'à nouvel ordre.
+              </p>
+            ) : (
+              <p className="confirmation-description">
+                L'utilisateur pourra à nouveau se connecter à son espace collaborateur avec ses identifiants habituels.
+              </p>
+            )}
+
+            <div className="confirmation-actions">
+              <button type="button" className="admin-users-secondary" onClick={() => setModalStatut(null)}>
+                Annuler
+              </button>
+              <button
+                type="button"
+                className={modalStatut.actif ? "admin-users-danger" : "admin-users-success-btn"}
+                onClick={confirmerChangementStatut}
+              >
+                {modalStatut.actif ? "Oui, désactiver" : "Oui, réactiver"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 3. MODALE DE RÉINITIALISATION DE MOT DE PASSE */}
+      {modalReinit && (
+        <div className="admin-modal-overlay" onClick={() => setModalReinit(null)}>
+          <div className="admin-modal-container confirmation-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="status-modal-icon info">
+              <FiRotateCcw />
+            </div>
+
+            <h2 className="confirmation-title">Réinitialiser le mot de passe ?</h2>
+
+            <div className="confirmation-user-card">
+              <strong>{modalReinit.prenom} {modalReinit.nom}</strong>
+              <span>E-mail : {modalReinit.email}</span>
+            </div>
+
+            <p className="confirmation-description">
+              Un nouveau mot de passe sécurisé sera automatiquement généré par le système et transmis à l'adresse e-mail ci-dessus.
+            </p>
+
+            <div className="confirmation-actions">
+              <button type="button" className="admin-users-secondary" onClick={() => setModalReinit(null)}>
+                Annuler
+              </button>
+              <button type="button" className="admin-users-primary" onClick={confirmerReinitialisation}>
+                Générer et envoyer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SECTION PRINCIPALE DES COMPTES */}
+      <section className="admin-users-panel">
+        <div className="admin-users-toolbar">
+          <div>
+            <h2>Comptes enregistrés</h2>
+            <p>{utilisateurs.length} compte(s) au total</p>
+          </div>
+          <div className="admin-users-toolbar__actions">
+            <div className="admin-users-search">
+              <FiSearch className="search-icon" />
+              <input
+                aria-label="Rechercher un utilisateur"
+                placeholder="Rechercher nom, matricule, rôle…"
+                value={recherche}
+                onChange={(e) => setRecherche(e.target.value)}
+              />
+            </div>
+            <button type="button" className="admin-users-secondary" onClick={charger}>
+              <FiRefreshCw /> <span className="btn-label">Actualiser</span>
+            </button>
+          </div>
+        </div>
+
+        {chargement ? (
+          <div className="admin-users-state">
+            <div className="loader-dot"></div>
+            Chargement des utilisateurs…
+          </div>
+        ) : visibles.length === 0 ? (
+          <div className="admin-users-state">Aucun utilisateur ne correspond à la recherche.</div>
+        ) : (
+          <div className="admin-users-table-wrap">
+            <table className="admin-users-table">
+              <thead>
+                <tr>
+                  <th>Utilisateur</th>
+                  <th>Matricule</th>
+                  <th>Rôle</th>
+                  <th>Statut</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visibles.map((u) => {
+                  const roleInfo = couleurRole(u.role);
+                  return (
+                    <tr key={u.id} className={!u.actif ? "admin-users-row--inactive" : ""}>
+                      <td data-label="Utilisateur">
+                        <div className="admin-user-cell">
+                          <div className="admin-user-avatar" style={{ background: roleInfo.bg }}>
+                            {(u.prenom?.[0] || "")}
+                            {(u.nom?.[0] || "")}
+                          </div>
+                          <div>
+                            <strong>
+                              {u.prenom} {u.nom}
+                            </strong>
+                            <small>
+                              <FiMail /> {u.email}
+                            </small>
+                          </div>
+                        </div>
+                      </td>
+                      <td data-label="Matricule">
+                        <span className="admin-badge-matricule"><FiHash /> {u.matricule}</span>
+                      </td>
+                      <td data-label="Rôle">
+                        <span className={`admin-role-badge ${roleInfo.class}`}>
+                          <FiShield /> {libelleRole(u.role)}
+                        </span>
+                      </td>
+                      <td data-label="Statut">
+                        <span className={`admin-users-status ${u.actif ? "is-active" : "is-inactive"}`}>
+                          <span className="admin-status-dot"></span>
+                          {u.actif ? "Actif" : "Désactivé"}
+                        </span>
+                      </td>
+                      <td data-label="Actions">
+                        <div className="admin-users-row-actions">
+                          <button
+                            type="button"
+                            className="admin-users-secondary btn-icon"
+                            onClick={() => commencerEdition(u)}
+                            title="Modifier"
+                          >
+                            <FiEdit2 />
+                          </button>
+                          <button
+                            type="button"
+                            className="admin-users-secondary btn-icon"
+                            disabled={!u.actif || enCours === u.id}
+                            onClick={() => setModalReinit(u)}
+                            title="Réinitialiser le mot de passe"
+                          >
+                            <FiRotateCcw />
+                          </button>
+                          <button
+                            type="button"
+                            className={u.actif ? "admin-users-danger btn-icon" : "admin-users-secondary btn-icon"}
+                            disabled={enCours === u.id}
+                            onClick={() => setModalStatut(u)}
+                            title={u.actif ? "Désactiver" : "Réactiver"}
+                          >
+                            {u.actif ? <FiUserX /> : <FiUserCheck />}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
-      <p className="admin-users-note">Les comptes peuvent être désactivés puis réactivés à tout moment. La réinitialisation du mot de passe crée et valide automatiquement la demande pour envoyer un nouveau mot de passe par e-mail.</p>
-      <style>{`
-        .admin-users-page{max-width:1250px;margin:30px auto;padding:0 22px 48px;color:var(--text-color,#172033)}.admin-users-header{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:24px}.admin-users-header h1{margin:5px 0 8px;font-size:clamp(1.7rem,3vw,2.2rem)}.admin-users-header p,.admin-users-toolbar p,.admin-users-note{color:var(--muted-color,#687386);line-height:1.55}.admin-users-eyebrow{font-size:.72rem;font-weight:800;letter-spacing:.12em;color:#315fce}.admin-users-panel{background:var(--card-background,#fff);border:1px solid var(--border-color,#e2e7ef);border-radius:15px;padding:22px;margin:18px 0;box-shadow:0 7px 24px rgba(20,35,65,.04)}.admin-users-panel h2{font-size:1.15rem;margin:0 0 5px}.admin-users-toolbar,.admin-users-panel__header{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:18px}.admin-users-toolbar p{margin:0;font-size:.9rem}.admin-users-toolbar__actions{display:flex;gap:8px;align-items:center}.admin-users-toolbar input,.admin-users-form input,.admin-users-form select{box-sizing:border-box;max-width:100%;border:1px solid var(--border-color,#cfd7e4);border-radius:8px;padding:10px 11px;background:var(--input-background,#fff);color:inherit;font:inherit}.admin-users-toolbar input{width:min(330px,50vw)}.admin-users-primary,.admin-users-secondary,.admin-users-danger{display:inline-flex;align-items:center;justify-content:center;border-radius:8px;padding:9px 12px;border:1px solid transparent;font:inherit;font-size:.86rem;font-weight:700;text-decoration:none;cursor:pointer;white-space:nowrap}.admin-users-primary{background:#315fce;color:#fff}.admin-users-secondary{background:transparent;border-color:var(--border-color,#cfd7e4);color:inherit}.admin-users-danger{background:#fff0f0;color:#a52020;border-color:#ffd0d0}.admin-users-primary:disabled,.admin-users-secondary:disabled,.admin-users-danger:disabled{opacity:.55;cursor:not-allowed}.admin-users-table-wrap{overflow-x:auto}.admin-users-table{width:100%;border-collapse:collapse;font-size:.9rem}.admin-users-table th,.admin-users-table td{text-align:left;padding:13px 11px;border-bottom:1px solid var(--border-color,#e7ebf1);vertical-align:middle}.admin-users-table th{font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted-color,#687386);background:var(--subtle-background,#f8faff)}.admin-users-table td small{display:block;margin-top:4px;color:var(--muted-color,#687386);overflow-wrap:anywhere}.admin-users-status{display:inline-flex;border-radius:30px;padding:5px 9px;font-size:.78rem;font-weight:750}.admin-users-status.is-active{background:#e9f9ef;color:#17663c}.admin-users-status.is-inactive{background:#f1f2f5;color:#646b78}.admin-users-row-actions{display:flex;gap:6px;flex-wrap:wrap}.admin-users-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.admin-users-form label{display:grid;gap:6px;font-size:.9rem;font-weight:650}.admin-users-form__actions{display:flex;gap:8px;align-items:center;align-self:end}.admin-users-alert{padding:11px 14px;border-radius:9px}.admin-users-alert--error{background:#fff0f0;color:#9d2020}.admin-users-alert--success{background:#edfff4;color:#17663c}.admin-users-note{font-size:.86rem}.admin-users-panel__header{margin-bottom:20px}@media(max-width:850px){.admin-users-header,.admin-users-toolbar{align-items:flex-start;flex-direction:column}.admin-users-toolbar__actions{width:100%;flex-wrap:wrap}.admin-users-toolbar input{width:100%;flex:1}.admin-users-form{grid-template-columns:1fr}}@media(max-width:600px){.admin-users-page{padding:0 12px 30px}.admin-users-panel{padding:14px}.admin-users-header{flex-direction:column}.admin-users-table{min-width:820px}}
-      `}</style>
+
+      <p className="admin-users-note">
+        💡 Les comptes peuvent être désactivés puis réactivés à tout moment. La réinitialisation du
+        mot de passe crée et valide automatiquement la demande pour envoyer un nouveau mot de passe
+        par e-mail.
+      </p>
     </main>
   );
 }

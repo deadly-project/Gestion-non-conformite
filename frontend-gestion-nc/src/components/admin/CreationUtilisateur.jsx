@@ -1,5 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { 
+    FiUserPlus, 
+    FiUser, 
+    FiMail, 
+    FiHash, 
+    FiLock, 
+    FiShield, 
+    FiCheckCircle, 
+    FiAlertCircle, 
+    FiInfo,
+    FiX
+} from "react-icons/fi";
 import { apiRequest } from "../../api/api";
+import "./CreationUtilisateur.css";
 
 const formulaireInitial = {
     nom: "",
@@ -12,10 +25,18 @@ const formulaireInitial = {
 
 export default function CreationUtilisateur({ onCreated }) {
     const [formulaire, setFormulaire] = useState(formulaireInitial);
-    const [erreur, setErreur] = useState("");
-    const [messageSucces, setMessageSucces] = useState("");
-    const [statutEmail, setStatutEmail] = useState("");
+    const [notification, setNotification] = useState(null); // { type: 'success' | 'error' | 'info', message: '' }
     const [chargement, setChargement] = useState(false);
+
+    // Effet pour faire disparaître automatiquement la notification après 5 secondes
+    useEffect(() => {
+        if (notification) {
+            const timer = setTimeout(() => {
+                setNotification(null);
+            }, 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [notification]);
 
     function modifier(champ, valeur) {
         setFormulaire((ancien) => ({
@@ -26,9 +47,7 @@ export default function CreationUtilisateur({ onCreated }) {
 
     async function handleSubmit(event) {
         event.preventDefault();
-        setErreur("");
-        setMessageSucces("");
-        setStatutEmail("");
+        setNotification(null);
         setChargement(true);
 
         const payload = {
@@ -42,125 +61,171 @@ export default function CreationUtilisateur({ onCreated }) {
                 body: JSON.stringify(payload),
             });
 
-            // resultat contient { utilisateur, messageSucces, statutEmail }
-            setMessageSucces(resultat.messageSucces || "Utilisateur créé avec succès.");
-            setStatutEmail(resultat.statutEmail || "");
+            const msgSucces = resultat.messageSucces || "Utilisateur créé avec succès.";
+            const msgEmail = resultat.statutEmail ? ` (${resultat.statutEmail})` : "";
+
+            setNotification({
+                type: "success",
+                message: msgSucces + msgEmail
+            });
+
             setFormulaire(formulaireInitial);
             onCreated?.();
         } catch (error) {
-            setErreur(error.message || "Erreur lors de la création de l'utilisateur.");
+            setNotification({
+                type: "error",
+                message: error.message || "Erreur lors de la création de l'utilisateur."
+            });
         } finally {
             setChargement(false);
         }
     }
 
     return (
-        <main>
-            <h1>Créer un utilisateur</h1>
-
-            <p>
-                Les comptes administrateurs ne peuvent pas être créés
-                depuis ce formulaire.
-            </p>
-
-            <form onSubmit={handleSubmit}>
-                <div>
-                    <label htmlFor="nom">Nom</label>
-                    <input
-                        id="nom"
-                        value={formulaire.nom}
-                        onChange={(e) => modifier("nom", e.target.value)}
-                        required
-                    />
-                </div>
-
-                <div>
-                    <label htmlFor="prenom">Prénom</label>
-                    <input
-                        id="prenom"
-                        value={formulaire.prenom}
-                        onChange={(e) => modifier("prenom", e.target.value)}
-                        required
-                    />
-                </div>
-
-                <div>
-                    <label htmlFor="email">Email</label>
-                    <input
-                        id="email"
-                        type="email"
-                        value={formulaire.email}
-                        onChange={(e) => modifier("email", e.target.value)}
-                        required
-                    />
-                </div>
-
-                <div>
-                    <label htmlFor="matricule">Matricule</label>
-                    <input
-                        id="matricule"
-                        type="number"
-                        value={formulaire.matricule}
-                        onChange={(e) =>
-                            modifier("matricule", e.target.value)
-                        }
-                        required
-                    />
-                </div>
-
-                <div>
-                    <label htmlFor="motDePasse">Mot de passe initial</label>
-                    <input
-                        id="motDePasse"
-                        type="password"
-                        minLength={8}
-                        maxLength={72}
-                        autoComplete="new-password"
-                        value={formulaire.motDePasse}
-                        onChange={(e) =>
-                            modifier("motDePasse", e.target.value)
-                        }
-                        required
-                    />
-                </div>
-
-                <div>
-                    <label htmlFor="role">Rôle</label>
-                    <select
-                        id="role"
-                        value={formulaire.role}
-                        onChange={(e) => modifier("role", e.target.value)}
+        <main className="user-create-page">
+            {/* Notification Toast Flottante (Temporaire) */}
+            {notification && (
+                <div className={`toast-notification ${notification.type}`} role="status">
+                    {notification.type === "success" && <FiCheckCircle className="toast-icon" />}
+                    {notification.type === "error" && <FiAlertCircle className="toast-icon" />}
+                    {notification.type === "info" && <FiInfo className="toast-icon" />}
+                    
+                    <span className="toast-text">{notification.message}</span>
+                    
+                    <button 
+                        type="button" 
+                        className="toast-close" 
+                        onClick={() => setNotification(null)}
+                        aria-label="Fermer"
                     >
-                        <option value="DECLARANT">Déclarant</option>
-                        <option value="AUDITEUR">Auditeur</option>
-                        <option value="RESPONSABLE_QUALITE">
-                            Responsable qualité
-                        </option>
-                    </select>
+                        <FiX />
+                    </button>
                 </div>
+            )}
 
-                {erreur && (
-                    <p role="alert" style={{ color: "red", fontWeight: "bold" }}>
-                        ❌ {erreur}
-                    </p>
-                )}
+            <div className="user-create-header-section">
+                <h1>Créer un utilisateur</h1>
+                <p className="user-create-subtitle">
+                    Ajoutez un nouveau collaborateur et attribuez-lui son rôle dans le système.
+                </p>
+            </div>
 
-                {messageSucces && (
-                    <p role="status" style={{ color: "green", fontWeight: "bold" }}>
-                        ✅ {messageSucces}
-                    </p>
-                )}
+            <div className="user-create-card">
+                <form onSubmit={handleSubmit} className="user-create-form">
+                    <div className="form-grid">
+                        {/* Nom */}
+                        <div className="input-group">
+                            <label htmlFor="nom">Nom</label>
+                            <div className="input-wrapper">
+                                <FiUser className="input-icon" />
+                                <input
+                                    id="nom"
+                                    className="form-input has-icon"
+                                    placeholder="Ex : Dupont"
+                                    value={formulaire.nom}
+                                    onChange={(e) => modifier("nom", e.target.value)}
+                                    required
+                                />
+                            </div>
+                        </div>
 
-                {statutEmail && (
-                    <p role="status" style={{ color: statutEmail.includes("succès") ? "green" : "orange" }}>
-                        📧 {statutEmail}
-                    </p>
-                )}
+                        {/* Prénom */}
+                        <div className="input-group">
+                            <label htmlFor="prenom">Prénom</label>
+                            <div className="input-wrapper">
+                                <FiUser className="input-icon" />
+                                <input
+                                    id="prenom"
+                                    className="form-input has-icon"
+                                    placeholder="Ex : Jean"
+                                    value={formulaire.prenom}
+                                    onChange={(e) => modifier("prenom", e.target.value)}
+                                    required
+                                />
+                            </div>
+                        </div>
 
-                <button type="submit" disabled={chargement}>
-                    {chargement ? "Création..." : "Créer l'utilisateur"}
-                </button>
-            </form>
+                        {/* Email */}
+                        <div className="input-group">
+                            <label htmlFor="email">Email</label>
+                            <div className="input-wrapper">
+                                <FiMail className="input-icon" />
+                                <input
+                                    id="email"
+                                    type="email"
+                                    className="form-input has-icon"
+                                    placeholder="jean.dupont@entreprise.com"
+                                    value={formulaire.email}
+                                    onChange={(e) => modifier("email", e.target.value)}
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        {/* Matricule */}
+                        <div className="input-group">
+                            <label htmlFor="matricule">Matricule</label>
+                            <div className="input-wrapper">
+                                <FiHash className="input-icon" />
+                                <input
+                                    id="matricule"
+                                    type="number"
+                                    className="form-input has-icon"
+                                    placeholder="Ex : 12345"
+                                    value={formulaire.matricule}
+                                    onChange={(e) => modifier("matricule", e.target.value)}
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        {/* Mot de passe */}
+                        <div className="input-group">
+                            <label htmlFor="motDePasse">Mot de passe initial</label>
+                            <div className="input-wrapper">
+                                <FiLock className="input-icon" />
+                                <input
+                                    id="motDePasse"
+                                    type="password"
+                                    className="form-input has-icon"
+                                    minLength={8}
+                                    maxLength={72}
+                                    autoComplete="new-password"
+                                    placeholder="Min. 8 caractères"
+                                    value={formulaire.motDePasse}
+                                    onChange={(e) => modifier("motDePasse", e.target.value)}
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        {/* Rôle */}
+                        <div className="input-group">
+                            <label htmlFor="role">Rôle</label>
+                            <div className="input-wrapper">
+                                <FiShield className="input-icon" />
+                                <select
+                                    id="role"
+                                    className="form-input has-icon form-select"
+                                    value={formulaire.role}
+                                    onChange={(e) => modifier("role", e.target.value)}
+                                >
+                                    <option value="DECLARANT">Déclarant</option>
+                                    <option value="AUDITEUR">Auditeur</option>
+                                    <option value="RESPONSABLE_QUALITE">Responsable qualité</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="form-actions">
+                        <button type="submit" className="submit-button" disabled={chargement}>
+                            <FiUserPlus />
+                            <span>{chargement ? "Création en cours..." : "Créer l'utilisateur"}</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
         </main>
     );
 }

@@ -40,11 +40,12 @@ function Page({ titre }) {
 
 function Layout({ utilisateur, onLogout }) {
     return (
-        <>
+        <div className="app-layout">
             <Nav utilisateur={utilisateur} onLogout={onLogout} />
-            <hr />
-            <Outlet />
-        </>
+            <div className="app-content-wrapper">
+                <Outlet />
+            </div>
+        </div>
     );
 }
 

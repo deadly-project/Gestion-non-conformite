@@ -1,0 +1,105 @@
+/* =====================
+   RESET GLOBAL
+===================== */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    width: 100%;
+    background: #f7f9fc;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #0f172a;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    border: none;
+    outline: none;
+}
+
+/* =====================
+   LAYOUT APPLICATION
+===================== */
+.app-layout {
+    display: flex;
+    min-height: 100vh;
+    width: 100%;
+}
+
+.app-content-wrapper {
+    flex: 1;
+    margin-left: 260px; /* Espace réservé pour le sidebar fixe */
+    width: calc(100% - 260px);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Sur mobile, le sidebar disparaît, donc le contenu prend toute la largeur */
+@media (max-width: 900px) {
+    .app-content-wrapper {
+        margin-left: 0;
+        width: 100%;
+    }
+}
+
+/* Suppression des anciens HR résiduels */
+main + hr,
+hr {
+    display: none;
+}
+
+/* =====================
+   CONTENU DES PAGES PROTÉGÉES
+===================== */
+main {
+    padding: 32px;
+    max-width: 1400px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+@media (max-width: 640px) {
+    main {
+        padding: 24px 16px;
+        padding-top: 70px; /* Laisse de l'espace pour le bouton hamburger en haut */
+    }
+}
+
+/* =====================
+   TITRES
+===================== */
+h1 {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #0f172a;
+    margin: 0 0 16px;
+}
+
+p {
+    color: #475569;
+    line-height: 1.6;
+}
+
+/* =====================
+   VÉRIFICATION DE SESSION
+===================== */
+#root > p {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+    font-size: 15px;
+    color: #64748b;
+}
