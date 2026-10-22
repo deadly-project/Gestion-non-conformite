@@ -84,6 +84,9 @@ public class AuditCapaService {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "La date dépasse l'échéance de l'étape (" + action.getDateEcheance() + ")");
             }
+            if ("VERIFIEE".equals(action.getStatutAction())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Cette étape CAPA est déjà validée");
+            }
 
             NonConformite nc = ncParId.computeIfAbsent(action.getNcId(), ncId -> ncRepository.findById(ncId)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Non-conformité introuvable")));

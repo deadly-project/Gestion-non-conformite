@@ -1,0 +1,118 @@
+/* Styles partagés : espace auditeur (pages Mes audits / Réalisation) et suivi qualité. Préfixe "aud-". */
+
+.aud-badge {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: #e2e8f0;
+    color: #334155;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.aud-badge--PLANIFIE { background: #dbeafe; color: #1e40af; }
+.aud-badge--EN_COURS { background: #fef3c7; color: #92400e; }
+.aud-badge--TERMINE,
+.aud-badge--REALISE,
+.aud-badge--VERIFIEE { background: #dcfce7; color: #166534; }
+.aud-badge--RETARD,
+.aud-badge--NON_REALISE { background: #fee2e2; color: #991b1b; }
+.aud-badge--PARTIEL { background: #ffedd5; color: #9a3412; }
+
+/* ----- Messages ----- */
+.aud-bandeau {
+    margin: 0 0 1rem;
+    padding: 0.6rem 0.9rem;
+    border-left: 3px solid #3b82f6;
+    border-radius: 0 6px 6px 0;
+    background: #eff6ff;
+    color: #1e3a8a;
+    font-size: 0.9rem;
+}
+
+.aud-bandeau--alerte { border-color: #d97706; background: #fffbeb; color: #92400e; }
+
+/* ----- Champs de formulaire ----- */
+.aud-champ { margin-bottom: 0.9rem; }
+.aud-champ label,
+.aud-champ legend { display: block; margin-bottom: 0.3rem; font-weight: 600; font-size: 0.9rem; }
+
+.aud-champ textarea,
+.aud-champ select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font: inherit;
+}
+
+.aud-champ textarea:disabled,
+.aud-champ select:disabled { background: #f1f5f9; color: #475569; }
+
+.aud-champ fieldset { margin: 0; padding: 0; border: 0; }
+
+.aud-options { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+.aud-option {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.75rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: #fff;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.aud-option:has(input:checked) { border-color: #3b82f6; background: #eff6ff; }
+.aud-option:has(input:disabled) { opacity: 0.65; cursor: not-allowed; }
+
+/* ----- Constats ----- */
+.aud-constats { display: flex; flex-direction: column; gap: 0.75rem; margin: 0; padding: 0; list-style: none; }
+
+.aud-constat {
+    padding: 0.75rem 0.9rem;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #94a3b8;
+    border-radius: 6px;
+    background: #fff;
+}
+
+.aud-constat--ECART { border-left-color: #dc2626; }
+.aud-constat--POINT_FORT { border-left-color: #16a34a; }
+.aud-constat--REMARQUE { border-left-color: #2563eb; }
+
+.aud-constat-entete { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem; }
+.aud-constat-type { font-weight: 700; font-size: 0.85rem; }
+.aud-constat-meta { font-size: 0.8rem; color: #64748b; }
+.aud-constat-actions { display: flex; gap: 0.4rem; margin-left: auto; }
+.aud-constat-texte { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* ----- Fil de commentaires du responsable qualité ----- */
+.aud-fil {
+    margin-top: 0.6rem;
+    padding-top: 0.6rem;
+    border-top: 1px dashed #cbd5e1;
+}
+
+.aud-fil ul { display: flex; flex-direction: column; gap: 0.4rem; margin: 0 0 0.5rem; padding: 0; list-style: none; }
+
+.aud-commentaire {
+    padding: 0.45rem 0.7rem;
+    border-radius: 6px;
+    background: #f1f5f9;
+    font-size: 0.9rem;
+}
+
+.aud-commentaire p { margin: 0.15rem 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.aud-commentaire-meta { font-size: 0.75rem; color: #64748b; }
+
+.aud-fil-formulaire { display: flex; gap: 0.5rem; align-items: flex-start; }
+.aud-fil-formulaire textarea { flex: 1; padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 6px; font: inherit; }
+
+.aud-vide { margin: 0; color: #64748b; font-size: 0.9rem; }
+
+/* Petit bouton (au cas où nc.css ne le définirait pas) */
+.nc-btn-petit { padding: 4px 10px; font-size: 0.8rem; }

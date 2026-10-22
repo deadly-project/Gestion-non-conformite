@@ -1,0 +1,102 @@
+/* Page « Mes audits » de l'auditeur. Préfixe "maud-" ; la grille réutilise les classes cal-* de CalendrierAudits.css. */
+
+.maud-intro { max-width: 70ch; margin: 0 0 1.25rem; color: #64748b; }
+
+.maud-espace {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+    gap: 1.5rem;
+    align-items: start;
+}
+
+.maud-titre { margin: 0 0 0.5rem; }
+.maud-aide { margin: 0 0 0.75rem; font-size: 0.9rem; color: #64748b; }
+.maud-retards { color: #b91c1c; }
+
+/* Les audits des jours passés restent cliquables : pas de curseur « interdit » */
+.maud-jour { cursor: default; }
+
+/* ----- Puces d'audit (boutons) ----- */
+.maud-puce {
+    display: block;
+    width: 100%;
+    padding: 1px 6px;
+    border: 0;
+    border-radius: 4px;
+    background: #dbeafe;
+    color: #1e40af;
+    font: inherit;
+    font-size: 0.75rem;
+    line-height: 1.35;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+}
+
+.maud-puce:hover { filter: brightness(0.95); }
+.maud-puce--EN_COURS { background: #fef3c7; color: #92400e; }
+.maud-puce--TERMINE { background: #dcfce7; color: #166534; }
+.maud-puce--RETARD { background: #fee2e2; color: #991b1b; }
+
+.maud-puce:focus-visible,
+.maud-carte:focus-visible { outline: 2px solid #1e40af; outline-offset: 1px; }
+
+/* ----- Légende ----- */
+.maud-legende {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.9rem;
+    margin: 0.75rem 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.8rem;
+    color: #475569;
+}
+
+.maud-legende li { display: flex; align-items: center; gap: 0.35rem; }
+.maud-point { display: inline-block; width: 0.8rem; height: 0.8rem; border-radius: 3px; }
+
+/* ----- Liste « À traiter » ----- */
+.maud-liste {
+    position: sticky;
+    top: 1rem;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+}
+
+.maud-cartes { display: flex; flex-direction: column; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
+
+.maud-carte {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: #fff;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.maud-carte:hover { border-color: #3b82f6; }
+.maud-carte-entete { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.maud-carte-titre { font-weight: 600; font-size: 0.9rem; overflow-wrap: anywhere; }
+
+.maud-carte-detail {
+    font-size: 0.8rem;
+    color: #64748b;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+@media (max-width: 960px) {
+    .maud-espace { grid-template-columns: minmax(0, 1fr); }
+    .maud-liste { position: static; max-height: none; overflow-y: visible; }
+}

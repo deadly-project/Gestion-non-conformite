@@ -27,6 +27,10 @@ import AnalyseCausesPage from "./components/responsable_qualite/AnalyseCausesPag
 import CapaPage from "./components/responsable_qualite/CapaPage";
 import MesNonConformites from "./components/Declarant/MesNonConformites";
 
+import MesAuditsPage from "./components/Auditeur/MesAuditsPage";
+import AuditRealisationPage from "./components/Auditeur/AuditRealisationPage";
+import SuiviCapaPage from "./components/responsable_qualite/SuiviCapaPage";
+
 import './App.css'
 
 function Page({ titre }) {
@@ -256,13 +260,17 @@ function Application() {
                     >
                         <Route
                             path="/auditeur/audits"
-                            element={<Page titre="Mes audits" />}
+                            element={<MesAuditsPage />}
                         />
 
                         <Route
                             path="/auditeur/constats"
                             element={<Page titre="Constats d'audit" />}
                         />
+
+                        <Route 
+                            path="/auditeur/audits/:id" 
+                            element={<AuditRealisationPage />} />
                     </Route>
 
                     <Route
@@ -288,13 +296,20 @@ function Application() {
 
                         <Route 
                             path="/responsable/non-conformites" 
-                            element={<ListeNonConformites utilisateur={utilisateur} />} />
+                            element={<ListeNonConformites utilisateur={utilisateur} />} 
+                        />
                         <Route 
                             path="/responsable/nc/:id/analyse" 
-                            element={<AnalyseCausesPage />} />
+                            element={<AnalyseCausesPage />} 
+                        />
                         <Route 
                             path="/responsable/nc/:id/capa" 
-                            element={<CapaPage />} />
+                            element={<CapaPage />} 
+                        />
+                        <Route 
+                            path="/responsable/nc/:id/suivi" 
+                            element={<SuiviCapaPage />} 
+                        />
                     </Route>
                 </Route>
             </Route>

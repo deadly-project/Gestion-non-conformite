@@ -1,0 +1,124 @@
+/* Suivi terrain des CAPA (responsable qualité). Préfixe "suivi-" ; composants communs dans auditeur/audits.css. */
+
+.suivi-retour { margin-bottom: 1rem; }
+
+.suivi-entete {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.suivi-entete h1 { margin: 0; }
+.suivi-titre-nc { margin: 0.25rem 0 0; color: #475569; }
+
+.suivi-cloture { display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem; max-width: 320px; }
+.suivi-motif { font-size: 0.8rem; color: #64748b; text-align: right; }
+
+/* ----- Progression ----- */
+.suivi-progression {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 1rem 0 0.5rem;
+    font-size: 0.9rem;
+    color: #475569;
+}
+
+.suivi-barre { flex: 1; max-width: 360px; height: 0.6rem; border-radius: 999px; background: #e2e8f0; overflow: hidden; }
+.suivi-barre-remplie { height: 100%; background: #16a34a; transition: width 0.3s ease; }
+
+/* ----- Temps réel ----- */
+.suivi-temps-reel { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; font-size: 0.8rem; color: #64748b; }
+.suivi-point { width: 0.55rem; height: 0.55rem; border-radius: 50%; background: #94a3b8; }
+.suivi-point--actif { background: #16a34a; }
+
+.suivi-evenement { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+
+/* ----- Étapes (accordéon) ----- */
+.suivi-etapes { display: flex; flex-direction: column; gap: 0.75rem; margin: 0; padding: 0; list-style: none; }
+
+.suivi-etape { border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; }
+.suivi-etape--validee { border-color: #86efac; }
+
+.suivi-etape-entete {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.suivi-etape-entete:hover { background: #f8fafc; }
+.suivi-etape-entete:focus-visible { outline: 2px solid #1e40af; outline-offset: -2px; }
+
+.suivi-etape-titre { display: flex; flex: 1; flex-wrap: wrap; align-items: center; gap: 0.45rem; }
+.suivi-etape-resume { font-size: 0.8rem; color: #64748b; }
+.suivi-etape-fleche { font-size: 0.7rem; color: #64748b; }
+
+.suivi-etape-corps { padding: 0 1rem 1rem; border-top: 1px solid #e2e8f0; }
+.suivi-etape-description { margin: 0.9rem 0 0.25rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+.suivi-etape-meta { margin: 0 0 0.5rem; font-size: 0.85rem; color: #64748b; }
+.suivi-sous-titre { margin: 1rem 0 0.5rem; font-size: 1rem; }
+
+/* ----- Audits d'une étape ----- */
+.suivi-audits { display: flex; flex-direction: column; gap: 0.9rem; margin: 0; padding: 0; list-style: none; }
+
+.suivi-audit { padding: 0.8rem 0.9rem; border-radius: 8px; background: #f8fafc; border: 1px solid #e2e8f0; }
+.suivi-audit-entete { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+.suivi-audit-meta { font-size: 0.8rem; color: #64748b; }
+
+.suivi-texte { margin-bottom: 0.6rem; }
+.suivi-texte h4,
+.suivi-texte-titre { margin: 0 0 0.2rem; font-size: 0.85rem; color: #475569; }
+.suivi-texte-titre { margin-top: 0.4rem; }
+.suivi-texte p,
+.suivi-texte-simple { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.suivi-texte-simple { margin-bottom: 0.6rem; }
+
+/* ----- Classification ----- */
+.suivi-classification {
+    margin-top: 1.1rem;
+    padding: 0.9rem 1rem;
+    border: 2px dashed #3b82f6;
+    border-radius: 8px;
+    background: #eff6ff;
+}
+
+.suivi-classification .suivi-sous-titre { margin-top: 0; color: #1e40af; }
+.suivi-classification--validee { border: 1px solid #86efac; background: #f0fdf4; }
+.suivi-classification--validee .suivi-sous-titre { color: #166534; }
+
+/* ----- Dialogue de clôture ----- */
+.suivi-voile { position: fixed; inset: 0; z-index: 900; background: rgba(15, 23, 42, 0.4); }
+
+.suivi-dialogue {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    z-index: 901;
+    width: min(480px, calc(100% - 2rem));
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+    padding: 1.25rem 1.4rem;
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 12px 40px rgba(15, 23, 42, 0.3);
+    transform: translate(-50%, -50%);
+}
+
+.suivi-dialogue h2 { margin: 0 0 0.6rem; }
+.suivi-dialogue-actions { display: flex; gap: 0.6rem; }
+
+@media (max-width: 640px) {
+    .suivi-cloture { align-items: stretch; max-width: none; width: 100%; }
+    .suivi-motif { text-align: left; }
+    .suivi-etape-resume { display: none; }
+}

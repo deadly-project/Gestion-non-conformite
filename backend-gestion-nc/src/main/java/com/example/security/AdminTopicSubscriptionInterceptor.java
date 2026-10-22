@@ -1,4 +1,3 @@
-
 package com.example.security;
 
 import org.springframework.messaging.Message;
@@ -12,6 +11,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 import java.security.Principal;
+import java.util.Set;
 
 @Component
 public class AdminTopicSubscriptionInterceptor implements ChannelInterceptor {
@@ -20,6 +20,11 @@ public class AdminTopicSubscriptionInterceptor implements ChannelInterceptor {
     private static final String TOPIC_REINITIALISATIONS =
             "/topic/admin/reinitialisations";
     private static final String TOPIC_NC = "/topic/admin/nc";
+    /** Suivi terrain des CAPA : actions des auditeurs et du responsable qualité (CapaEvenementService). */
+    private static final String TOPIC_CAPA = "/topic/admin/capa";
+
+    /** Canaux que le responsable qualité peut écouter, en plus de l'administrateur qui les peut tous. */
+    private static final Set<String> TOPICS_RESPONSABLE = Set.of(TOPIC_NC, TOPIC_CAPA);
 
     @Override
     public Message<?> preSend(
@@ -58,9 +63,9 @@ public class AdminTopicSubscriptionInterceptor implements ChannelInterceptor {
                 return message;
             }
 
-            // Le responsable qualité peut suivre les non-conformités,
+            // Le responsable qualité peut suivre les non-conformités et leurs CAPA,
             // mais pas consulter les demandes de réinitialisation.
-            if (TOPIC_NC.equals(destination)
+            if (TOPICS_RESPONSABLE.contains(destination)
                     && estResponsable(principal)) {
                 return message;
             }

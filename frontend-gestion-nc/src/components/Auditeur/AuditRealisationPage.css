@@ -1,0 +1,65 @@
+/* Page de réalisation d'un audit (auditeur). Préfixe "area-" ; les composants communs sont dans audits.css. */
+
+.area-retour { margin-bottom: 1rem; }
+
+.area-entete { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
+.area-entete h1 { margin: 0; }
+
+.area-meta { margin: 0.4rem 0 1rem; font-size: 0.9rem; color: #64748b; }
+.area-aide { margin: 0.4rem 0 0; font-size: 0.8rem; color: #64748b; }
+
+.area-section { max-width: 860px; margin-bottom: 1.5rem; }
+.area-section h2 { margin-top: 0; }
+
+/* ----- Étape CAPA auditée ----- */
+.area-etape-ref { margin: 0 0 0.25rem; }
+.area-etape-nc { margin: 0 0 0.5rem; font-size: 0.9rem; color: #475569; }
+
+.area-etape-description {
+    margin: 0 0 0.5rem;
+    padding: 0.6rem 0.8rem;
+    border-left: 3px solid #3b82f6;
+    background: #f8fafc;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+/* ----- Démarrage ----- */
+.area-demarrage {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    max-width: 860px;
+    margin-bottom: 1.5rem;
+    padding: 0.9rem 1.1rem;
+    border: 2px dashed #3b82f6;
+    border-radius: 8px;
+    background: #eff6ff;
+}
+
+.area-demarrage p { margin: 0; color: #1e3a8a; }
+
+/* ----- Formulaires ----- */
+.area-nouveau-constat {
+    margin-top: 1rem;
+    padding: 1rem 1.1rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: #f8fafc;
+}
+
+.area-nouveau-constat h3 { margin: 0 0 0.75rem; font-size: 1rem; }
+
+.area-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+
+.area-confirmation {
+    padding: 1rem 1.1rem;
+    border: 2px solid #d97706;
+    border-radius: 8px;
+    background: #fffbeb;
+}
+
+.area-confirmation h3 { margin: 0 0 0.4rem; color: #92400e; }
+.area-confirmation p { margin: 0 0 0.75rem; }

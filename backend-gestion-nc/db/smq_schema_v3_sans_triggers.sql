@@ -79,7 +79,12 @@ CREATE TABLE audits (
     statut             VARCHAR(10) NOT NULL DEFAULT 'PLANIFIE'
                        CHECK (statut IN ('PLANIFIE','EN_COURS','TERMINE')),
     date_creation      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    date_modification  TIMESTAMP
+    date_modification  TIMESTAMP,
+
+    compte_rendu        TEXT,
+    traitement_realise  TEXT,
+    resultat_traitement VARCHAR(12)
+            CHECK (resultat_traitement IN ('REALISE','PARTIEL','NON_REALISE'))
 );
 
 CREATE TABLE constats_audit (
@@ -366,3 +371,6 @@ CREATE UNIQUE INDEX uq_audits_capa_jour
     WHERE action_capa_id IS NOT NULL;
 
 CREATE INDEX idx_audits_action_capa ON audits(action_capa_id);
+
+CREATE INDEX idx_audits_auditeur ON audits(auditeur_id, date_planifiee);
+CREATE INDEX idx_commentaires_constat ON commentaires_constats(constat_id);

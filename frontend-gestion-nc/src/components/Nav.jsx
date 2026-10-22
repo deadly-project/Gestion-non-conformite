@@ -18,9 +18,9 @@ import "./Nav.css";
 
 const liensParRole = {
     ADMINISTRATEUR: [
-        { to: "/admin/utilisateurs", label: "Liste des Utilisateurs", icon: <FiUsers />, end: true },
-        { to: "/admin/utilisateurs/nouveau", label: "Créer un Utilisateur", icon: <FiUserPlus /> },
         { to: "/admin/dashboard", label: "Administration", icon: <FiGrid /> },
+        { to: "/admin/utilisateurs/nouveau", label: "Créer un Utilisateur", icon: <FiUserPlus /> },
+        { to: "/admin/utilisateurs", label: "Liste des Utilisateurs", icon: <FiUsers />, end: true },
         { to: "/admin/reinitialisations", label: "Demande de réinitialisation", icon: <FiRotateCcw /> },
     ],
 

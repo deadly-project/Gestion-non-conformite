@@ -174,8 +174,12 @@ export default function CapaPage() {
 
     return (
         <main className="nc-page">
-            <button type="button" className="nc-btn nc-btn-secondaire capa-retour" onClick={() => navigate(-1)}>
+            <button type="button" className="nc-btn nc-btn-secondaire capa-retour" onClick={() => navigate(`/responsable/non-conformites`)}>
                 ← Retour au suivi
+            </button>
+
+            <button type="button" className="nc-btn" onClick={() => navigate(`/responsable/nc/${id}/suivi`)}>
+                Suivi terrain et validation →
             </button>
 
             <h1>Plan d'actions (CAPA) : {detail?.reference}</h1>
