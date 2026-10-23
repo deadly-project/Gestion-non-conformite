@@ -12,6 +12,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -57,6 +58,33 @@ public class SuiviCapaService {
         return construire(trouverNc(ncId));
     }
 
+    /** Toutes les étapes CAPA attribuées, pour la page « Actions correctives ». */
+    @Transactional(readOnly = true)
+    public List<CapaListItem> listerToutes() {
+        List<ActionCapa> etapes = capaRepository.findAll(org.springframework.data.domain.Sort.by("id"));
+        if (etapes.isEmpty()) return List.of();
+
+        Map<Long, NonConformite> ncs = ncRepository.findAllById(etapes.stream()
+                        .map(ActionCapa::getNcId).filter(Objects::nonNull).distinct().toList())
+                .stream().collect(Collectors.toMap(NonConformite::getId, Function.identity()));
+
+        Map<Long, Integer> numeros = new HashMap<>();
+        for (Long ncId : ncs.keySet()) {
+            List<ActionCapa> plan = capaRepository.findByNcIdOrderByIdAsc(ncId);
+            for (int i = 0; i < plan.size(); i++) numeros.put(plan.get(i).getId(), i + 1);
+        }
+
+        return etapes.stream().map(e -> {
+            NonConformite nc = ncs.get(e.getNcId());
+            return new CapaListItem(
+                    e.getId(), e.getNcId(), nc == null ? null : nc.getReference(),
+                    nc == null ? null : nc.getTitre(), nc == null ? null : nc.getStatut(),
+                    numeros.getOrDefault(e.getId(), 0), e.getTypeAction(), e.getDescription(),
+                    assembleur.personne(e.getResponsableActionId()), e.getDateEcheance(),
+                    e.getStatutAction(), e.getEfficace());
+        }).toList();
+    }
+
     // ------------------------------------------------------------------ commentaire d'un constat
     @Transactional
     public SuiviNc commenter(Long constatId, String texte, Users rq) {
@@ -80,7 +108,7 @@ public class SuiviCapaService {
         c.setCommentaire(texte.trim());
         commentaireRepository.save(c);
 
-        journal.enregistrer(rq.getId(), "COMMENTER_CONSTAT", "CONSTAT_AUDIT", constatId,
+        journal.enregistrer(rq.getId(), "ADD_COMMENT", "CONSTAT_AUDIT", constatId,
                 Map.of("auditId", audit.getId(), "ncId", nc.getId()));
         evenements.publier(nc.getId(), etape.getId(), audit.getId(), "COMMENTAIRE_AJOUTE",
                 nom(rq) + " a commenté un constat de « " + audit.getTitre() + " »");
@@ -116,7 +144,7 @@ public class SuiviCapaService {
         etape.setDateModification(maintenant);
         capaRepository.save(etape);
 
-        journal.enregistrer(rq.getId(), "VALIDER_CAPA", "ACTION_CAPA", etape.getId(),
+        journal.enregistrer(rq.getId(), "VALIDATE_CAPA", "ACTION_CAPA", etape.getId(),
                 Map.of("ncId", nc.getId(), "efficace", req.efficace()));
         evenements.publier(nc.getId(), etape.getId(), null, "CAPA_VALIDEE",
                 nom(rq) + " a validé une étape CAPA (" + (req.efficace() ? "efficace" : "non efficace") + ")");
@@ -143,7 +171,7 @@ public class SuiviCapaService {
         etape.setDateModification(LocalDateTime.now());
         capaRepository.save(etape);
 
-        journal.enregistrer(rq.getId(), "ANNULER_VALIDATION_CAPA", "ACTION_CAPA", etape.getId(),
+        journal.enregistrer(rq.getId(), "CANCEL_CAPA_VALIDATION", "ACTION_CAPA", etape.getId(),
                 Map.of("ncId", nc.getId()));
         evenements.publier(nc.getId(), etape.getId(), null, "VALIDATION_ANNULEE",
                 nom(rq) + " a annulé la validation d'une étape CAPA");
@@ -178,7 +206,7 @@ public class SuiviCapaService {
         h.setDateChangement(maintenant);
         statutHistoriqueRepository.save(h);
 
-        journal.enregistrer(rq.getId(), "CLOTURER_NC", "NON_CONFORMITE", nc.getId(),
+        journal.enregistrer(rq.getId(), "CLOSE_NC", "NON_CONFORMITE", nc.getId(),
                 Map.of("statutAvant", ancienStatut, "statutApres", StatutNc.CLOTUREE.name()));
         evenements.publier(nc.getId(), null, null, "NC_CLOTUREE",
                 nom(rq) + " a clôturé la non-conformité " + nc.getReference());

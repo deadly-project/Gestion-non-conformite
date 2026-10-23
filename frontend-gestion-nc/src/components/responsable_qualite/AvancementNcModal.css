@@ -1,0 +1,309 @@
+/* =====================================================
+   AvancementNcModal — préfixe AV-
+   ===================================================== */
+
+.AV-contenu {
+    display: grid;
+    gap: 1.25rem;
+}
+
+/* ---- Résumé ---- */
+.AV-resume {
+    background: linear-gradient(135deg, #f0f7ff 0%, #fafcff 100%);
+    border: 1px solid #d6e3f5;
+    border-radius: 12px;
+    padding: 1rem 1.15rem;
+    display: grid;
+    gap: .85rem;
+}
+.AV-resume-entete {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding-bottom: .55rem;
+    border-bottom: 1px solid #dbe6f5;
+}
+.AV-resume-entete h3 {
+    margin: 0;
+    font-size: 1.02rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+.AV-resume-icone { color: #1f4e9c; font-size: 1.05rem; }
+
+.AV-resume-grille {
+    display: grid;
+    gap: .9rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    margin: 0;
+}
+.AV-resume-grille dt {
+    font-size: .78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    color: #64748b;
+    margin-bottom: .2rem;
+}
+.AV-resume-grille dd {
+    margin: 0;
+    color: #0f172a;
+    font-size: .92rem;
+}
+
+/* ---- Barre de progression ---- */
+.AV-progress {
+    width: 100%;
+    height: 8px;
+    background: #e2e8f0;
+    border-radius: 999px;
+    overflow: hidden;
+    margin-bottom: .35rem;
+}
+.AV-progress-barre {
+    height: 100%;
+    background: linear-gradient(90deg, #1f4e9c, #3b82f6);
+    border-radius: 999px;
+    transition: width .4s ease;
+}
+.AV-progress-texte {
+    font-size: .82rem;
+    color: #475569;
+}
+
+/* ---- Étapes ---- */
+.AV-etapes {
+    display: grid;
+    gap: 1rem;
+}
+
+.AV-etape {
+    background: #fff;
+    border: 1px solid #e5e9ef;
+    border-radius: 12px;
+    padding: 1rem 1.1rem;
+    display: grid;
+    gap: .8rem;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .03);
+}
+
+.AV-etape-entete {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: .75rem;
+    flex-wrap: wrap;
+    padding-bottom: .55rem;
+    border-bottom: 1px solid #eef1f5;
+}
+.AV-etape-entete h3 {
+    margin: .2rem 0 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+.AV-etape-numero {
+    font-size: .75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: #1f4e9c;
+}
+
+.AV-etape-description {
+    margin: 0;
+    color: #334155;
+    line-height: 1.5;
+}
+
+.AV-etape-meta {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    font-size: .85rem;
+    color: #475569;
+}
+.AV-etape-meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+}
+
+/* ---- Badges étape ---- */
+.AV-badge {
+    display: inline-block;
+    padding: .18rem .6rem;
+    border-radius: 999px;
+    font-size: .78rem;
+    font-weight: 700;
+    background: #e2e8f0;
+    color: #334155;
+    white-space: nowrap;
+}
+.AV-badge--A_FAIRE { background: #fef3c7; color: #92400e; }
+.AV-badge--EN_COURS { background: #dbeafe; color: #1e40af; }
+.AV-badge--VALIDEE { background: #d1fae5; color: #065f46; }
+.AV-badge--REJETEE { background: #fee2e2; color: #991b1b; }
+.AV-badge--CLOTUREE { background: #e2e8f0; color: #334155; }
+
+/* ---- Audits ---- */
+.AV-audits {
+    display: grid;
+    gap: .8rem;
+}
+.AV-audit {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: .85rem 1rem;
+    background: #fafbfc;
+    display: grid;
+    gap: .65rem;
+}
+.AV-audit-entete {
+    display: flex;
+    gap: .55rem;
+    flex-wrap: wrap;
+    align-items: center;
+    padding-bottom: .5rem;
+    border-bottom: 1px dashed #e2e8f0;
+}
+.AV-audit-entete strong { color: #0f172a; }
+.AV-audit-type {
+    font-size: .82rem;
+    color: #64748b;
+    font-style: italic;
+}
+
+.AV-texte h4,
+.AV-constats-titre {
+    margin: 0 0 .35rem;
+    font-size: .88rem;
+    font-weight: 700;
+    color: #334155;
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+}
+.AV-texte p {
+    margin: 0;
+    color: #475569;
+    line-height: 1.5;
+    font-size: .9rem;
+}
+
+.AV-constats-titre {
+    margin-top: .4rem;
+    padding-top: .55rem;
+    border-top: 1px dashed #e2e8f0;
+}
+
+.AV-vide {
+    color: #64748b;
+    font-style: italic;
+    font-size: .88rem;
+    margin: 0;
+    padding: .5rem;
+    border: 1px dashed #cbd5e1;
+    border-radius: 8px;
+    text-align: center;
+}
+
+/* ---- Pied d'étape ---- */
+.AV-etape-pied {
+    display: flex;
+    justify-content: space-between;
+    gap: .5rem;
+    flex-wrap: wrap;
+    padding-top: .55rem;
+    border-top: 1px solid #eef1f5;
+}
+
+.AV-aide {
+    font-size: .8rem;
+    color: #64748b;
+}
+
+/* ---- Boutons ---- */
+.AV-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .4rem;
+    padding: .55rem 1rem;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    font: inherit;
+    font-weight: 600;
+    font-size: .88rem;
+    cursor: pointer;
+    transition: background .15s, box-shadow .15s;
+}
+.AV-btn--primaire {
+    background: #1f4e9c;
+    color: #fff;
+    border-color: #1f4e9c;
+}
+.AV-btn--primaire:hover { background: #163b78; }
+
+.AV-btn--secondaire {
+    background: #fff;
+    color: #1f4e9c;
+    border-color: #1f4e9c;
+}
+.AV-btn--secondaire:hover { background: #e0edff; }
+
+.AV-btn--petit {
+    padding: .35rem .7rem;
+    font-size: .82rem;
+    justify-self: start;
+}
+
+.AV-pied {
+    display: flex;
+    gap: .6rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+/* ---- Alertes / Chargement ---- */
+.AV-alerte {
+    display: flex;
+    align-items: flex-start;
+    gap: .5rem;
+    padding: .7rem .9rem;
+    border-radius: 8px;
+    font-size: .9rem;
+}
+.AV-alerte--erreur {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+}
+.AV-alerte--info {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1e40af;
+}
+
+.AV-chargement {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    padding: 2rem;
+    color: #64748b;
+}
+.AV-spin {
+    animation: AV-spin .8s linear infinite;
+}
+@keyframes AV-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 640px) {
+    .AV-resume-grille { grid-template-columns: 1fr; }
+    .AV-etape-pied { flex-direction: column; }
+    .AV-pied { flex-direction: column-reverse; }
+    .AV-pied .AV-btn { width: 100%; }
+}

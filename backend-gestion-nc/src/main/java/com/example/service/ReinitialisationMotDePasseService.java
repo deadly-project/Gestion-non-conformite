@@ -49,18 +49,21 @@ public class ReinitialisationMotDePasseService {
     private final PasswordEncoder passwordEncoder;
     private final NotificationEmailService emailService;
     private final ApplicationEventPublisher eventPublisher;
+    private final JournalActionsService journal;
 
     public ReinitialisationMotDePasseService(
             UtilisateurRepository utilisateurRepository,
             DemandeReinitialisationRepository demandeRepository,
             PasswordEncoder passwordEncoder,
             NotificationEmailService emailService,
-            ApplicationEventPublisher eventPublisher) {
+            ApplicationEventPublisher eventPublisher,
+            JournalActionsService journal) {
         this.utilisateurRepository = utilisateurRepository;
         this.demandeRepository = demandeRepository;
         this.passwordEncoder = passwordEncoder;
         this.emailService = emailService;
         this.eventPublisher = eventPublisher;
+        this.journal = journal;
     }
 
     // ------------------------------------------------------------------
@@ -89,6 +92,9 @@ public class ReinitialisationMotDePasseService {
         DemandeReinitialisation demande = new DemandeReinitialisation();
         demande.setUtilisateur(utilisateur);
         demande = demandeRepository.save(demande);
+
+        journal.enregistrer(utilisateur.getId(), "REQUEST_RESET_PASSWORD", "REINITIALISATION", demande.getId(),
+                java.util.Map.of("matricule", utilisateur.getMatricule()));
 
         // Notification admin (WebSocket) + accusé de réception : après le commit, en asynchrone
         eventPublisher.publishEvent(new DemandeReinitialisationRecueEvent(
@@ -142,6 +148,10 @@ public class ReinitialisationMotDePasseService {
                             + "Le mot de passe n'a PAS été modifié : réessayez plus tard.");
         }
 
+        Users admin = resoudreActeur(administrateur);
+        journal.enregistrer(admin == null ? null : admin.getId(), "VALIDATE_RESET_PASSWORD", "REINITIALISATION",
+                demande.getId(), java.util.Map.of("matricule", utilisateur.getMatricule()));
+
         DemandeReinitialisationResponse reponse = DemandeReinitialisationResponse.from(demande);
         eventPublisher.publishEvent(new DemandeReinitialisationTraiteeEvent(
                 reponse, utilisateur.getEmail(), utilisateur.getPrenom(), utilisateur.getNom()));
@@ -160,6 +170,10 @@ public class ReinitialisationMotDePasseService {
         demande.setDateTraitement(LocalDateTime.now());
         demande.setTraitePar(resoudreActeur(administrateur));
         demandeRepository.save(demande);
+
+        Users adminRefus = resoudreActeur(administrateur);
+        journal.enregistrer(adminRefus == null ? null : adminRefus.getId(), "REFUSE_RESET_PASSWORD",
+                "REINITIALISATION", demande.getId(), java.util.Map.of("matricule", utilisateur.getMatricule()));
 
         DemandeReinitialisationResponse reponse = DemandeReinitialisationResponse.from(demande);
         eventPublisher.publishEvent(new DemandeReinitialisationTraiteeEvent(

@@ -69,29 +69,8 @@ public class NcService {
                     "La date de détection ne peut pas être dans le futur");
         }
 
-        // 1. Validation et génération automatique de la référence au format ANNEE-MOIS-ID (ex: 2026-06-1)
-        String referenceSaisie;
-        if (req.reference() == null || req.reference().isBlank()) {
-            int anneeCourante = LocalDate.now().getYear();
-            int moisCourant = LocalDate.now().getMonthValue();
-
-            long dernierId = ncRepository.count();
-            long prochainId = dernierId + 1;
-
-            referenceSaisie = String.format("%d-%02d-%d", anneeCourante, moisCourant, prochainId);
-
-            // Sécurité en cas de doublon rare
-            while (ncRepository.findByReference(referenceSaisie).isPresent()) {
-                prochainId++;
-                referenceSaisie = String.format("%d-%02d-%d", anneeCourante, moisCourant, prochainId);
-            }
-        } else {
-            referenceSaisie = req.reference().trim();
-            if (ncRepository.findByReference(referenceSaisie).isPresent()) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cette référence existe déjà");
-            }
-        }
-
+        // 1. La référence n'est plus saisie par le déclarant : elle est attribuée
+        //    plus tard par le responsable qualité dans le formulaire de traitement.
         // 2. Gestion du processus : Existant ou création à la volée
         Long processusIdFinal;
         if (req.processusId() != null) {
@@ -129,7 +108,7 @@ public class NcService {
 
         // 4. Enregistrement de la non-conformité
         NonConformite nc = new NonConformite();
-        nc.setReference(referenceSaisie);
+        nc.setReference(null);
         nc.setTitre(req.titre().trim());
         nc.setDateDetection(req.dateDetection());
         nc.setDeclarantId(declarant.getId());
@@ -153,14 +132,17 @@ public class NcService {
         pieceJointeService.enregistrer(nc.getId(), fichiers, declarant.getId(), maintenant);
 
         // 7. Journalisation
-        journal.enregistrer(declarant.getId(), "CREATE_NC", "NON_CONFORMITE", nc.getId(),
-                Map.of("reference", nc.getReference(), "piecesJointes", fichiers.size()));
+        Map<String, Object> detailsCreation = new java.util.HashMap<>();
+        detailsCreation.put("reference", nc.getReference() == null ? "" : nc.getReference());
+        detailsCreation.put("referenceAttenteAttribution", nc.getReference() == null);
+        detailsCreation.put("piecesJointes", fichiers.size());
+        journal.enregistrer(declarant.getId(), "ADD_NC", "NON_CONFORMITE", nc.getId(), detailsCreation);
 
 
         // 8. Notification WebSocket après validation de la transaction
         Map<String, Object> payloadNotification = Map.of(
                 "id", nc.getId(),
-                "reference", nc.getReference(),
+                "reference", nc.getReference() == null ? "" : nc.getReference(),
                 "titre", nc.getTitre(),
                 "dateCreation", maintenant.toString()
         );
@@ -204,10 +186,14 @@ public class NcService {
         nc.setDateModification(LocalDateTime.now());
         ncRepository.save(nc);
 
+        journal.enregistrer(declarant.getId(), "UPDATE_NC", "NON_CONFORMITE", nc.getId(), Map.of(
+                "titre", nc.getTitre(),
+                "graviteDeclaree", nc.getGraviteDeclaree()));
+
         // Notification WebSocket en temps réel
         Map<String, Object> payloadNotification = Map.of(
                 "id", nc.getId(),
-                "reference", nc.getReference(),
+                "reference", nc.getReference() == null ? "" : nc.getReference(),
                 "titre", nc.getTitre(),
                 "type", "MODIFICATION_NC"
         );

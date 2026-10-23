@@ -32,6 +32,7 @@ public class NcTraitementService {
     private final IshikawaAnalyseRepository ishikawaRepository;
     private final ActionCapaRepository capaRepository;
     private final NcStatutHistoriqueRepository statutHistoriqueRepository;
+    private final NcCompteurRepository compteurRepository;
     private final NcConsultationService consultationService;
     private final JournalActionsService journal;
 
@@ -41,6 +42,7 @@ public class NcTraitementService {
                                IshikawaAnalyseRepository ishikawaRepository,
                                ActionCapaRepository capaRepository,
                                NcStatutHistoriqueRepository statutHistoriqueRepository,
+                               NcCompteurRepository compteurRepository,
                                NcConsultationService consultationService,
                                JournalActionsService journal) {
         this.ncRepository = ncRepository;
@@ -49,6 +51,7 @@ public class NcTraitementService {
         this.ishikawaRepository = ishikawaRepository;
         this.capaRepository = capaRepository;
         this.statutHistoriqueRepository = statutHistoriqueRepository;
+        this.compteurRepository = compteurRepository;
         this.consultationService = consultationService;
         this.journal = journal;
     }
@@ -95,6 +98,24 @@ public class NcTraitementService {
 
         LocalDateTime maintenant = LocalDateTime.now();
 
+        // --- Attribution de la référence (une seule fois, par le responsable qualité) ---
+        String referenceAttribuee = null;
+        if (nc.getReference() == null || nc.getReference().isBlank()) {
+            if (Boolean.TRUE.equals(req.genererReference())) {
+                referenceAttribuee = genererReferenceUnique();
+            } else if (req.reference() != null && !req.reference().isBlank()) {
+                String proposee = req.reference().trim();
+                if (ncRepository.findByReference(proposee).isPresent()) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cette référence existe déjà");
+                }
+                referenceAttribuee = proposee;
+            } else {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Attribuez une référence à cette non-conformité ou cochez la génération automatique");
+            }
+            nc.setReference(referenceAttribuee);
+        }
+
         // --- Champs de qualification ---
         if (req.gravite() != null) {
             nc.setGravite(req.gravite().name());
@@ -140,13 +161,34 @@ public class NcTraitementService {
         nc.setDateModification(maintenant);
         ncRepository.save(nc);
 
-        journal.enregistrer(acteur.getId(), "TRAITEMENT_NC", "NON_CONFORMITE", nc.getId(), Map.of(
-                "statutAvant", statutActuel.name(),
-                "statutApres", req.statut().name(),
-                "gravite", req.gravite() != null ? req.gravite().name() : "",
-                "etapesCapa", req.etapesCapa().size()));
+        Map<String, Object> detailsTraitement = new HashMap<>();
+        detailsTraitement.put("statutAvant", statutActuel.name());
+        detailsTraitement.put("statutApres", req.statut().name());
+        detailsTraitement.put("gravite", req.gravite() != null ? req.gravite().name() : "");
+        detailsTraitement.put("etapesCapa", req.etapesCapa().size());
+        if (referenceAttribuee != null) detailsTraitement.put("referenceAttribuee", referenceAttribuee);
+        journal.enregistrer(acteur.getId(), "UPDATE_NC", "NON_CONFORMITE", nc.getId(), detailsTraitement);
 
         return consultationService.detail(nc.getId());
+    }
+
+    /** Référence unique au format NC-ANNEE-NNNN, séquence annuelle verrouillée. */
+    private String genererReferenceUnique() {
+        int annee = LocalDate.now().getYear();
+        compteurRepository.creerSiAbsent(annee);
+        NcCompteur compteur = compteurRepository.findByAnneeForUpdate(annee)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                        "Compteur de références indisponible"));
+
+        int numero = compteur.getDernierNumero() == null ? 1 : compteur.getDernierNumero() + 1;
+        String reference = String.format("NC-%d-%04d", annee, numero);
+        while (ncRepository.findByReference(reference).isPresent()) {
+            numero++;
+            reference = String.format("NC-%d-%04d", annee, numero);
+        }
+        compteur.setDernierNumero(numero);
+        compteurRepository.save(compteur);
+        return reference;
     }
 
     // ------------------------------------------------------------------

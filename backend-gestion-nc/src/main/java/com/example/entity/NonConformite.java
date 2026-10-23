@@ -14,7 +14,7 @@ public class NonConformite {
     @Column(name = "id", nullable = false, updatable = false)
     private Long id;
 
-@Column(name="reference", nullable=false, unique=true, length=20) private String reference;
+@Column(name="reference", unique=true, length=20) private String reference;
 @Column(name="titre", nullable=false, length=200) private String titre;
 @Column(name="date_detection", nullable=false) private LocalDate dateDetection;
 @Column(name="declarant_id", nullable=false) private Long declarantId;

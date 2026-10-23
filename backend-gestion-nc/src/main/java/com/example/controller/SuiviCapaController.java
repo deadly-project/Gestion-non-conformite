@@ -29,6 +29,12 @@ public class SuiviCapaController {
         this.utilisateurRepository = utilisateurRepository;
     }
 
+    @GetMapping
+    @PreAuthorize("hasAnyRole('RESPONSABLE_QUALITE','ADMINISTRATEUR')")
+    public java.util.List<CapaListItem> listerToutes() {
+        return service.listerToutes();
+    }
+
     @GetMapping("/nc/{ncId}/suivi")
     @PreAuthorize("hasAnyRole('RESPONSABLE_QUALITE','ADMINISTRATEUR')")
     public SuiviNc suivi(@PathVariable Long ncId) {

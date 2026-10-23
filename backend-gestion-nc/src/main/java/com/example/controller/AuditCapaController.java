@@ -1,10 +1,15 @@
 package com.example.controller;
 
+import com.example.entity.Users;
+import com.example.repository.UtilisateurRepository;
 import com.example.service.AuditCapaService;
 import com.example.service.AuditCapaService.EntreePlanning;
 import com.example.service.AuditCapaService.PlanificationRequest;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
@@ -19,9 +24,11 @@ import java.util.Map;
 public class AuditCapaController {
 
     private final AuditCapaService service;
+    private final UtilisateurRepository utilisateurRepository;
 
-    public AuditCapaController(AuditCapaService service) {
+    public AuditCapaController(AuditCapaService service, UtilisateurRepository utilisateurRepository) {
         this.service = service;
+        this.utilisateurRepository = utilisateurRepository;
     }
 
     @GetMapping
@@ -30,14 +37,21 @@ public class AuditCapaController {
     }
 
     @PostMapping
-    public List<EntreePlanning> planifier(@Valid @RequestBody PlanificationRequest request) {
-        return service.planifier(request);
+    public List<EntreePlanning> planifier(@Valid @RequestBody PlanificationRequest request,
+                                          Authentication authentication) {
+        return service.planifier(request, utilisateurCourant(authentication));
     }
 
     // Renvoie un corps JSON (et non un 204 vide) pour que apiRequest puisse toujours le lire.
     @DeleteMapping("/{id}")
-    public Map<String, Long> retirer(@PathVariable Long id) {
-        service.retirer(id);
+    public Map<String, Long> retirer(@PathVariable Long id, Authentication authentication) {
+        service.retirer(id, utilisateurCourant(authentication));
         return Map.of("id", id);
+    }
+
+    private Users utilisateurCourant(Authentication authentication) {
+        return utilisateurRepository.findByEmailIgnoreCase(authentication.getName())
+                .filter(u -> Boolean.TRUE.equals(u.getActif()))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Session invalide"));
     }
 }

@@ -4,14 +4,17 @@ import com.example.dto.audit.AuditDtos.*;
 import com.example.entity.Users;
 import com.example.repository.UtilisateurRepository;
 import com.example.service.AuditeurAuditService;
+import com.example.service.ConstatPieceJointeService;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -25,10 +28,14 @@ import java.util.List;
 public class AuditeurAuditController {
 
     private final AuditeurAuditService service;
+    private final ConstatPieceJointeService pieceJointeService;
     private final UtilisateurRepository utilisateurRepository;
 
-    public AuditeurAuditController(AuditeurAuditService service, UtilisateurRepository utilisateurRepository) {
+    public AuditeurAuditController(AuditeurAuditService service,
+                                   ConstatPieceJointeService pieceJointeService,
+                                   UtilisateurRepository utilisateurRepository) {
         this.service = service;
+        this.pieceJointeService = pieceJointeService;
         this.utilisateurRepository = utilisateurRepository;
     }
 
@@ -85,6 +92,31 @@ public class AuditeurAuditController {
     public AuditDetail supprimerConstat(@PathVariable Long id, @PathVariable Long constatId,
                                         Authentication authentication) {
         return service.supprimerConstat(id, constatId, utilisateurCourant(authentication));
+    }
+
+    /** Preuves facultatives d'un constat : images (JPEG/PNG/WebP) et/ou PDF. */
+    @PostMapping(value = "/{id}/constats/{constatId}/pieces-jointes", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('AUDITEUR')")
+    public AuditDetail ajouterPieceJointe(@PathVariable Long id, @PathVariable Long constatId,
+                                          @RequestPart(value = "images", required = false) List<MultipartFile> images,
+                                          @RequestPart(value = "pdf", required = false) MultipartFile pdf,
+                                          Authentication authentication) {
+        return pieceJointeService.ajouter(id, constatId, images, pdf, utilisateurCourant(authentication));
+    }
+
+    /** Téléchargement protégé d'une preuve de constat. */
+    @GetMapping("/pieces-jointes/{pieceId}")
+    @PreAuthorize("hasAnyRole('AUDITEUR','RESPONSABLE_QUALITE','ADMINISTRATEUR')")
+    public ResponseEntity<org.springframework.core.io.Resource> pieceJointe(@PathVariable Long pieceId,
+                                                                           Authentication authentication) {
+        ConstatPieceJointeService.PieceJointeLue pj =
+                pieceJointeService.lire(pieceId, utilisateurCourant(authentication));
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(pj.mime()))
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.inline().filename(pj.nom(), StandardCharsets.UTF_8).build().toString())
+                .header("X-Content-Type-Options", "nosniff")
+                .body(pj.ressource());
     }
 
     @PostMapping("/{id}/reouvrir")

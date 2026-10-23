@@ -100,7 +100,7 @@ public class AuditeurAuditService {
             capaRepository.save(etape);
         }
 
-        journal.enregistrer(auditeur.getId(), "DEMARRER_AUDIT", "AUDIT", audit.getId(),
+        journal.enregistrer(auditeur.getId(), "START_AUDIT", "AUDIT", audit.getId(),
                 Map.of("titre", audit.getTitre()));
         publier(etape, audit, "AUDIT_DEMARRE", nom(auditeur) + " a démarré l'audit « " + audit.getTitre() + " »");
         return construireDetail(audit);
@@ -116,7 +116,7 @@ public class AuditeurAuditService {
         audit.setDateModification(LocalDateTime.now());
         auditRepository.save(audit);
 
-        journal.enregistrer(auditeur.getId(), "ENREGISTRER_COMPTE_RENDU", "AUDIT", audit.getId(),
+        journal.enregistrer(auditeur.getId(), "UPDATE_AUDIT", "AUDIT", audit.getId(),
                 Map.of("titre", audit.getTitre()));
         publier(etapeDe(audit), audit, "AUDIT_ENREGISTRE",
                 nom(auditeur) + " a mis à jour le compte rendu de « " + audit.getTitre() + " »");
@@ -135,7 +135,7 @@ public class AuditeurAuditService {
         constat.setAuteurId(auditeur.getId());
         constatRepository.save(constat);
 
-        journal.enregistrer(auditeur.getId(), "AJOUTER_CONSTAT", "CONSTAT_AUDIT", constat.getId(),
+        journal.enregistrer(auditeur.getId(), "ADD_CONSTAT", "CONSTAT_AUDIT", constat.getId(),
                 Map.of("auditId", audit.getId(), "type", req.type()));
         publier(etapeDe(audit), audit, "CONSTAT_AJOUTE",
                 nom(auditeur) + " a ajouté un constat (" + libelleConstat(req.type()) + ") sur « " + audit.getTitre() + " »");
@@ -152,7 +152,7 @@ public class AuditeurAuditService {
         constat.setDescriptionConstat(req.description().trim());
         constatRepository.save(constat);
 
-        journal.enregistrer(auditeur.getId(), "MODIFIER_CONSTAT", "CONSTAT_AUDIT", constat.getId(),
+        journal.enregistrer(auditeur.getId(), "UPDATE_CONSTAT", "CONSTAT_AUDIT", constat.getId(),
                 Map.of("auditId", audit.getId(), "type", req.type()));
         publier(etapeDe(audit), audit, "CONSTAT_MODIFIE",
                 nom(auditeur) + " a modifié un constat de « " + audit.getTitre() + " »");
@@ -167,7 +167,7 @@ public class AuditeurAuditService {
         ConstatAudit constat = constatDe(audit, constatId);
         constatRepository.delete(constat);   // ses commentaires partent avec lui (ON DELETE CASCADE)
 
-        journal.enregistrer(auditeur.getId(), "SUPPRIMER_CONSTAT", "CONSTAT_AUDIT", constatId,
+        journal.enregistrer(auditeur.getId(), "DELETE_CONSTAT", "CONSTAT_AUDIT", constatId,
                 Map.of("auditId", audit.getId()));
         publier(etapeDe(audit), audit, "CONSTAT_SUPPRIME",
                 nom(auditeur) + " a supprimé un constat de « " + audit.getTitre() + " »");
@@ -214,7 +214,7 @@ public class AuditeurAuditService {
             capaRepository.save(etape);
         }
 
-        journal.enregistrer(auditeur.getId(), "TERMINER_AUDIT", "AUDIT", audit.getId(),
+        journal.enregistrer(auditeur.getId(), "CLOSE_AUDIT", "AUDIT", audit.getId(),
                 Map.of("titre", audit.getTitre(),
                         "resultat", audit.getResultatTraitement() == null ? "" : audit.getResultatTraitement()));
         publier(etape, audit, "AUDIT_TERMINE",
@@ -265,7 +265,7 @@ public class AuditeurAuditService {
         audit.setStatut(EN_COURS);
         audit.setDateModification(LocalDateTime.now());
         auditRepository.save(audit);
-        journal.enregistrer(auditeur.getId(), "REOUVRIR_AUDIT", "AUDIT", audit.getId(),
+        journal.enregistrer(auditeur.getId(), "REOPEN_AUDIT", "AUDIT", audit.getId(),
                 Map.of("resultatPrecedent", audit.getResultatTraitement(), "echeance", etape.getDateEcheance().toString()));
         publier(etape, audit, "AUDIT_REOUVERT",
                 nom(auditeur) + " a réouvert l'audit « " + audit.getTitre() + " » pour reprendre le traitement");

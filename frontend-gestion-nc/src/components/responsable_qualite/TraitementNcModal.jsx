@@ -6,13 +6,18 @@ import {
     GRAVITES, ORDRE_STATUT, STATUTS_NC, STATUTS_TRAITEMENT,
     TYPES_ACTION, dateAujourdhui,
 } from "../constantes";
+import {
+    FaFingerprint, FaWandMagicSparkles, FaUserShield, FaLayerGroup,
+    FaTriangleExclamation, FaCircleInfo, FaListCheck, FaPlus,
+    FaTrashCan, FaFloppyDisk, FaXmark, FaCalendarDays, FaSpinner,
+} from "react-icons/fa6";
+import "./TraitementNcModal.css";
 
 export default function TraitementNcModal({ ncId, utilisateur, onFermer, onEnregistre }) {
     const [detail, setDetail] = useState(null);
     const [categories, setCategories] = useState([]);
     const [form, setForm] = useState(null);
 
-    const [confirmation, setConfirmation] = useState(null);
     const [erreurs, setErreurs] = useState([]);
     const [erreurServeur, setErreurServeur] = useState("");
     const [chargement, setChargement] = useState(true);
@@ -27,6 +32,8 @@ export default function TraitementNcModal({ ncId, utilisateur, onFermer, onEnreg
                 setDetail(d);
                 setCategories(c);
                 setForm({
+                    reference: d.reference || "",
+                    genererReference: false,
                     gravite: d.gravite || d.graviteDeclaree || "",
                     categorieId: d.categorieId ? String(d.categorieId) : "",
                     statut: ORDRE_STATUT[d.statut] >= 1 ? d.statut : "OUVERT",
@@ -44,7 +51,6 @@ export default function TraitementNcModal({ ncId, utilisateur, onFermer, onEnreg
 
     function maj(patch) {
         setForm((f) => ({ ...f, ...patch }));
-        setConfirmation(null);
     }
 
     function ajouterEtape() {
@@ -68,10 +74,12 @@ export default function TraitementNcModal({ ncId, utilisateur, onFermer, onEnreg
 
     function valider() {
         const problemes = [];
+        if (!detail?.reference && !form.genererReference && !form.reference.trim()) {
+            problemes.push("Attribuez une référence ou cochez la génération automatique.");
+        }
         if (!form.gravite) problemes.push("Choisissez la gravité.");
         if (!form.categorieId) problemes.push("Choisissez la nature.");
         if (!form.statut) problemes.push("Choisissez le statut.");
-
         const delai = Number(form.delaisJours);
         if (!Number.isInteger(delai) || delai < 1 || delai > 365) {
             problemes.push("Le délai doit être compris entre 1 et 365 jours.");
@@ -86,14 +94,17 @@ export default function TraitementNcModal({ ncId, utilisateur, onFermer, onEnreg
             return;
         }
         setEnregistrement(true);
+        setErreurServeur("");
         try {
             const corps = {
+                reference: form.reference.trim() || null,
+                genererReference: form.genererReference,
                 gravite: form.gravite,
                 categorieId: Number(form.categorieId),
                 statut: form.statut,
                 auditeurId: form.auditeur ? form.auditeur.id : null,
                 delaisJours: Number(form.delaisJours),
-                analyses: [], // Les analyses se font désormais dans leur propre page indépendante si besoin, ou on transmet les existantes
+                analyses: [],
                 etapesCapa: form.etapesCapa.map((e) => ({
                     id: e.id ?? null,
                     type: e.type,
@@ -111,34 +122,110 @@ export default function TraitementNcModal({ ncId, utilisateur, onFermer, onEnreg
             setErreurServeur(error.message || "L'enregistrement a échoué.");
         } finally {
             setEnregistrement(false);
-            setConfirmation(null);
         }
     }
 
-    const statutsProposes = detail ? STATUTS_TRAITEMENT.filter((s) => ORDRE_STATUT[s] >= ORDRE_STATUT[detail.statut]) : [];
+    const statutsProposes = detail
+        ? STATUTS_TRAITEMENT.filter((s) => ORDRE_STATUT[s] >= ORDRE_STATUT[detail.statut])
+        : [];
 
     const pied = form && (
-        <>
+        <div className="TRT-pied">
             {erreurs.length > 0 && (
-                <div className="nc-erreur"><ul className="nc-erreurs">{erreurs.map((e) => <li key={e}>{e}</li>)}</ul></div>
+                <div className="TRT-alerte TRT-alerte--erreur">
+                    <FaCircleInfo />
+                    <ul className="TRT-erreurs">
+                        {erreurs.map((e) => <li key={e}>{e}</li>)}
+                    </ul>
+                </div>
             )}
-            {erreurServeur && <p className="nc-erreur">{erreurServeur}</p>}
-            <div className="nc-actions">
-                <button type="button" className="nc-btn" disabled={enregistrement} onClick={terminer}>
-                    {enregistrement ? "Enregistrement..." : "Enregistrer le traitement"}
+            {erreurServeur && (
+                <div className="TRT-alerte TRT-alerte--erreur">
+                    <FaTriangleExclamation />
+                    <span>{erreurServeur}</span>
+                </div>
+            )}
+            <div className="TRT-pied-actions">
+                <button
+                    type="button"
+                    className="TRT-btn TRT-btn--primaire"
+                    disabled={enregistrement}
+                    onClick={terminer}
+                >
+                    {enregistrement ? <><FaSpinner className="TRT-spin" /> Enregistrement...</> : <><FaFloppyDisk /> Enregistrer le traitement</>}
                 </button>
-                <button type="button" className="nc-btn nc-btn-secondaire" onClick={onFermer}>Annuler</button>
+                <button type="button" className="TRT-btn TRT-btn--secondaire" onClick={onFermer}>
+                    <FaXmark /> Annuler
+                </button>
             </div>
-        </>
+        </div>
     );
 
     return (
-        <Modal titre={detail ? `Traitement / Qualification : ${detail.reference}` : "Traitement"} onFermer={onFermer} pied={pied}>
-            {chargement && <p>Chargement...</p>}
+        <Modal
+            titre={detail ? `Traitement / Qualification : ${detail.reference}` : "Traitement"}
+            onFermer={onFermer}
+            pied={pied}
+        >
+            {chargement && (
+                <div className="TRT-chargement">
+                    <FaSpinner className="TRT-spin" /> Chargement...
+                </div>
+            )}
+
             {form && detail && (
-                <>
-                    <section className="nc-section">
-                        <h3>Qualification</h3>
+                <div className="TRT-contenu">
+                    {/* --- Section Référence --- */}
+                    <section className="TRT-section">
+                        <header className="TRT-section-entete">
+                            <FaFingerprint className="TRT-section-icone" />
+                            <h3>Référence de la non-conformité</h3>
+                        </header>
+
+                        {detail.reference ? (
+                            <div className="TRT-champ">
+                                <label>Référence attribuée</label>
+                                <input value={detail.reference} readOnly className="TRT-input TRT-input--readonly" />
+                                <span className="TRT-aide">La référence est déjà attribuée et ne peut plus être modifiée.</span>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="TRT-champ">
+                                    <label htmlFor="referenceNc">Référence à attribuer</label>
+                                    <input
+                                        id="referenceNc"
+                                        className="TRT-input"
+                                        value={form.reference}
+                                        maxLength={20}
+                                        disabled={form.genererReference}
+                                        placeholder="Ex : NC-2026-0001"
+                                        onChange={(e) => maj({ reference: e.target.value })}
+                                    />
+                                </div>
+                                <label className="TRT-checkbox">
+                                    <input
+                                        type="checkbox"
+                                        checked={form.genererReference}
+                                        onChange={(e) => maj({
+                                            genererReference: e.target.checked,
+                                            reference: e.target.checked ? "" : form.reference,
+                                        })}
+                                    />
+                                    <FaWandMagicSparkles className="TRT-icone-inline" />
+                                    Générer automatiquement la référence (format NC-ANNÉE-NNNN)
+                                </label>
+                                <span className="TRT-aide">La référence sera attribuée à l'enregistrement du traitement.</span>
+                            </>
+                        )}
+                    </section>
+
+                    {/* --- Section Qualification --- */}
+                    <section className="TRT-section">
+                        <header className="TRT-section-entete">
+                            <FaUserShield className="TRT-section-icone" />
+                            <h3>Qualification</h3>
+                        </header>
+
                         <RechercheUtilisateur
                             id="auditeur"
                             label="Auditeur à attribuer"
@@ -146,60 +233,142 @@ export default function TraitementNcModal({ ncId, utilisateur, onFermer, onEnreg
                             valeur={form.auditeur}
                             onChange={(u) => maj({ auditeur: u })}
                         />
-                        <div className="nc-grille">
-                            <div className="nc-champ">
-                                <label htmlFor="nature">Nature *</label>
-                                <select id="nature" value={form.categorieId} onChange={(e) => maj({ categorieId: e.target.value })}>
+
+                        <div className="TRT-grille">
+                            <div className="TRT-champ">
+                                <label htmlFor="nature"><FaLayerGroup /> Nature *</label>
+                                <select
+                                    id="nature"
+                                    className="TRT-input"
+                                    value={form.categorieId}
+                                    onChange={(e) => maj({ categorieId: e.target.value })}
+                                >
                                     <option value="">— Choisir —</option>
-                                    {categories.map((c) => (<option key={c.id} value={c.id}>{c.libelle}</option>))}
+                                    {categories.map((c) => (
+                                        <option key={c.id} value={c.id}>{c.libelle}</option>
+                                    ))}
                                 </select>
                             </div>
-                            <div className="nc-champ">
-                                <label htmlFor="graviteRetenue">Gravité retenue *</label>
-                                <select id="graviteRetenue" value={form.gravite} onChange={(e) => maj({ gravite: e.target.value })}>
+
+                            <div className="TRT-champ">
+                                <label htmlFor="graviteRetenue"><FaTriangleExclamation /> Gravité retenue *</label>
+                                <select
+                                    id="graviteRetenue"
+                                    className="TRT-input"
+                                    value={form.gravite}
+                                    onChange={(e) => maj({ gravite: e.target.value })}
+                                >
                                     <option value="">— Choisir —</option>
-                                    {Object.entries(GRAVITES).map(([code, libelle]) => (<option key={code} value={code}>{libelle}</option>))}
+                                    {Object.entries(GRAVITES).map(([code, libelle]) => (
+                                        <option key={code} value={code}>{libelle}</option>
+                                    ))}
                                 </select>
                             </div>
-                            <div className="nc-champ">
-                                <label htmlFor="statut">Statut d'ouverture *</label>
-                                <select id="statut" value={form.statut} onChange={(e) => maj({ statut: e.target.value })}>
-                                    {statutsProposes.map((s) => (<option key={s} value={s}>{STATUTS_NC[s]}</option>))}
+
+                            <div className="TRT-champ">
+                                <label htmlFor="statut"><FaListCheck /> Statut d'ouverture *</label>
+                                <select
+                                    id="statut"
+                                    className="TRT-input"
+                                    value={form.statut}
+                                    onChange={(e) => maj({ statut: e.target.value })}
+                                >
+                                    {statutsProposes.map((s) => (
+                                        <option key={s} value={s}>{STATUTS_NC[s]}</option>
+                                    ))}
                                 </select>
                             </div>
-                            <div className="nc-champ">
-                                <label htmlFor="delai">Délai de traitement (jours) *</label>
-                                <input id="delai" type="number" min={1} max={365} value={form.delaisJours} onChange={(e) => maj({ delaisJours: e.target.value })} />
+
+                            <div className="TRT-champ">
+                                <label htmlFor="delai"><FaCalendarDays /> Délai de traitement (jours) *</label>
+                                <input
+                                    id="delai"
+                                    type="number"
+                                    min={1}
+                                    max={365}
+                                    className="TRT-input"
+                                    value={form.delaisJours}
+                                    onChange={(e) => maj({ delaisJours: e.target.value })}
+                                />
                             </div>
                         </div>
                     </section>
 
-                    <section className="nc-section">
-                        <h3>Plan d'actions (CAPA)</h3>
-                        {form.etapesCapa.map((e, index) => (
-                            <div className="nc-etape" key={e.cle} style={{ marginBottom: "1rem", padding: "10px", border: "1px solid #ddd" }}>
-                                <strong>Étape {index + 1}</strong>
-                                <button type="button" className="nc-btn nc-btn-secondaire nc-btn-petit" onClick={() => retirerEtape(e.cle)} style={{ float: "right" }}>Retirer</button>
-                                <div className="nc-champ" style={{ marginTop: "10px" }}>
-                                    <label>Type</label>
-                                    <select value={e.type} onChange={(ev) => majEtape(e.cle, { type: ev.target.value })}>
-                                        {Object.entries(TYPES_ACTION).map(([code, libelle]) => (<option key={code} value={code}>{libelle}</option>))}
-                                    </select>
-                                </div>
-                                <div className="nc-champ">
-                                    <label>Action à mener</label>
-                                    <textarea rows={2} value={e.description} onChange={(ev) => majEtape(e.cle, { description: ev.target.value })} />
-                                </div>
-                                <div className="nc-champ">
-                                    <label>Échéance</label>
-                                    <input type="date" value={e.dateEcheance} min={dateAujourdhui()} onChange={(ev) => majEtape(e.cle, { dateEcheance: ev.target.value })} />
-                                </div>
-                                <p className="nc-aide">Responsable : {e.responsable?.prenom} {e.responsable?.nom} (Figé)</p>
-                            </div>
-                        ))}
-                        <button type="button" className="nc-btn nc-btn-secondaire" onClick={ajouterEtape}>+ Ajouter une étape CAPA</button>
+                    {/* --- Section CAPA --- */}
+                    <section className="TRT-section">
+                        <header className="TRT-section-entete">
+                            <FaListCheck className="TRT-section-icone" />
+                            <h3>Plan d'actions (CAPA)</h3>
+                            <span className="TRT-compteur">{form.etapesCapa.length}</span>
+                        </header>
+
+                        {form.etapesCapa.length === 0 && (
+                            <p className="TRT-vide">Aucune étape CAPA définie pour l'instant.</p>
+                        )}
+
+                        <div className="TRT-capa-liste">
+                            {form.etapesCapa.map((e, index) => (
+                                <article className="TRT-capa" key={e.cle}>
+                                    <header className="TRT-capa-entete">
+                                        <span className="TRT-capa-numero">Étape {index + 1}</span>
+                                        <button
+                                            type="button"
+                                            className="TRT-btn TRT-btn--danger TRT-btn--petit"
+                                            onClick={() => retirerEtape(e.cle)}
+                                            title="Retirer cette étape"
+                                        >
+                                            <FaTrashCan /> Retirer
+                                        </button>
+                                    </header>
+
+                                    <div className="TRT-grille">
+                                        <div className="TRT-champ">
+                                            <label>Type</label>
+                                            <select
+                                                className="TRT-input"
+                                                value={e.type}
+                                                onChange={(ev) => majEtape(e.cle, { type: ev.target.value })}
+                                            >
+                                                {Object.entries(TYPES_ACTION).map(([code, libelle]) => (
+                                                    <option key={code} value={code}>{libelle}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="TRT-champ">
+                                            <label><FaCalendarDays /> Échéance</label>
+                                            <input
+                                                type="date"
+                                                className="TRT-input"
+                                                value={e.dateEcheance}
+                                                min={dateAujourdhui()}
+                                                onChange={(ev) => majEtape(e.cle, { dateEcheance: ev.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="TRT-champ">
+                                        <label>Action à mener</label>
+                                        <textarea
+                                            rows={3}
+                                            className="TRT-input"
+                                            value={e.description}
+                                            onChange={(ev) => majEtape(e.cle, { description: ev.target.value })}
+                                            placeholder="Décrivez l'action corrective/préventive..."
+                                        />
+                                    </div>
+
+                                    <p className="TRT-aide">
+                                        Responsable : <strong>{e.responsable?.prenom} {e.responsable?.nom}</strong> (figé)
+                                    </p>
+                                </article>
+                            ))}
+                        </div>
+
+                        <button type="button" className="TRT-btn TRT-btn--secondaire" onClick={ajouterEtape}>
+                            <FaPlus /> Ajouter une étape CAPA
+                        </button>
                     </section>
-                </>
+                </div>
             )}
         </Modal>
     );

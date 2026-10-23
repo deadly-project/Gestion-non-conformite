@@ -11,7 +11,8 @@ import {
     FiClipboard, 
     FiCheckSquare, 
     FiAlertTriangle, 
-    FiCalendar, 
+    FiCalendar,
+    FiClock,
     FiLogOut 
 } from "react-icons/fi";
 import "./Nav.css";
@@ -22,24 +23,27 @@ const liensParRole = {
         { to: "/admin/utilisateurs/nouveau", label: "Créer un Utilisateur", icon: <FiUserPlus /> },
         { to: "/admin/utilisateurs", label: "Liste des Utilisateurs", icon: <FiUsers />, end: true },
         { to: "/admin/reinitialisations", label: "Demande de réinitialisation", icon: <FiRotateCcw /> },
+        { to: "/historique", label: "Historique", icon: <FiClock /> },
     ],
 
     DECLARANT: [
         { to: "/declarant/non-conformites", label: "Mes déclarations", icon: <FiFileText /> },
         { to: "/declarant/non-conformites/nouvelle", label: "Déclarer une non-conformité", icon: <FiPlusCircle /> },
+        { to: "/historique", label: "Mon historique", icon: <FiClock /> },
         { to: "/parametres", label: "Paramètres", icon: <FiSettings /> },
     ],
 
     AUDITEUR: [
         { to: "/auditeur/audits", label: "Mes audits", icon: <FiClipboard /> },
         { to: "/auditeur/constats", label: "Constats d'audit", icon: <FiCheckSquare /> },
+        { to: "/historique", label: "Mon historique", icon: <FiClock /> },
         { to: "/parametres", label: "Paramètres", icon: <FiSettings /> },
     ],
 
     RESPONSABLE_QUALITE: [
         { to: "/responsable/non-conformites", label: "Non-conformités", icon: <FiAlertTriangle /> },
         { to: "/responsable/capa", label: "Actions correctives (CAPA)", icon: <FiCheckSquare /> },
-        { to: "/responsable/audits", label: "Planification des audits", icon: <FiCalendar /> },
+        { to: "/historique", label: "Mon historique", icon: <FiClock /> },
         { to: "/parametres", label: "Paramètres", icon: <FiSettings /> },
     ],
 };

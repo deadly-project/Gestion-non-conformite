@@ -18,14 +18,17 @@ public class ComptePersonnelService {
     private final UtilisateurRepository repository;
     private final PasswordEncoder passwordEncoder;
     private final NotificationEmailService emailService;
+    private final JournalActionsService journal;
 
     public ComptePersonnelService(
             UtilisateurRepository repository,
             PasswordEncoder passwordEncoder,
-            NotificationEmailService emailService) {
+            NotificationEmailService emailService,
+            JournalActionsService journal) {
         this.repository = repository;
         this.passwordEncoder = passwordEncoder;
         this.emailService = emailService;
+        this.journal = journal;
     }
 
     private Users utilisateurConnecte(Authentication authentication) {
@@ -68,8 +71,12 @@ public class ComptePersonnelService {
         user.setPrenom(request.prenom().trim());
         user.setEmail(email);
         user.setMatricule(matricule);
+        Users enregistre = repository.save(user);
 
-        return UtilisateurResponse.from(repository.save(user));
+        journal.enregistrer(user.getId(), "UPDATE_PROFILE", "UTILISATEUR", user.getId(),
+                java.util.Map.of("matricule", enregistre.getMatricule(), "email", enregistre.getEmail()));
+
+        return UtilisateurResponse.from(enregistre);
     }
 
     @Transactional
@@ -107,6 +114,9 @@ public class ComptePersonnelService {
         user.setMotDePasse(
                 passwordEncoder.encode(request.nouveauMotDePasse()));
         repository.save(user);
+
+        journal.enregistrer(user.getId(), "UPDATE_PASSWORD", "UTILISATEUR", user.getId(),
+                java.util.Map.of("matricule", user.getMatricule()));
 
         // Une notification est envoyée après la modification.
         try {

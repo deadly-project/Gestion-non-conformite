@@ -118,11 +118,27 @@ public class PieceJointeService {
         }
     }
 
+    /**
+     * Enregistre un fichier déjà validé dans un dossier donné et renvoie sa clé relative.
+     * Utilisé par les pièces jointes des constats d'audit.
+     */
+    public String stocker(String dossier, FichierValide f) {
+        String cle = dossier + "/" + UUID.randomUUID() + "." + f.extension();
+        Path cible = resoudre(cle);
+        ecrire(f.fichier(), cible);
+        supprimerSiRollback(cible);
+        return cle;
+    }
+
     // ------------------------------------------------------------------
     // 3. Lecture
     // ------------------------------------------------------------------
     public Resource lire(NcAttachment pj) {
-        Path chemin = resoudre(pj.getFileUrl());
+        return lireParCle(pj.getFileUrl());
+    }
+
+    public Resource lireParCle(String cle) {
+        Path chemin = resoudre(cle);
         if (!Files.isReadable(chemin)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Fichier introuvable sur le stockage");
         }

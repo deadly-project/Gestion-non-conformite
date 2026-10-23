@@ -25,14 +25,17 @@ public class UtilisateurService {
     private final UtilisateurRepository repository;
     private final PasswordEncoder passwordEncoder;
     private final NotificationEmailService notificationEmailService;
+    private final JournalActionsService journal;
 
     public UtilisateurService(
             UtilisateurRepository repository,
             PasswordEncoder passwordEncoder,
-            NotificationEmailService notificationEmailService) {
+            NotificationEmailService notificationEmailService,
+            JournalActionsService journal) {
         this.repository = repository;
         this.passwordEncoder = passwordEncoder;
         this.notificationEmailService = notificationEmailService;
+        this.journal = journal;
     }
 
     private String normaliserEmail(String email) {
@@ -61,7 +64,7 @@ public class UtilisateurService {
     }
 
     @Transactional
-    public UtilisateurCreationResponse creer(UtilisateurCreationRequest request) {
+    public UtilisateurCreationResponse creer(UtilisateurCreationRequest request, Long acteurId) {
         String email = normaliserEmail(request.email());
         Integer matricule = request.matricule();
 
@@ -91,6 +94,9 @@ public class UtilisateurService {
                 .build();
 
         Users cree = repository.save(u);
+
+        journal.enregistrer(acteurId, "ADD_USER", "UTILISATEUR", cree.getId(), java.util.Map.of(
+                "matricule", cree.getMatricule(), "role", cree.getRole(), "email", cree.getEmail()));
 
         UtilisateurCreeEvent event = new UtilisateurCreeEvent(
                 cree.getId(),
@@ -122,7 +128,7 @@ public class UtilisateurService {
     }
 
     @Transactional
-    public UtilisateurResponse modifier(Long id, UtilisateurModificationRequest request) {
+    public UtilisateurResponse modifier(Long id, UtilisateurModificationRequest request, Long acteurId) {
         Users u = rechercher(id);
         String email = normaliserEmail(request.email());
         Integer matricule = request.matricule();
@@ -143,16 +149,23 @@ public class UtilisateurService {
         u.setPrenom(request.prenom().trim());
         u.setEmail(email);
         u.setMatricule(matricule);
+        String ancienRole = u.getRole();
         u.setRole(validerRole(request.role()));
+        Users enregistre = repository.save(u);
 
-        return UtilisateurResponse.from(repository.save(u));
+        journal.enregistrer(acteurId, "UPDATE_USER", "UTILISATEUR", enregistre.getId(), java.util.Map.of(
+                "matricule", enregistre.getMatricule(), "roleAvant", ancienRole, "roleApres", enregistre.getRole()));
+
+        return UtilisateurResponse.from(enregistre);
     }
 
     @Transactional
-    public void desactiver(Long id) {
+    public void desactiver(Long id, Long acteurId) {
         Users u = rechercher(id);
         u.setActif(false);
         repository.save(u);
+        journal.enregistrer(acteurId, "DISABLE_USER", "UTILISATEUR", u.getId(),
+                java.util.Map.of("matricule", u.getMatricule()));
     }
 
     private Users rechercher(Long id) {
@@ -161,9 +174,11 @@ public class UtilisateurService {
     }
 
     @Transactional
-    public void activer(Long id) {
+    public void activer(Long id, Long acteurId) {
         Users u = rechercher(id);
         u.setActif(true);
         repository.save(u);
+        journal.enregistrer(acteurId, "ENABLE_USER", "UTILISATEUR", u.getId(),
+                java.util.Map.of("matricule", u.getMatricule()));
     }
 }

@@ -45,9 +45,10 @@ body {
 }
 
 /* Sur mobile, le sidebar disparaît, donc le contenu prend toute la largeur */
-@media (max-width: 900px) {
+@media (max-width: 950px) {
     .app-content-wrapper {
         margin-left: 0;
+        margin-top: 50px;
         width: 100%;
     }
 }

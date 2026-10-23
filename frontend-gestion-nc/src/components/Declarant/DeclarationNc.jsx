@@ -29,7 +29,6 @@ function formaterDescriptionProcessus(description) {
 }
 
 export default function DeclarationNc({ utilisateur }) {
-    const [reference, setReference] = useState("");
     const [titre, setTitre] = useState("");
     const [dateDetection, setDateDetection] = useState(dateAujourdhui());
     const [gravite, setGravite] = useState("");
@@ -187,7 +186,6 @@ export default function DeclarationNc({ utilisateur }) {
     function reinitialiser() {
         images.forEach((i) => URL.revokeObjectURL(i.url));
         arreterCamera();
-        setReference("");
         setTitre("");
         setDateDetection(dateAujourdhui());
         setProcessusSelectionneId("");
@@ -213,7 +211,6 @@ export default function DeclarationNc({ utilisateur }) {
             const formData = new FormData();
             
             const payload = {
-                reference: reference.trim() !== "" ? reference.trim() : null,
                 titre: titre.trim(),
                 dateDetection,
                 graviteDeclaree: gravite,
@@ -254,8 +251,9 @@ export default function DeclarationNc({ utilisateur }) {
             <main className="nc-page">
                 <h1>Déclaration enregistrée</h1>
                 <p className="nc-succes" role="status">
-                    Votre non-conformité a bien été enregistrée sous la référence{" "}
-                    <strong>{cree.reference}</strong>. Elle sera examinée par le responsable qualité.
+                    Votre non-conformité a bien été enregistrée
+                    {cree.reference ? <> sous la référence <strong>{cree.reference}</strong></> : <> sans référence</>}.
+                    Le responsable qualité lui attribuera une référence lors de son traitement.
                 </p>
                 <button type="button" className="nc-btn" onClick={reinitialiser}>
                     Déclarer une autre non-conformité
@@ -270,16 +268,6 @@ export default function DeclarationNc({ utilisateur }) {
 
             <form className="nc-form" onSubmit={envoyer}>
                 <div className="nc-grille">
-                    <div className="nc-champ">
-                        <label htmlFor="reference">Référence (Facultative)</label>
-                        <input 
-                            id="reference" 
-                            value={reference} 
-                            onChange={(e) => setReference(e.target.value)} 
-                            placeholder="Laisser vide pour génération automatique"
-                        />
-                    </div>
-
                     <div className="nc-champ">
                         <label htmlFor="auteur">Auteur de la déclaration</label>
                         <input

@@ -52,8 +52,7 @@ export default function MesNonConformites({ utilisateur }) {
                 titre,
                 descriptionDetaillee: description,
                 graviteDeclaree: gravite,
-                dateDetection: ncSelectionnee.dateDetection,
-                reference: ncSelectionnee.reference
+                dateDetection: ncSelectionnee.dateDetection
             };
 
             await apiRequest(`/api/non-conformites/${ncSelectionnee.id}/declarant`, {
@@ -104,7 +103,7 @@ export default function MesNonConformites({ utilisateur }) {
                                     const gravite = nc.gravite || nc.graviteDeclaree;
                                     return (
                                         <tr key={nc.id}>
-                                            <td>{nc.reference}</td>
+                                            <td>{nc.reference || <span style={{ color: "#b45309", fontStyle: "italic" }}>En attente d'attribution</span>}</td>
                                             <td>{nc.titre}</td>
                                             <td>{formaterDate(nc.dateDetection)}</td>
                                             <td><span className={`nc-badge nc-badge-${nc.statut}`}>{STATUTS_NC[nc.statut] ?? nc.statut}</span></td>
@@ -136,7 +135,11 @@ export default function MesNonConformites({ utilisateur }) {
 
             {/* Modal de visualisation détaillée de la NC */}
             {ncVisualisationId && (
-                <VisualisationNcModal ncId={ncVisualisationId} onFermer={() => setNcVisualisationId(null)} />
+                <VisualisationNcModal
+                    ncId={ncVisualisationId}
+                    actionsResponsable={false}
+                    onFermer={() => setNcVisualisationId(null)}
+                />
             )}
 
             {/* Modal de modification simple */}

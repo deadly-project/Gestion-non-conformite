@@ -3,6 +3,7 @@ package com.example.service;
 import com.example.entity.ActionCapa;
 import com.example.entity.Audit;
 import com.example.entity.NonConformite;
+import com.example.entity.Users;
 import com.example.repository.ActionCapaRepository;
 import com.example.repository.AuditRepository;
 import com.example.repository.NonConformiteRepository;
@@ -40,13 +41,16 @@ public class AuditCapaService {
     private final AuditRepository auditRepository;
     private final ActionCapaRepository capaRepository;
     private final NonConformiteRepository ncRepository;
+    private final JournalActionsService journal;
 
     public AuditCapaService(AuditRepository auditRepository,
                             ActionCapaRepository capaRepository,
-                            NonConformiteRepository ncRepository) {
+                            NonConformiteRepository ncRepository,
+                            JournalActionsService journal) {
         this.auditRepository = auditRepository;
         this.capaRepository = capaRepository;
         this.ncRepository = ncRepository;
+        this.journal = journal;
     }
 
     @Transactional(readOnly = true)
@@ -60,7 +64,7 @@ public class AuditCapaService {
      * Une étape déjà planifiée ce jour-là est ignorée. Tout ou rien en cas de refus.
      */
     @Transactional
-    public List<EntreePlanning> planifier(PlanificationRequest req) {
+    public List<EntreePlanning> planifier(PlanificationRequest req, Users acteur) {
         if (req.date().isBefore(LocalDate.now())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Impossible de planifier un audit avant aujourd'hui");
@@ -113,12 +117,17 @@ public class AuditCapaService {
                     .build());
         }
 
-        return auditRepository.saveAll(aCreer).stream().map(this::versDto).toList();
+        List<Audit> crees = auditRepository.saveAll(aCreer);
+        for (Audit audit : crees) {
+            journal.enregistrer(acteur.getId(), "ADD_AUDIT_PLANNING", "AUDIT", audit.getId(),
+                    Map.of("etapeId", audit.getActionCapaId(), "date", audit.getDatePlanifiee().toString()));
+        }
+        return crees.stream().map(this::versDto).toList();
     }
 
     /** Retire un audit de CAPA ; seuls les audits encore PLANIFIE peuvent l'être. */
     @Transactional
-    public void retirer(Long id) {
+    public void retirer(Long id, Users acteur) {
         Audit audit = auditRepository.findById(id)
                 .filter(a -> a.getActionCapaId() != null)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Audit introuvable"));
@@ -126,6 +135,8 @@ public class AuditCapaService {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Un audit en cours ou terminé ne peut pas être retiré du calendrier");
         }
+        journal.enregistrer(acteur.getId(), "DELETE_AUDIT_PLANNING", "AUDIT", audit.getId(),
+                Map.of("etapeId", audit.getActionCapaId()));
         auditRepository.delete(audit);
     }
 

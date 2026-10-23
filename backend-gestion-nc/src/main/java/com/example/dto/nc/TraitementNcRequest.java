@@ -18,5 +18,8 @@ public record TraitementNcRequest(
         Long auditeurId,
         @NotNull @Min(1) @Max(365) Integer delaisJours,
         @NotNull @Size(max = 5) List<@Valid AnalyseIshikawaDto> analyses,
-        @NotNull @Size(max = 30) List<@Valid EtapeCapaDto> etapesCapa
+        @NotNull @Size(max = 30) List<@Valid EtapeCapaDto> etapesCapa,
+        // Attribution de la référence par le responsable qualité (uniquement si la NC n'en a pas).
+        @Size(max = 20) String reference,
+        Boolean genererReference
 ) {}

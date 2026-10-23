@@ -30,8 +30,12 @@ public final class AuditDtos {
 
     public record CommentaireDto(Long id, PersonneResume auteur, String commentaire, LocalDateTime date) {}
 
+    /** Pièce jointe (preuve) d'un constat d'audit. */
+    public record PieceJointeConstatDto(Long id, String nom, String type, String mime, Long taille) {}
+
     public record ConstatDto(Long id, String type, String description, PersonneResume auteur,
-                             LocalDateTime date, List<CommentaireDto> commentaires) {}
+                             LocalDateTime date, List<CommentaireDto> commentaires,
+                             List<PieceJointeConstatDto> piecesJointes) {}
 
     /** Page de réalisation d'un audit. modifiable = false : motifBlocage explique pourquoi. */
     public record AuditDetail(AuditItem audit, String compteRendu, String traitementRealise,
@@ -52,6 +56,11 @@ public final class AuditDtos {
                           int nbEtapes, int nbValidees, int nbNonEfficaces,
                           int nbRealisees, int nbPartielles, int nbNonRealisees,
                           boolean peutCloturer, String motifNonCloturable, List<EtapeSuivi> etapes) {}
+
+    /** Ligne de la page « Actions correctives (CAPA) » : toutes les étapes attribuées. */
+    public record CapaListItem(Long id, Long ncId, String ncReference, String ncTitre, String ncStatut,
+                               int numero, String type, String description, PersonneResume responsable,
+                               LocalDate dateEcheance, String statut, Boolean efficace) {}
 
     // ------------------------------------------------------------------ requêtes
     public record ConstatRequest(

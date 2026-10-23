@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { apiRequest } from "../../api/api";
+import { apiBlob, apiRequest } from "../../api/api";
 import { STATUTS_ACTION, TYPES_ACTION, formaterDate } from "../constantes";
 import ConstatsAudit from "./ConstatsAudit";
 import Modal from "../Modal";
@@ -154,6 +154,49 @@ export default function AuditRealisationPage() {
         executer(`/constats/${constat.id}`, { method: "PUT", body: JSON.stringify(valeurs) });
 
     const supprimerConstat = (constat) => executer(`/constats/${constat.id}`, { method: "DELETE" });
+
+    async function ajouterPieceJointeConstat(constat, fichiers) {
+        const donnees = new FormData();
+        let pdfAjoute = false;
+        for (const fichier of fichiers) {
+            if (fichier.type === "application/pdf" && !pdfAjoute) {
+                donnees.append("pdf", fichier);
+                pdfAjoute = true;
+            } else if (fichier.type !== "application/pdf") {
+                donnees.append("images", fichier);
+            }
+        }
+        if (!donnees.has("images") && !donnees.has("pdf")) return false;
+
+        setOccupe(true);
+        setErreur("");
+        setMessage("");
+        try {
+            const d = await apiRequest(`/api/audits/${id}/constats/${constat.id}/pieces-jointes`, {
+                method: "POST",
+                body: donnees,
+            });
+            setDetail(d);
+            setMessage("Preuve ajoutée au constat.");
+            return true;
+        } catch (e) {
+            setErreur(e.message || "Impossible d'ajouter la preuve.");
+            return false;
+        } finally {
+            setOccupe(false);
+        }
+    }
+
+    async function ouvrirPieceJointe(piece) {
+        try {
+            const blob = await apiBlob(`/api/audits/pieces-jointes/${piece.id}`);
+            const url = URL.createObjectURL(blob);
+            window.open(url, "_blank", "noopener");
+            setTimeout(() => URL.revokeObjectURL(url), 60000);
+        } catch (e) {
+            setErreur(e.message || "Impossible d'ouvrir la pièce jointe.");
+        }
+    }
 
     if (chargement) return <main className="nc-page"><p>Chargement...</p></main>;
     if (!detail) {
@@ -317,6 +360,8 @@ export default function AuditRealisationPage() {
                     constats={detail.constats}
                     onModifier={peutSaisir ? modifierConstat : undefined}
                     onSupprimer={peutSaisir ? supprimerConstat : undefined}
+                    onAjouterPieceJointe={peutSaisir ? ajouterPieceJointeConstat : undefined}
+                    onOuvrirPieceJointe={ouvrirPieceJointe}
                 />
 
                 {peutSaisir && (

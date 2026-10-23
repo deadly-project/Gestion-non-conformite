@@ -17,6 +17,7 @@ public class AuditAssembleur {
 
     private final ConstatAuditRepository constatRepository;
     private final CommentaireConstatRepository commentaireRepository;
+    private final ConstatPieceJointeRepository pieceJointeRepository;
     private final ActionCapaRepository capaRepository;
     private final NonConformiteRepository ncRepository;
     private final ProcessusRepository processusRepository;
@@ -24,12 +25,14 @@ public class AuditAssembleur {
 
     public AuditAssembleur(ConstatAuditRepository constatRepository,
                            CommentaireConstatRepository commentaireRepository,
+                           ConstatPieceJointeRepository pieceJointeRepository,
                            ActionCapaRepository capaRepository,
                            NonConformiteRepository ncRepository,
                            ProcessusRepository processusRepository,
                            UtilisateurRepository utilisateurRepository) {
         this.constatRepository = constatRepository;
         this.commentaireRepository = commentaireRepository;
+        this.pieceJointeRepository = pieceJointeRepository;
         this.capaRepository = capaRepository;
         this.ncRepository = ncRepository;
         this.processusRepository = processusRepository;
@@ -49,19 +52,26 @@ public class AuditAssembleur {
         if (auditIds.isEmpty()) return Map.of();
 
         List<ConstatAudit> constats = constatRepository.findByAuditIdInOrderByDateConstatAscIdAsc(auditIds);
+        List<Long> constatIds = constats.stream().map(ConstatAudit::getId).toList();
         Map<Long, List<CommentaireConstat>> commentaires = constats.isEmpty() ? Map.of()
-                : commentaireRepository.findByConstatIdInOrderByDateCommentaireAscIdAsc(
-                        constats.stream().map(ConstatAudit::getId).toList())
+                : commentaireRepository.findByConstatIdInOrderByDateCommentaireAscIdAsc(constatIds)
                 .stream().collect(Collectors.groupingBy(CommentaireConstat::getConstatId));
+        Map<Long, List<ConstatPieceJointe>> pieces = constats.isEmpty() ? Map.of()
+                : pieceJointeRepository.findByConstatIdInOrderByIdAsc(constatIds)
+                .stream().collect(Collectors.groupingBy(ConstatPieceJointe::getConstatId));
 
         Map<Long, List<ConstatDto>> resultat = new HashMap<>();
         for (ConstatAudit c : constats) {
             List<CommentaireDto> fil = commentaires.getOrDefault(c.getId(), List.of()).stream()
                     .map(k -> new CommentaireDto(k.getId(), personne(k.getAuteurId()), k.getCommentaire(), k.getDateCommentaire()))
                     .toList();
+            List<PieceJointeConstatDto> preuves = pieces.getOrDefault(c.getId(), List.of()).stream()
+                    .map(p -> new PieceJointeConstatDto(p.getId(), p.getNomOriginal(), p.getFileType(),
+                            p.getMimeType(), p.getTailleOctets()))
+                    .toList();
             resultat.computeIfAbsent(c.getAuditId(), k -> new ArrayList<>())
                     .add(new ConstatDto(c.getId(), c.getTypeConstat(), c.getDescriptionConstat(),
-                            personne(c.getAuteurId()), c.getDateConstat(), fil));
+                            personne(c.getAuteurId()), c.getDateConstat(), fil, preuves));
         }
         return resultat;
     }

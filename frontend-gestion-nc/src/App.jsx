@@ -25,11 +25,13 @@ import ListeNonConformites from "./components/responsable_qualite/ListeNonConfor
 
 import AnalyseCausesPage from "./components/responsable_qualite/AnalyseCausesPage";
 import CapaPage from "./components/responsable_qualite/CapaPage";
+import ListeCapaPage from "./components/responsable_qualite/ListeCapaPage";
 import MesNonConformites from "./components/Declarant/MesNonConformites";
 
 import MesAuditsPage from "./components/Auditeur/MesAuditsPage";
 import AuditRealisationPage from "./components/Auditeur/AuditRealisationPage";
 import SuiviCapaPage from "./components/responsable_qualite/SuiviCapaPage";
+import HistoriquePage from "./components/HistoriquePage";
 
 import './App.css'
 
@@ -190,6 +192,11 @@ function Application() {
 
                     {/* ROUTE COMMUNE À TOUS LES UTILISATEURS CONNECTÉS */}
                     <Route
+                        path="/historique"
+                        element={<HistoriquePage utilisateur={utilisateur} />}
+                    />
+
+                    <Route
                         path="/parametres"
                         element={
                             <Parametres
@@ -287,7 +294,7 @@ function Application() {
                         />
                         <Route
                             path="/responsable/capa"
-                            element={<Page titre="Actions correctives et préventives" />}
+                            element={<ListeCapaPage />}
                         />
                         <Route
                             path="/responsable/audits"

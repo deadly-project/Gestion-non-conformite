@@ -1,0 +1,248 @@
+/* =====================================================
+   TraitementNcModal — préfixe TRT-
+   ===================================================== */
+
+.TRT-contenu {
+    display: grid;
+    gap: 1.25rem;
+}
+
+/* ---- Sections ---- */
+.TRT-section {
+    background: #fff;
+    border: 1px solid #e5e9ef;
+    border-radius: 12px;
+    padding: 1rem 1.1rem;
+    display: grid;
+    gap: .85rem;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .03);
+}
+
+.TRT-section-entete {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    padding-bottom: .55rem;
+    border-bottom: 1px solid #eef1f5;
+}
+.TRT-section-entete h3 {
+    margin: 0;
+    font-size: 1.02rem;
+    font-weight: 700;
+    color: #0f172a;
+    flex: 1;
+}
+.TRT-section-icone {
+    color: #1f4e9c;
+    font-size: 1.05rem;
+    flex-shrink: 0;
+}
+
+.TRT-compteur {
+    background: #1f4e9c;
+    color: #fff;
+    font-size: .78rem;
+    font-weight: 700;
+    padding: .1rem .55rem;
+    border-radius: 999px;
+}
+
+/* ---- Champs ---- */
+.TRT-grille {
+    display: grid;
+    gap: .85rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.TRT-champ {
+    display: flex;
+    flex-direction: column;
+    gap: .3rem;
+}
+.TRT-champ label {
+    font-weight: 600;
+    font-size: .85rem;
+    color: #334155;
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+}
+.TRT-input {
+    padding: .55rem .7rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font: inherit;
+    width: 100%;
+    box-sizing: border-box;
+    background: #fff;
+    transition: border-color .15s, box-shadow .15s;
+}
+.TRT-input:focus {
+    outline: none;
+    border-color: #1f4e9c;
+    box-shadow: 0 0 0 3px rgba(31, 78, 156, .15);
+}
+.TRT-input--readonly {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.TRT-aide {
+    font-size: .82rem;
+    color: #64748b;
+    margin: 0;
+}
+
+.TRT-checkbox {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    font-size: .9rem;
+    cursor: pointer;
+    padding: .5rem .65rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+}
+.TRT-checkbox input { cursor: pointer; }
+.TRT-icone-inline { color: #7c3aed; }
+
+/* ---- Cartes CAPA ---- */
+.TRT-capa-liste {
+    display: grid;
+    gap: .85rem;
+}
+.TRT-capa {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: .9rem 1rem;
+    background: #fafbfc;
+    display: grid;
+    gap: .75rem;
+    transition: border-color .15s, box-shadow .15s;
+}
+.TRT-capa:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, .04);
+}
+
+.TRT-capa-entete {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: .5rem;
+}
+.TRT-capa-numero {
+    font-weight: 700;
+    font-size: .9rem;
+    color: #1f4e9c;
+    background: #e0edff;
+    padding: .15rem .65rem;
+    border-radius: 999px;
+}
+
+.TRT-vide {
+    color: #64748b;
+    font-style: italic;
+    text-align: center;
+    padding: .75rem;
+    border: 1px dashed #cbd5e1;
+    border-radius: 8px;
+}
+
+/* ---- Boutons ---- */
+.TRT-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .4rem;
+    padding: .55rem 1rem;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    font: inherit;
+    font-weight: 600;
+    font-size: .9rem;
+    cursor: pointer;
+    transition: background .15s, box-shadow .15s, transform .05s;
+}
+.TRT-btn:active { transform: translateY(1px); }
+.TRT-btn:disabled { opacity: .55; cursor: not-allowed; }
+
+.TRT-btn--primaire {
+    background: #1f4e9c;
+    color: #fff;
+    border-color: #1f4e9c;
+}
+.TRT-btn--primaire:hover:not(:disabled) { background: #163b78; }
+
+.TRT-btn--secondaire {
+    background: #fff;
+    color: #1f4e9c;
+    border-color: #1f4e9c;
+}
+.TRT-btn--secondaire:hover:not(:disabled) { background: #e0edff; }
+
+.TRT-btn--danger {
+    background: #fff;
+    color: #b91c1c;
+    border-color: #fca5a5;
+}
+.TRT-btn--danger:hover:not(:disabled) { background: #fef2f2; }
+
+.TRT-btn--petit {
+    padding: .3rem .65rem;
+    font-size: .82rem;
+}
+
+/* ---- Pied / Alertes ---- */
+.TRT-pied {
+    display: grid;
+    gap: .65rem;
+}
+.TRT-pied-actions {
+    display: flex;
+    gap: .6rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.TRT-alerte {
+    display: flex;
+    align-items: flex-start;
+    gap: .5rem;
+    padding: .6rem .8rem;
+    border-radius: 8px;
+    font-size: .88rem;
+}
+.TRT-alerte--erreur {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+}
+.TRT-erreurs {
+    margin: 0;
+    padding-left: 1.1rem;
+}
+
+.TRT-chargement {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    padding: 2rem;
+    color: #64748b;
+}
+
+.TRT-spin {
+    animation: TRT-spin .8s linear infinite;
+}
+@keyframes TRT-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 640px) {
+    .TRT-grille { grid-template-columns: 1fr; }
+    .TRT-pied-actions { flex-direction: column-reverse; }
+    .TRT-pied-actions .TRT-btn { width: 100%; }
+}

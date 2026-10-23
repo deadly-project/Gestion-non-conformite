@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
-import { apiRequest } from "../../api/api";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { apiBlob, apiRequest } from "../../api/api";
 import { useNotificationsAdmin } from "../../hooks/useNotificationsAdmin";   // adapter le chemin si besoin
 import { STATUTS_ACTION, TYPES_ACTION, formaterDate } from "../constantes";
 
@@ -23,6 +23,8 @@ const TOPIC_CAPA = "/topic/admin/capa";
 export default function SuiviCapaPage() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const etapeDemandee = searchParams.get("etape");
 
     const [suivi, setSuivi] = useState(null);
     const [chargement, setChargement] = useState(true);
@@ -41,14 +43,18 @@ export default function SuiviCapaPage() {
             setErreur("");
             if (premierChargement.current) {   // à l'arrivée, on déplie les étapes prêtes à être validées
                 premierChargement.current = false;
-                setOuvertes(new Set(donnees.etapes.filter((e) => e.validable).map((e) => e.id)));
+                const aOuvrir = new Set(donnees.etapes.filter((e) => e.validable).map((e) => e.id));
+                if (etapeDemandee && donnees.etapes.some((e) => String(e.id) === String(etapeDemandee))) {
+                    aOuvrir.add(Number(etapeDemandee));
+                }
+                setOuvertes(aOuvrir);
             }
         } catch (e) {
             setErreur(e.message || "Impossible de charger le suivi.");
         } finally {
             setChargement(false);
         }
-    }, [id]);
+    }, [id, etapeDemandee]);
 
     useEffect(() => {
         premierChargement.current = true;
@@ -57,6 +63,12 @@ export default function SuiviCapaPage() {
     }, [charger]);
 
     useEffect(() => () => clearTimeout(minuterie.current), []);
+
+    useEffect(() => {
+        if (!suivi || !etapeDemandee) return;
+        const cible = document.getElementById(`suivi-etape-${etapeDemandee}`);
+        if (cible) cible.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, [suivi, etapeDemandee]);
 
     // Temps réel : chaque événement concernant cette NC déclenche un rechargement (regroupé sur 300 ms)
     const surEvenement = useCallback((message) => {
@@ -95,6 +107,17 @@ export default function SuiviCapaPage() {
     async function cloturer(commentaire) {
         const ok = await executer(`/api/capa/nc/${id}/cloture`, { method: "POST", body: JSON.stringify({ commentaire }) });
         if (ok) setDialogueCloture(false);
+    }
+
+    async function ouvrirPieceJointe(piece) {
+        try {
+            const blob = await apiBlob(`/api/audits/pieces-jointes/${piece.id}`);
+            const url = URL.createObjectURL(blob);
+            window.open(url, "_blank", "noopener");
+            setTimeout(() => URL.revokeObjectURL(url), 60000);
+        } catch (e) {
+            setErreur(e.message || "Impossible d'ouvrir la pièce jointe.");
+        }
     }
 
     function basculer(etapeId) {
@@ -186,6 +209,7 @@ export default function SuiviCapaPage() {
                             onCommenter={suivi.cloturee ? undefined : commenter}
                             onValider={valider}
                             onAnnuler={annulerValidation}
+                            onOuvrirPieceJointe={ouvrirPieceJointe}
                         />
                     ))}
                 </ol>
@@ -204,12 +228,12 @@ export default function SuiviCapaPage() {
 }
 
 // ----------------------------------------------------------------------------------------------
-function CarteEtape({ etape, ncId, ouverte, onBasculer, cloturee, occupe, onCommenter, onValider, onAnnuler }) {
+function CarteEtape({ etape, ncId, ouverte, onBasculer, cloturee, occupe, onCommenter, onValider, onAnnuler, onOuvrirPieceJointe }) {
     const idCorps = `suivi-etape-${etape.id}`;
     const nbConstats = etape.audits.reduce((total, a) => total + a.constats.length, 0);
 
     return (
-        <li className={`suivi-etape${etape.statut === "VERIFIEE" ? " suivi-etape--validee" : ""}`}>
+        <li id={`suivi-etape-${etape.id}`} className={`suivi-etape${etape.statut === "VERIFIEE" ? " suivi-etape--validee" : ""}`}>
             <button type="button" className="suivi-etape-entete" aria-expanded={ouverte} aria-controls={idCorps} onClick={onBasculer}>
                 <span className="suivi-etape-titre">
                     <strong>Étape {etape.numero}</strong>
@@ -243,7 +267,7 @@ function CarteEtape({ etape, ncId, ouverte, onBasculer, cloturee, occupe, onComm
                     ) : (
                         <ul className="suivi-audits">
                             {etape.audits.map((audit) => (
-                                <AuditBloc key={audit.id} audit={audit} onCommenter={onCommenter} />
+                                <AuditBloc key={audit.id} audit={audit} onCommenter={onCommenter} onOuvrirPieceJointe={onOuvrirPieceJointe} />
                             ))}
                         </ul>
                     )}
@@ -255,7 +279,7 @@ function CarteEtape({ etape, ncId, ouverte, onBasculer, cloturee, occupe, onComm
     );
 }
 
-function AuditBloc({ audit, onCommenter }) {
+function AuditBloc({ audit, onCommenter, onOuvrirPieceJointe }) {
     return (
         <li className="suivi-audit">
             <div className="suivi-audit-entete">
@@ -285,7 +309,11 @@ function AuditBloc({ audit, onCommenter }) {
             )}
 
             <h4 className="suivi-texte-titre">Constats ({audit.constats.length})</h4>
-            <ConstatsAudit constats={audit.constats} onCommenter={onCommenter} />
+            <ConstatsAudit
+                constats={audit.constats}
+                onCommenter={onCommenter}
+                onOuvrirPieceJointe={onOuvrirPieceJointe}
+            />
         </li>
     );
 }
