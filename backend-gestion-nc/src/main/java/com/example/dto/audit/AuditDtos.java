@@ -50,6 +50,7 @@ public final class AuditDtos {
 
     public record SuiviNc(Long id, String reference, String titre, String statut, boolean cloturee,
                           int nbEtapes, int nbValidees, int nbNonEfficaces,
+                          int nbRealisees, int nbPartielles, int nbNonRealisees,
                           boolean peutCloturer, String motifNonCloturable, List<EtapeSuivi> etapes) {}
 
     // ------------------------------------------------------------------ requêtes

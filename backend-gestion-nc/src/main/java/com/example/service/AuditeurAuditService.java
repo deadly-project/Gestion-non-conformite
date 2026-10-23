@@ -206,7 +206,7 @@ public class AuditeurAuditService {
         audit.setDateModification(maintenant);
         auditRepository.save(audit);
 
-        if (etape != null && "REALISE".equals(audit.getResultatTraitement())
+        if (etape != null && audit.getResultatTraitement() != null
                 && !StatutAction.VERIFIEE.name().equals(etape.getStatutAction())) {
             etape.setStatutAction(StatutAction.TERMINEE.name());
             if (etape.getDateRealisation() == null) etape.setDateRealisation(LocalDate.now());
@@ -220,6 +220,55 @@ public class AuditeurAuditService {
         publier(etape, audit, "AUDIT_TERMINE",
                 nom(auditeur) + " a terminé l'audit « " + audit.getTitre() + " »"
                         + (audit.getResultatTraitement() == null ? "" : " : " + libelleResultat(audit.getResultatTraitement())));
+        return construireDetail(audit);
+    }
+
+    /**
+     * Réouvre un audit terminé si le traitement est partiel ou non réalisé,
+     * tant que l'échéance CAPA n'est pas dépassée.
+     */
+    @Transactional
+    public AuditDetail reouvrir(Long auditId, Users auditeur) {
+        if (!"AUDITEUR".equals(auditeur.getRole())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Réservé aux auditeurs");
+        }
+        Audit audit = trouver(auditId);
+        if (!audit.getAuditeurId().equals(auditeur.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cet audit ne vous est pas attribué");
+        }
+        if (!TERMINE.equals(audit.getStatut())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Seul un audit terminé peut être réouvert");
+        }
+        if (!"PARTIEL".equals(audit.getResultatTraitement())
+                && !"NON_REALISE".equals(audit.getResultatTraitement())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "La réouverture est réservée aux traitements partiels ou non réalisés");
+        }
+        ActionCapa etape = etapeDe(audit);
+        if (etape == null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cet audit n'est pas rattaché à une étape CAPA");
+        }
+        if (etape.getDateEcheance() == null || LocalDate.now().isAfter(etape.getDateEcheance())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "La date d'échéance du traitement est dépassée : réouverture impossible");
+        }
+        if (StatutAction.VERIFIEE.name().equals(etape.getStatutAction())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "L'étape CAPA a déjà été validée par le responsable qualité");
+        }
+        if (etape.getNcId() != null) {
+            NonConformite nc = ncRepository.findById(etape.getNcId()).orElse(null);
+            if (nc != null && StatutNc.CLOTUREE.name().equals(nc.getStatut())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "La non-conformité est clôturée");
+            }
+        }
+        audit.setStatut(EN_COURS);
+        audit.setDateModification(LocalDateTime.now());
+        auditRepository.save(audit);
+        journal.enregistrer(auditeur.getId(), "REOUVRIR_AUDIT", "AUDIT", audit.getId(),
+                Map.of("resultatPrecedent", audit.getResultatTraitement(), "echeance", etape.getDateEcheance().toString()));
+        publier(etape, audit, "AUDIT_REOUVERT",
+                nom(auditeur) + " a réouvert l'audit « " + audit.getTitre() + " » pour reprendre le traitement");
         return construireDetail(audit);
     }
 

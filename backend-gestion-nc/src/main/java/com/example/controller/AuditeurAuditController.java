@@ -87,6 +87,12 @@ public class AuditeurAuditController {
         return service.supprimerConstat(id, constatId, utilisateurCourant(authentication));
     }
 
+    @PostMapping("/{id}/reouvrir")
+    @PreAuthorize("hasRole('AUDITEUR')")
+    public AuditDetail reouvrir(@PathVariable Long id, Authentication authentication) {
+        return service.reouvrir(id, utilisateurCourant(authentication));
+    }
+
     @PostMapping("/{id}/terminer")
     @PreAuthorize("hasRole('AUDITEUR')")
     public AuditDetail terminer(@PathVariable Long id, @Valid @RequestBody CompteRenduRequest requete,

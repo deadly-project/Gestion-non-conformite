@@ -193,9 +193,8 @@ public class SuiviCapaService {
         if (audits.stream().anyMatch(a -> "EN_COURS".equals(a.getStatut()))) {
             return "Un audit est encore en cours sur cette étape";
         }
-        if (!StatutAction.TERMINEE.name().equals(etape.getStatutAction())) {
-            return "Aucun audit terminé n'atteste que le traitement a été réalisé";
-        }
+        boolean auditTermine = audits.stream().anyMatch(a -> "TERMINE".equals(a.getStatut()));
+        if (!auditTermine) return "Aucun audit terminé pour cette étape";
         return null;
     }
 
@@ -222,10 +221,22 @@ public class SuiviCapaService {
         List<EtapeSuivi> resultat = new ArrayList<>();
         int validees = 0;
         int nonEfficaces = 0;
+        int realisees = 0;
+        int partielles = 0;
+        int nonRealisees = 0;
 
         for (int i = 0; i < etapes.size(); i++) {
             ActionCapa e = etapes.get(i);
             List<Audit> auditsEtape = auditsParEtape.getOrDefault(e.getId(), List.of());
+
+            // Un seul résultat par étape : le dernier audit renseigné, pas chaque audit historique.
+            String dernierResultat = auditsEtape.stream()
+                    .filter(a -> "TERMINE".equals(a.getStatut()) && a.getResultatTraitement() != null)
+                    .max(Comparator.comparing(Audit::getDatePlanifiee).thenComparing(Audit::getId))
+                    .map(Audit::getResultatTraitement).orElse(null);
+            if ("REALISE".equals(dernierResultat)) realisees++;
+            else if ("PARTIEL".equals(dernierResultat)) partielles++;
+            else if ("NON_REALISE".equals(dernierResultat)) nonRealisees++;
 
             boolean verifiee = StatutAction.VERIFIEE.name().equals(e.getStatutAction());
             if (verifiee) {
@@ -250,7 +261,8 @@ public class SuiviCapaService {
 
         String motifCloture = cloturee ? "La non-conformité est déjà clôturée" : motifNonCloturable(etapes);
         return new SuiviNc(nc.getId(), nc.getReference(), nc.getTitre(), nc.getStatut(), cloturee,
-                etapes.size(), validees, nonEfficaces, motifCloture == null, motifCloture, resultat);
+                etapes.size(), validees, nonEfficaces, realisees, partielles, nonRealisees,
+                motifCloture == null, motifCloture, resultat);
     }
 
     // ------------------------------------------------------------------ outils

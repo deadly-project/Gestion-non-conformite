@@ -134,7 +134,7 @@ export default function SuiviCapaPage() {
                         Clôturer la non-conformité
                     </button>
                     <span id="suivi-motif-cloture" className="suivi-motif">
-                        {suivi.cloturee ? "Non-conformité clôturée" : suivi.peutCloturer ? "Toutes les étapes sont validées" : suivi.motifNonCloturable}
+                        {suivi.cloturee ? "Non-conformité clôturée" : suivi.peutCloturer ? "Toutes les étapes sont classifiées" : suivi.motifNonCloturable}
                     </span>
                 </div>
             </header>
@@ -143,7 +143,12 @@ export default function SuiviCapaPage() {
                 <div className="suivi-barre" role="progressbar" aria-valuemin={0} aria-valuemax={suivi.nbEtapes} aria-valuenow={suivi.nbValidees}>
                     <div className="suivi-barre-remplie" style={{ width: `${pourcentage}%` }} />
                 </div>
-                <span>{suivi.nbValidees} / {suivi.nbEtapes} étape(s) validée(s)</span>
+                <span>{suivi.nbValidees} / {suivi.nbEtapes} étape(s) classifiée(s)</span>
+            </div>
+            <div className="suivi-statistiques" aria-label="Résultats des traitements CAPA">
+                <span>Réalisées : {suivi.nbRealisees ?? 0}</span>
+                <span>Partielles : {suivi.nbPartielles ?? 0}</span>
+                <span>Non réalisées : {suivi.nbNonRealisees ?? 0}</span>
             </div>
 
             <div className="suivi-temps-reel" role="status" aria-live="polite">
@@ -411,8 +416,8 @@ function DialogueCloture({ suivi, occupe, onConfirmer, onAnnuler }) {
             <div className="suivi-dialogue" role="dialog" aria-modal="true" aria-labelledby="suivi-dialogue-titre">
                 <h2 id="suivi-dialogue-titre">Clôturer {suivi.reference} ?</h2>
                 <p>
-                    Les {suivi.nbEtapes} étape(s) CAPA sont validées. Après la clôture, la non-conformité
-                    et son plan d'actions ne seront plus modifiables.
+                    Les {suivi.nbEtapes} étape(s) CAPA sont classifiées. Les résultats partiels ou non réalisés
+                    restent comptabilisés. Après la clôture, la non-conformité et son plan d'actions ne seront plus modifiables.
                 </p>
                 {suivi.nbNonEfficaces > 0 && (
                     <p className="aud-bandeau aud-bandeau--alerte">

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { apiRequest } from "../../api/api";
 import { STATUTS_ACTION, TYPES_ACTION, formaterDate } from "../constantes";
 import ConstatsAudit from "./ConstatsAudit";
+import Modal from "../Modal";
 import { RESULTATS_TRAITEMENT, STATUTS_AUDIT, TYPES_AUDIT, TYPES_CONSTAT } from "./libelles";
 import "../Declarant/nc.css";
 import "./audits.css";
@@ -16,10 +17,8 @@ const formDepuisDetail = (d) => ({
     resultat: d.audit.resultatTraitement ?? "",
 });
 
-/**
- * Réalisation d'un audit par l'auditeur : démarrer, consigner les constats, décrire l'audit,
- * enregistrer le traitement constaté sur le terrain, puis terminer (validation de l'auditeur).
- */
+const formVide = { compteRendu: "", traitementRealise: "", resultat: "" };
+
 export default function AuditRealisationPage() {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -30,10 +29,12 @@ export default function AuditRealisationPage() {
     const [message, setMessage] = useState("");
     const [occupe, setOccupe] = useState(false);
 
-    const [form, setForm] = useState({ compteRendu: "", traitementRealise: "", resultat: "" });
+    const [form, setForm] = useState(formVide);
     const [nouveauType, setNouveauType] = useState("ECART");
     const [nouvelleDescription, setNouvelleDescription] = useState("");
-    const [confirmerFin, setConfirmerFin] = useState(false);
+
+    const [afficherModalSaisie, setAfficherModalSaisie] = useState(false);
+    const [afficherModalConfirmation, setAfficherModalConfirmation] = useState(false);
 
     const charger = useCallback(async (initialiserFormulaire) => {
         try {
@@ -53,7 +54,6 @@ export default function AuditRealisationPage() {
         charger(true);
     }, [charger]);
 
-    // Rafraîchissement silencieux (commentaires du responsable qualité) : le formulaire n'est jamais écrasé
     useEffect(() => {
         const surRafraichissement = () => charger(false);
         const minuterie = setInterval(surRafraichissement, RAFRAICHISSEMENT_MS);
@@ -64,7 +64,6 @@ export default function AuditRealisationPage() {
         };
     }, [charger]);
 
-    /** Appel d'une action : la réponse est l'audit à jour. Renvoie true en cas de succès. */
     async function executer(chemin, options, { reinitialiserFormulaire = false } = {}) {
         setOccupe(true);
         setErreur("");
@@ -92,12 +91,23 @@ export default function AuditRealisationPage() {
         if (await executer("/demarrer", { method: "POST" })) setMessage("Audit démarré.");
     };
 
-    async function enregistrer() {
-        const ok = await executer("/compte-rendu", { method: "PUT", body: corpsCompteRendu() }, { reinitialiserFormulaire: true });
+    function ouvrirModalSaisie() {
+        setErreur("");
+        setMessage("");
+        setForm(formDepuisDetail(detail));
+        setAfficherModalSaisie(true);
+    }
+
+    async function enregistrerBrouillon() {
+        const ok = await executer(
+            "/compte-rendu",
+            { method: "PUT", body: corpsCompteRendu() },
+            { reinitialiserFormulaire: true }
+        );
         if (ok) setMessage("Brouillon enregistré.");
     }
 
-    function demanderFin() {
+    function demanderConfirmation() {
         setErreur("");
         if (!form.compteRendu.trim()) {
             setErreur("Le compte rendu de l'audit est obligatoire.");
@@ -111,13 +121,23 @@ export default function AuditRealisationPage() {
             setErreur("Indiquez si le traitement est réalisé, partiellement réalisé ou non réalisé.");
             return;
         }
-        setConfirmerFin(true);
+        setAfficherModalConfirmation(true);
     }
 
     async function terminer() {
-        const ok = await executer("/terminer", { method: "POST", body: corpsCompteRendu() }, { reinitialiserFormulaire: true });
-        setConfirmerFin(false);
+        const ok = await executer(
+            "/terminer",
+            { method: "POST", body: corpsCompteRendu() },
+            { reinitialiserFormulaire: true }
+        );
+        setAfficherModalConfirmation(false);
+        setAfficherModalSaisie(false);
         if (ok) setMessage("Audit terminé : vos constats et le traitement constaté ont été transmis au responsable qualité.");
+    }
+
+    async function reouvrir() {
+        const ok = await executer("/reouvrir", { method: "POST" }, { reinitialiserFormulaire: true });
+        if (ok) setMessage("Audit réouvert : vous pouvez reprendre le traitement avant l'échéance.");
     }
 
     async function ajouterConstat(event) {
@@ -150,59 +170,148 @@ export default function AuditRealisationPage() {
     const nc = audit.nc;
     const peutSaisir = detail.modifiable && audit.statut === "EN_COURS";
     const termine = audit.statut === "TERMINE";
+    const echeanceNonDepassee = Boolean(etape?.dateEcheance)
+        && new Date(`${etape.dateEcheance}T23:59:59`).getTime() >= Date.now();
+    const peutReouvrir = termine && Boolean(etape)
+        && ["PARTIEL", "NON_REALISE"].includes(audit.resultatTraitement)
+        && echeanceNonDepassee && nc?.statut !== "CLOTUREE";
+
+    const libelleResultat = RESULTATS_TRAITEMENT[form.resultat] ?? "Non défini";
 
     return (
-        <main className="nc-page">
+        <main className="nc-page area-container">
             <button type="button" className="nc-btn nc-btn-secondaire area-retour" onClick={() => navigate("/auditeur/audits")}>
                 ← Mes audits
             </button>
 
-            <header className="area-entete">
-                <h1>{audit.titre}</h1>
-                <span className={`aud-badge aud-badge--${audit.statut}`}>{STATUTS_AUDIT[audit.statut] ?? audit.statut}</span>
-                {audit.resultatTraitement && (
-                    <span className={`aud-badge aud-badge--${audit.resultatTraitement}`}>
-                        {RESULTATS_TRAITEMENT[audit.resultatTraitement]}
+            {/* EN-TÊTE — carte hero */}
+            <header className="area-card-header area-card-header--hero">
+                <div className="area-hero-top">
+                    <div className="area-header-top">
+                        <span className={`area-badge area-badge--${audit.statut} area-badge--large`}>
+                            Statut audit : {STATUTS_AUDIT[audit.statut] ?? audit.statut}
+                        </span>
+                        {audit.resultatTraitement && (
+                            <span className={`area-badge area-badge--sub area-badge--${audit.resultatTraitement} area-badge--large`}>
+                                Résultat : {RESULTATS_TRAITEMENT[audit.resultatTraitement]}
+                            </span>
+                        )}
+                    </div>
+
+                    {peutSaisir && (
+                        <button
+                            type="button"
+                            className="nc-btn area-btn-terminer area-btn-terminer--hero"
+                            disabled={occupe}
+                            onClick={ouvrirModalSaisie}
+                        >
+                            <span className="area-btn-terminer-icon" aria-hidden="true">✓</span>
+                            Terminer l'audit
+                        </button>
+                    )}
+                </div>
+
+                <h1 className="area-titre">Titre audit : {audit.titre}</h1>
+
+                {/* Badges secondaires — alignés sur MesAuditsPage */}
+                <div className="area-hero-badges">
+                    <span className="area-badge-type-audit">
+                        {(TYPES_AUDIT[audit.typeAudit] ?? audit.typeAudit ?? "").toLowerCase()}
                     </span>
+                    {etape && (
+                        <span className="area-badge-action">
+                            {TYPES_ACTION[etape.type] ?? etape.type}
+                        </span>
+                    )}
+                </div>
+
+                {/* Pied meta : processus + date, façon maud-carte-pied */}
+                <div className="area-hero-pied">
+                    <span className="area-hero-processus">
+                        <span className="area-icon-pin" aria-hidden="true">📍</span>
+                        Processus : {audit.processus || "N/A"}
+                    </span>
+                    <span className="area-hero-date">
+                        Prévu le : <strong>{formaterDate(audit.date)}</strong>
+                        {audit.dateRealisation ? ` · Réalisé le : ${formaterDate(audit.dateRealisation)}` : ""}
+                    </span>
+                </div>
+
+                {termine && (
+                    <div className="area-etat-final">
+                        <span className="area-etat-final-label">Description du Compte rendu :</span>
+                        <p className="area-etat-final-texte">{audit.compteRendu || "Non renseigné"}</p>
+                    </div>
                 )}
             </header>
 
-            <p className="area-meta">
-                Prévu le {formaterDate(audit.date)} · Audit {(TYPES_AUDIT[audit.typeAudit] ?? "").toLowerCase()}
-                {audit.processus ? ` · Processus : ${audit.processus}` : ""}
-                {audit.dateRealisation ? ` · Réalisé le ${formaterDate(audit.dateRealisation)}` : ""}
-            </p>
-
             {erreur && <p className="nc-erreur" role="alert">{erreur}</p>}
             {message && <p className="nc-succes" role="status">{message}</p>}
+
             {!detail.modifiable && detail.motifBlocage && !termine && (
                 <p className="aud-bandeau aud-bandeau--alerte">{detail.motifBlocage}</p>
             )}
+
             {termine && (
-                <p className="aud-bandeau">Cet audit est terminé : il est en lecture seule. Le responsable qualité peut commenter vos constats.</p>
-            )}
-
-            {etape && (
-                <section className="nc-section area-section" aria-labelledby="area-titre-etape">
-                    <h2 id="area-titre-etape">Étape CAPA auditée</h2>
-                    <p className="area-etape-ref">
-                        <strong>{nc?.reference}</strong> · Étape {etape.numero} · {TYPES_ACTION[etape.type] ?? etape.type}
-                        {" · "}<span className={`aud-badge aud-badge--${etape.statut}`}>{STATUTS_ACTION[etape.statut] ?? etape.statut}</span>
-                    </p>
-                    {nc?.titre && <p className="area-etape-nc">Non-conformité : {nc.titre}</p>}
-                    <p className="area-etape-description">{etape.description}</p>
-                    <p className="area-meta">Échéance de l'action : {formaterDate(etape.dateEcheance)}</p>
-                </section>
-            )}
-
-            {audit.statut === "PLANIFIE" && detail.modifiable && (
-                <div className="area-demarrage">
-                    <p>Cet audit n'est pas encore démarré. Démarrez-le pour consigner vos constats et le compte rendu.</p>
-                    <button type="button" className="nc-btn" disabled={occupe} onClick={demarrer}>Démarrer l'audit</button>
+                <div className="area-bandeau-container">
+                    <p className="aud-bandeau">Cet audit est terminé : le responsable qualité peut commenter vos constats.</p>
+                    {etape && ["PARTIEL", "NON_REALISE"].includes(audit.resultatTraitement) && !peutReouvrir
+                        && <p className="aud-bandeau">Réouverture impossible : vérifiez l'échéance du traitement et le statut de la non-conformité.</p>}
+                    {peutReouvrir && (
+                        <button type="button" className="nc-btn" disabled={occupe} onClick={reouvrir}>
+                            Réouvrir l'audit
+                        </button>
+                    )}
                 </div>
             )}
 
-            <section className="nc-section area-section" aria-labelledby="area-titre-constats">
+            {/* ÉTAPE CAPA AUDITÉE — carte façon maud-carte */}
+            {etape && (
+                <section className="area-section area-card-capa" aria-labelledby="area-titre-etape">
+                    <div className="area-carte-ligne-titre">
+                        <h2 id="area-titre-etape" className="area-carte-titre">
+                            Étape CAPA n°{etape.numero}
+                            {nc?.reference ? ` · Réf NC : ${nc.reference}` : ""}
+                        </h2>
+                        <span className={`aud-badge aud-badge--${etape.statut}`}>
+                            {STATUTS_ACTION[etape.statut] ?? etape.statut}
+                        </span>
+                    </div>
+
+                    <div className="area-carte-badges">
+                        <span className="area-badge-type-action">
+                            {TYPES_ACTION[etape.type] ?? etape.type}
+                        </span>
+                    </div>
+
+                    {nc?.titre && (
+                        <p className="area-etape-nc"><strong>Titre NC :</strong> {nc.titre}</p>
+                    )}
+
+                    <div className="area-carte-description">
+                        <strong>Description de la CAPA : </strong>{etape.description}
+                    </div>
+
+                    <div className="area-carte-pied">
+                        <span className="area-carte-echeance">
+                            Échéance de l'action : <strong>{formaterDate(etape.dateEcheance)}</strong>
+                        </span>
+                    </div>
+                </section>
+            )}
+
+            {/* DÉMARRAGE AUDIT */}
+            {audit.statut === "PLANIFIE" && detail.modifiable && (
+                <div className="area-demarrage">
+                    <p>Cet audit n'est pas encore démarré. Démarrez-le pour consigner vos constats et le compte rendu.</p>
+                    <button type="button" className="nc-btn area-btn-primaire" disabled={occupe} onClick={demarrer}>
+                        Démarrer l'audit
+                    </button>
+                </div>
+            )}
+
+            {/* CONSTATS */}
+            <section className="area-section" aria-labelledby="area-titre-constats">
                 <h2 id="area-titre-constats">Constats ({detail.constats.length})</h2>
                 <ConstatsAudit
                     constats={detail.constats}
@@ -214,7 +323,7 @@ export default function AuditRealisationPage() {
                     <form className="area-nouveau-constat" onSubmit={ajouterConstat}>
                         <h3>Nouveau constat</h3>
                         <div className="aud-champ">
-                            <label htmlFor="area-type-constat">Type</label>
+                            <label htmlFor="area-type-constat">Type de constat</label>
                             <select id="area-type-constat" value={nouveauType} onChange={(e) => setNouveauType(e.target.value)} disabled={occupe}>
                                 {Object.entries(TYPES_CONSTAT).map(([code, libelle]) => (
                                     <option key={code} value={code}>{libelle}</option>
@@ -222,7 +331,7 @@ export default function AuditRealisationPage() {
                             </select>
                         </div>
                         <div className="aud-champ">
-                            <label htmlFor="area-description-constat">Description *</label>
+                            <label htmlFor="area-description-constat">Description du constat *</label>
                             <textarea
                                 id="area-description-constat"
                                 rows={3}
@@ -233,97 +342,151 @@ export default function AuditRealisationPage() {
                                 disabled={occupe}
                             />
                         </div>
-                        <button type="submit" className="nc-btn" disabled={occupe || !nouvelleDescription.trim()}>Ajouter le constat</button>
+                        <button type="submit" className="nc-btn" disabled={occupe || !nouvelleDescription.trim()}>
+                            Ajouter le constat
+                        </button>
                     </form>
                 )}
             </section>
 
-            <section className="nc-section area-section" aria-labelledby="area-titre-cr">
-                <h2 id="area-titre-cr">Compte rendu de l'audit</h2>
+            {/* MODALE 1 : SAISIE DU COMPTE RENDU */}
+            {afficherModalSaisie && (
+                <Modal
+                    titre="Saisie du compte rendu de l'audit"
+                    onFermer={() => setAfficherModalSaisie(false)}
+                    largeur="large"
+                    pied={
+                        <>
+                            <button type="button" className="nc-btn nc-btn-secondaire" disabled={occupe} onClick={() => setAfficherModalSaisie(false)}>
+                                Annuler
+                            </button>
+                            <button type="button" className="nc-btn nc-btn-secondaire" disabled={occupe} onClick={enregistrerBrouillon}>
+                                Enregistrer le brouillon
+                            </button>
+                            <button type="button" className="nc-btn area-btn-terminer" disabled={occupe} onClick={demanderConfirmation}>
+                                Terminer l'audit
+                            </button>
+                        </>
+                    }
+                >
+                    <div className="area-modal-corps-interne">
+                        <p className="area-modal-intro">
+                            Renseignez le compte rendu de votre audit{etape ? " ainsi que le traitement constaté sur le terrain" : ""}.
+                            Vous pourrez enregistrer un brouillon à tout moment, puis confirmer la fin de l'audit.
+                        </p>
 
-                <div className="aud-champ">
-                    <label htmlFor="area-compte-rendu">Description de l'audit réalisé {peutSaisir && "*"}</label>
-                    <textarea
-                        id="area-compte-rendu"
-                        rows={5}
-                        value={form.compteRendu}
-                        onChange={(e) => setForm({ ...form, compteRendu: e.target.value })}
-                        placeholder="Déroulement, périmètre audité, personnes rencontrées, documents consultés..."
-                        maxLength={8000}
-                        disabled={!peutSaisir || occupe}
-                    />
-                </div>
-
-                {etape && (
-                    <>
                         <div className="aud-champ">
-                            <label htmlFor="area-traitement">Traitement constaté sur le terrain {peutSaisir && "*"}</label>
+                            <label htmlFor="area-compte-rendu">Description du compte rendu *</label>
                             <textarea
-                                id="area-traitement"
-                                rows={4}
-                                value={form.traitementRealise}
-                                onChange={(e) => setForm({ ...form, traitementRealise: e.target.value })}
-                                placeholder="Ce qui a été réellement fait pour traiter cette étape, avec les preuves vues..."
+                                id="area-compte-rendu"
+                                rows={6}
+                                value={form.compteRendu}
+                                onChange={(e) => setForm({ ...form, compteRendu: e.target.value })}
+                                placeholder="Déroulement, périmètre audité, personnes rencontrées, documents consultés..."
                                 maxLength={8000}
-                                disabled={!peutSaisir || occupe}
+                                disabled={occupe}
                             />
                         </div>
 
-                        <div className="aud-champ">
-                            <fieldset disabled={!peutSaisir || occupe}>
-                                <legend>Résultat du traitement {peutSaisir && "*"}</legend>
-                                <div className="aud-options">
-                                    {Object.entries(RESULTATS_TRAITEMENT).map(([code, libelle]) => (
-                                        <label key={code} className="aud-option">
-                                            <input
-                                                type="radio"
-                                                name="resultat"
-                                                value={code}
-                                                checked={form.resultat === code}
-                                                onChange={() => setForm({ ...form, resultat: code })}
-                                            />
-                                            {libelle}
-                                        </label>
-                                    ))}
+                        {etape && (
+                            <>
+                                <div className="aud-champ">
+                                    <label htmlFor="area-traitement">Traitement constaté sur le terrain *</label>
+                                    <textarea
+                                        id="area-traitement"
+                                        rows={4}
+                                        value={form.traitementRealise}
+                                        onChange={(e) => setForm({ ...form, traitementRealise: e.target.value })}
+                                        placeholder="Ce qui a été réellement fait pour traiter cette étape, avec les preuves vues..."
+                                        maxLength={8000}
+                                        disabled={occupe}
+                                    />
                                 </div>
-                            </fieldset>
-                            {peutSaisir && (
-                                <p className="area-aide">« Traitement réalisé » rend l'étape validable par le responsable qualité.</p>
-                            )}
-                        </div>
-                    </>
-                )}
 
-                {peutSaisir && !confirmerFin && (
-                    <div className="area-actions">
-                        <button type="button" className="nc-btn nc-btn-secondaire" disabled={occupe} onClick={enregistrer}>
-                            Enregistrer le brouillon
-                        </button>
-                        <button type="button" className="nc-btn" disabled={occupe} onClick={demanderFin}>
-                            Terminer l'audit
-                        </button>
+                                <div className="aud-champ">
+                                    <fieldset disabled={occupe}>
+                                        <legend>Résultat du traitement *</legend>
+                                        <div className="aud-options">
+                                            {Object.entries(RESULTATS_TRAITEMENT).map(([code, libelle]) => (
+                                                <label key={code} className={`aud-option aud-option--${code}`}>
+                                                    <input
+                                                        type="radio"
+                                                        name="resultat"
+                                                        value={code}
+                                                        checked={form.resultat === code}
+                                                        onChange={() => setForm({ ...form, resultat: code })}
+                                                    />
+                                                    {libelle}
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </fieldset>
+                                    <p className="area-aide">« Traitement réalisé » rend l'étape validable par le responsable qualité.</p>
+                                </div>
+                            </>
+                        )}
+
+                        {erreur && <p className="nc-erreur" role="alert">{erreur}</p>}
                     </div>
-                )}
+                </Modal>
+            )}
 
-                {peutSaisir && confirmerFin && (
-                    <div className="area-confirmation" role="alertdialog" aria-labelledby="area-confirmation-titre">
-                        <h3 id="area-confirmation-titre">Terminer cet audit ?</h3>
-                        <p>
-                            Vous validez {detail.constats.length} constat(s) et le traitement constaté
-                            {form.resultat ? ` (« ${RESULTATS_TRAITEMENT[form.resultat]} »)` : ""}.
-                            L'audit ne sera plus modifiable.
-                        </p>
-                        <div className="area-actions">
-                            <button type="button" className="nc-btn" disabled={occupe} onClick={terminer}>
-                                {occupe ? "Enregistrement..." : "Confirmer la fin de l'audit"}
-                            </button>
-                            <button type="button" className="nc-btn nc-btn-secondaire" disabled={occupe} onClick={() => setConfirmerFin(false)}>
+            {/* MODALE 2 : CONFIRMATION FINALE */}
+            {afficherModalConfirmation && (
+                <Modal
+                    titre="Confirmer la fin de l'audit"
+                    onFermer={() => setAfficherModalConfirmation(false)}
+                    largeur="large"
+                    pied={
+                        <>
+                            <button type="button" className="nc-btn nc-btn-secondaire" disabled={occupe} onClick={() => setAfficherModalConfirmation(false)}>
                                 Annuler
                             </button>
+                            <button type="button" className="nc-btn area-btn-terminer" disabled={occupe} onClick={terminer}>
+                                {occupe ? "Enregistrement..." : "Confirmer la fin de l'audit"}
+                            </button>
+                        </>
+                    }
+                >
+                    <div className="area-modal-corps-interne">
+                        <p className="area-modal-intro">
+                            Veuillez vérifier les informations ci-dessous. En confirmant, le compte rendu et les constats ({detail.constats.length}) seront transmis et l'audit ne sera plus modifiable.
+                        </p>
+
+                        <div className="area-recap-section">
+                            <h4>Description du compte rendu :</h4>
+                            <p className="area-recap-texte">{form.compteRendu || "Non renseigné"}</p>
                         </div>
+
+                        {etape && (
+                            <>
+                                <div className="area-recap-section">
+                                    <h4>Traitement constaté sur le terrain :</h4>
+                                    <p className="area-recap-texte">{form.traitementRealise || "Non renseigné"}</p>
+                                </div>
+
+                                <div className="area-recap-section">
+                                    <h4>Résultat du traitement :</h4>
+                                    <span className={`area-badge area-badge--sub area-badge--${form.resultat} area-badge--large`}>
+                                        {libelleResultat}
+                                    </span>
+                                </div>
+                            </>
+                        )}
+
+                        <div className="area-recap-section">
+                            <h4>Constats enregistrés :</h4>
+                            <p><strong>Total : </strong>{detail.constats.length} constat(s) consigné(s).</p>
+                        </div>
+
+                        <div className="area-modal-avertissement">
+                            ⚠️ Attention : Action irréversible après validation définitive.
+                        </div>
+
+                        {erreur && <p className="nc-erreur" role="alert">{erreur}</p>}
                     </div>
-                )}
-            </section>
+                </Modal>
+            )}
         </main>
     );
 }

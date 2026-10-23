@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiRequest } from "../../api/api";
-import { dateAujourdhui, formaterDate } from "../constantes";
+import { TYPES_ACTION, dateAujourdhui, formaterDate } from "../constantes";
 import { STATUTS_AUDIT, TYPES_AUDIT } from "./libelles";
+import { FiCalendar, FiMapPin, FiArrowRight, FiX } from "react-icons/fi";
 import "../Declarant/nc.css";
 import "../responsable_qualite/CalendrierAudits.css";   // grille du calendrier (classes cal-*)
 import "./audits.css";
@@ -16,10 +17,17 @@ const MOIS = [
 const PUCES_VISIBLES = 3;
 const RAFRAICHISSEMENT_MS = 60000;
 
+const FILTRES = [
+    { code: "TOUS", libelle: "Tous" },
+    { code: "PLANIFIE", libelle: "Planifié" },
+    { code: "EN_COURS", libelle: "En cours" },
+    { code: "TERMINE", libelle: "Terminé" },
+    { code: "RETARD", libelle: "En retard" },
+];
+
 const deuxChiffres = (n) => String(n).padStart(2, "0");
 const versIso = (annee, mois, jour) => `${annee}-${deuxChiffres(mois + 1)}-${deuxChiffres(jour)}`;
 
-/** Cellules du mois, semaine commençant le lundi ; null = case vide. */
 function construireGrille(annee, mois) {
     const decalage = (new Date(annee, mois, 1).getDay() + 6) % 7;
     const nbJours = new Date(annee, mois + 1, 0).getDate();
@@ -29,7 +37,6 @@ function construireGrille(annee, mois) {
     return cellules;
 }
 
-/** Couleur d'un audit : en retard (planifié et date passée) ou son statut. */
 const etatDe = (audit) => (audit.enRetard ? "RETARD" : audit.statut);
 const libelleEtat = (audit) => (audit.enRetard ? "En retard" : STATUTS_AUDIT[audit.statut] ?? audit.statut);
 
@@ -48,6 +55,9 @@ export default function MesAuditsPage() {
     const [aTraiter, setATraiter] = useState([]);
     const [chargement, setChargement] = useState(true);
     const [erreur, setErreur] = useState("");
+
+    const [jourSelectionne, setJourSelectionne] = useState(null);
+    const [filtreStatut, setFiltreStatut] = useState("TOUS");
 
     const du = versIso(annee, mois, 1);
     const au = versIso(annee, mois, new Date(annee, mois + 1, 0).getDate());
@@ -68,7 +78,6 @@ export default function MesAuditsPage() {
         }
     }, [du, au]);
 
-    // Chargement, puis rafraîchissement au retour sur l'onglet et toutes les minutes
     useEffect(() => {
         charger();
         const minuterie = setInterval(charger, RAFRAICHISSEMENT_MS);
@@ -79,16 +88,51 @@ export default function MesAuditsPage() {
         };
     }, [charger]);
 
+    useEffect(() => {
+        function surTouche(event) {
+            if (event.key === "Escape") {
+                setJourSelectionne(null);
+            }
+        }
+        if (jourSelectionne) {
+            document.addEventListener("keydown", surTouche);
+            document.body.style.overflow = "hidden";
+        }
+        return () => {
+            document.removeEventListener("keydown", surTouche);
+            document.body.style.overflow = "";
+        };
+    }, [jourSelectionne]);
+
+    // Prédicat de filtrage partagé par le calendrier et la sidebar
+    const correspondAuFiltre = useCallback(
+        (audit) => filtreStatut === "TOUS" || etatDe(audit) === filtreStatut,
+        [filtreStatut]
+    );
+
     const grille = useMemo(() => construireGrille(annee, mois), [annee, mois]);
+
+    // Audits filtrés pour le calendrier
+    const auditsFiltres = useMemo(
+        () => audits.filter(correspondAuFiltre),
+        [audits, correspondAuFiltre]
+    );
+
     const parJour = useMemo(() => {
         const resultat = new Map();
-        audits.forEach((a) => {
+        auditsFiltres.forEach((a) => {
             const jour = String(a.date).slice(0, 10);
             if (!resultat.has(jour)) resultat.set(jour, []);
             resultat.get(jour).push(a);
         });
         return resultat;
-    }, [audits]);
+    }, [auditsFiltres]);
+
+    // Audits filtrés pour la sidebar « À traiter »
+    const aTraiterFiltres = useMemo(
+        () => aTraiter.filter(correspondAuFiltre),
+        [aTraiter, correspondAuFiltre]
+    );
 
     const nbRetards = aTraiter.filter((a) => a.enRetard).length;
 
@@ -104,16 +148,37 @@ export default function MesAuditsPage() {
     }
 
     const ouvrir = (audit) => navigate(`/auditeur/audits/${audit.id}`);
+    const ouvrirJournee = (iso) => setJourSelectionne(iso);
+    const auditsJourSelectionne = jourSelectionne ? parJour.get(jourSelectionne) || [] : [];
 
     return (
         <main className="nc-page">
             <h1>Mes audits</h1>
             <p className="maud-intro">
-                Cliquez sur un audit pour le démarrer, consigner vos constats, décrire l'audit réalisé
+                Cliquez sur un audit ou une journée pour afficher les constats, décrire l'audit réalisé
                 et enregistrer le traitement constaté sur le terrain.
             </p>
 
             {erreur && <p className="nc-erreur" role="alert">{erreur}</p>}
+
+            {/* BARRE DE FILTRES PAR STATUT */}
+            <div className="maud-filtres" role="group" aria-label="Filtrer les audits par statut">
+                {FILTRES.map(({ code, libelle }) => {
+                    const actif = filtreStatut === code;
+                    return (
+                        <button
+                            key={code}
+                            type="button"
+                            className={`maud-filtre${actif ? " maud-filtre--actif" : ""} maud-filtre--${code}`}
+                            aria-pressed={actif}
+                            onClick={() => setFiltreStatut(code)}
+                        >
+                            <span className="maud-filtre-pastille" aria-hidden="true" />
+                            {libelle}
+                        </button>
+                    );
+                })}
+            </div>
 
             <div className="maud-espace">
                 <section className="maud-calendrier" aria-labelledby="maud-titre-calendrier">
@@ -136,9 +201,15 @@ export default function MesAuditsPage() {
                             const duJour = parJour.get(iso) || [];
                             const classes = ["cal-jour", "maud-jour"];
                             if (iso === aujourdhui) classes.push("cal-jour--aujourdhui");
+                            if (iso === jourSelectionne) classes.push("maud-jour--selectionne");
 
                             return (
-                                <div key={iso} className={classes.join(" ")} role="gridcell">
+                                <div 
+                                    key={iso} 
+                                    className={classes.join(" ")} 
+                                    role="gridcell"
+                                    onClick={() => ouvrirJournee(iso)}
+                                >
                                     <span className="cal-jour-numero">{jour}</span>
                                     {duJour.length > 0 && (
                                         <ul className="cal-puces">
@@ -148,7 +219,10 @@ export default function MesAuditsPage() {
                                                         type="button"
                                                         className={`maud-puce maud-puce--${etatDe(audit)}`}
                                                         title={`${audit.titre} (${libelleEtat(audit)})`}
-                                                        onClick={() => ouvrir(audit)}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            ouvrir(audit);
+                                                        }}
                                                     >
                                                         {libelleCourt(audit)}
                                                     </button>
@@ -174,6 +248,7 @@ export default function MesAuditsPage() {
                     </ul>
                 </section>
 
+                {/* LISTE À TRAITER */}
                 <aside className="maud-liste nc-section" aria-labelledby="maud-titre-liste">
                     <h2 id="maud-titre-liste" className="maud-titre">À traiter</h2>
                     <p className="maud-aide">
@@ -183,25 +258,49 @@ export default function MesAuditsPage() {
 
                     {chargement ? (
                         <p className="aud-vide">Chargement...</p>
-                    ) : aTraiter.length === 0 ? (
-                        <p className="aud-vide">Aucun audit à traiter pour le moment.</p>
+                    ) : aTraiterFiltres.length === 0 ? (
+                        <p className="aud-vide">
+                            {aTraiter.length === 0
+                                ? "Aucun audit à traiter pour le moment."
+                                : "Aucun audit ne correspond au filtre sélectionné."}
+                        </p>
                     ) : (
                         <ul className="maud-cartes">
-                            {aTraiter.map((audit) => (
+                            {aTraiterFiltres.map((audit) => (
                                 <li key={audit.id}>
                                     <button type="button" className="maud-carte" onClick={() => ouvrir(audit)}>
-                                        <span className="maud-carte-entete">
-                                            <strong>{formaterDate(audit.date)}</strong>
-                                            <span className={`aud-badge aud-badge--${etatDe(audit)}`}>{libelleEtat(audit)}</span>
-                                        </span>
-                                        <span className="maud-carte-titre">{audit.titre}</span>
-                                        {audit.etape && (
-                                            <span className="maud-carte-detail">{audit.etape.description}</span>
+                                        <div className="maud-carte-ligne-titre">
+                                            <span className="maud-carte-titre">Titre : {audit.titre}</span>
+                                            <span className={`aud-badge aud-badge--${etatDe(audit)}`}>
+                                                {libelleEtat(audit)}
+                                            </span>
+                                        </div>
+
+                                        <div className="maud-carte-badges">
+                                            <span className="maud-badge-type-audit">
+                                                {(TYPES_AUDIT[audit.typeAudit] ?? audit.typeAudit).toLowerCase()}
+                                            </span>
+                                            {audit.etape && (
+                                                <span className="maud-badge-action">
+                                                    {TYPES_ACTION[audit.etape.type] ?? audit.etape.type}
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        {audit.etape?.description && (
+                                            <p className="maud-carte-description">
+                                                <strong>Description : </strong>{audit.etape.description}
+                                            </p>
                                         )}
-                                        <span className="maud-carte-detail">
-                                            Audit {(TYPES_AUDIT[audit.typeAudit] ?? "").toLowerCase()}
-                                            {audit.processus ? ` · ${audit.processus}` : ""}
-                                        </span>
+
+                                        <div className="maud-carte-pied">
+                                            <span className="maud-carte-processus">
+                                                <FiMapPin className="maud-icon-pin" /> Processus : {audit.processus || "N/A"}
+                                            </span>
+                                            <span className="maud-carte-date">
+                                                Prévu le : <strong>{formaterDate(audit.date)}</strong>
+                                            </span>
+                                        </div>
                                     </button>
                                 </li>
                             ))}
@@ -209,6 +308,98 @@ export default function MesAuditsPage() {
                     )}
                 </aside>
             </div>
+
+            {/* TIROIR LATÉRAL (PROGRAMME DU JOUR) */}
+            {jourSelectionne && (
+                <div className="maud-drawer-overlay" onClick={() => setJourSelectionne(null)}>
+                    <div 
+                        className="maud-drawer" 
+                        onClick={(e) => e.stopPropagation()} 
+                        role="dialog" 
+                        aria-modal="true" 
+                        aria-labelledby="maud-drawer-titre"
+                    >
+                        <header className="maud-drawer-header">
+                            <div>
+                                <span className="maud-drawer-sous-titre">Programme du jour</span>
+                                <h3 id="maud-drawer-titre">
+                                    <FiCalendar className="maud-icon-titre" /> Date : {formaterDate(jourSelectionne)}
+                                </h3>
+                            </div>
+                            <button 
+                                type="button" 
+                                className="maud-drawer-fermer" 
+                                onClick={() => setJourSelectionne(null)}
+                                aria-label="Fermer le panneau"
+                            >
+                                <FiX />
+                            </button>
+                        </header>
+
+                        <div className="maud-drawer-corps">
+                            {auditsJourSelectionne.length === 0 ? (
+                                <p className="aud-vide">
+                                    {filtreStatut === "TOUS"
+                                        ? "Aucun audit programmé pour cette journée."
+                                        : "Aucun audit ne correspond au filtre sélectionné pour cette journée."}
+                                </p>
+                            ) : (
+                                <ul className="maud-drawer-liste">
+                                    {auditsJourSelectionne.map((audit) => (
+                                        <li key={audit.id}>
+                                            <button 
+                                                type="button" 
+                                                className="maud-drawer-item" 
+                                                onClick={() => ouvrir(audit)}
+                                            >
+                                                <div className="maud-carte-ligne-titre">
+                                                    <h4 className="maud-drawer-item-titre">Titre : {audit.titre}</h4>
+                                                    <span className={`aud-badge aud-badge--${etatDe(audit)}`}>
+                                                        {libelleEtat(audit)}
+                                                    </span>
+                                                </div>
+
+                                                <div className="maud-carte-badges">
+                                                    <span className="maud-badge-type-audit">
+                                                        {(TYPES_AUDIT[audit.typeAudit] ?? audit.typeAudit).toLowerCase()}
+                                                    </span>
+                                                    {audit.etape && (
+                                                        <span className="maud-badge-action">
+                                                            {TYPES_ACTION[audit.etape.type] ?? audit.etape.type}
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                {audit.nc && (
+                                                    <p className="maud-drawer-item-ref">
+                                                        Ref NC : <strong>{audit.nc.reference}</strong>
+                                                    </p>
+                                                )}
+
+                                                {audit.etape?.description && (
+                                                    <p className="maud-drawer-item-capa-desc">
+                                                        <strong>Description : </strong>{audit.etape.description}
+                                                    </p>
+                                                )}
+
+                                                <div className="maud-carte-pied">
+                                                    <span className="maud-carte-processus">
+                                                        <FiMapPin className="maud-icon-pin" /> Processus : {audit.processus || "N/A"}
+                                                    </span>
+                                                </div>
+
+                                                <span className="maud-drawer-item-action">
+                                                    Ouvrir l'audit <FiArrowRight className="maud-icon-arrow" />
+                                                </span>
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </main>
     );
 }
