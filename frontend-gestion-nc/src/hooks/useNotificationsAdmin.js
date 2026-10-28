@@ -10,6 +10,8 @@ const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8080";
  * L'identité est celle de l'ONGLET : le jeton est lu dans le sessionStorage et envoyé
  * dans l'en-tête Authorization de la trame CONNECT.
  *
+ * Le topic peut aussi être une file privée : /user/queue/notifications (voir useNotifications).
+ *
  * @returns true si la connexion temps réel est active
  */
 export function useNotificationsAdmin({ topic, onMessage }) {
@@ -21,6 +23,9 @@ export function useNotificationsAdmin({ topic, onMessage }) {
     }, [onMessage]);
 
     useEffect(() => {
+        // Pas de topic (ex. utilisateur non connecté) : aucune connexion
+        if (!topic) return undefined;
+
         const client = new Client({
             webSocketFactory: () => new SockJS(`${BASE_URL}/ws`),
             reconnectDelay: 5000,

@@ -15,6 +15,17 @@ const CODES_PROCESSUS_DISPONIBLES = [
     { code: "MAI", libelleType: "Maintenance" },
 ];
 
+/** Minuscules sans accents : « qualité » trouve « QUALITE ». */
+function normaliser(texte) {
+    return (texte ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+/** Libellé d'une option : plusieurs processus peuvent partager un code, la description les distingue. */
+function libelleOption(s) {
+    const resume = s.description ? ` — ${s.description.replace(/\s+/g, " ").slice(0, 40)}${s.description.length > 40 ? "…" : ""}` : "";
+    return `${s.libelle} (${s.code})${resume}`;
+}
+
 function formaterDescriptionProcessus(description) {
     if (!description) return "Aucune description";
     const matchPoint = description.match(/^.*?\./);
@@ -39,6 +50,7 @@ export default function DeclarationNc({ utilisateur }) {
     const [services, setServices] = useState([]);
     const [processusSelectionneId, setProcessusSelectionneId] = useState("");
     const [modeNouveauProcessus, setModeNouveauProcessus] = useState(false);
+    const [rechercheProcessus, setRechercheProcessus] = useState("");
     
     const [nouveauCode, setNouveauCode] = useState("PRD");
     const [nouveauLibelle, setNouveauLibelle] = useState("");
@@ -72,6 +84,14 @@ export default function DeclarationNc({ utilisateur }) {
     }, []);
 
     const processusActifSelectionne = services.find(s => s.id.toString() === processusSelectionneId);
+
+    // Recherche dans code, libellé et description ; le processus déjà choisi reste toujours dans la liste
+    const termes = normaliser(rechercheProcessus).split(/\s+/).filter(Boolean);
+    const servicesFiltres = services.filter((s) => {
+        if (s.id.toString() === processusSelectionneId) return true;
+        const texte = normaliser(`${s.code} ${s.libelle} ${s.description ?? ""}`);
+        return termes.every((t) => texte.includes(t));
+    });
 
     function gererFichiersImages(fichiersBruts) {
         const fichiers = Array.from(fichiersBruts || []);
@@ -190,6 +210,9 @@ export default function DeclarationNc({ utilisateur }) {
         setDateDetection(dateAujourdhui());
         setProcessusSelectionneId("");
         setModeNouveauProcessus(false);
+        setRechercheProcessus("");
+        // Le processus créé avec la déclaration doit apparaître dans la recherche suivante
+        apiRequest("/api/referentiels/processus").then(setServices).catch(() => {});
         setNouveauLibelle("");
         setNouvelleDescription("");
         setGravite("");
@@ -309,16 +332,28 @@ export default function DeclarationNc({ utilisateur }) {
 
                     {!modeNouveauProcessus ? (
                         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                            <input
+                                type="search"
+                                value={rechercheProcessus}
+                                onChange={(e) => setRechercheProcessus(e.target.value)}
+                                placeholder="Rechercher un processus (code, libellé, description)..."
+                                aria-label="Rechercher un processus existant"
+                                style={{ padding: "8px" }}
+                            />
                             <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
                                 <select 
                                     value={processusSelectionneId} 
                                     onChange={(e) => setProcessusSelectionneId(e.target.value)}
                                     style={{ flex: 1, padding: "8px" }}
                                 >
-                                    <option value="">— Sélectionnez un processus existant —</option>
-                                    {services.map((s) => (
+                                    <option value="">
+                                        {termes.length > 0
+                                            ? `— ${servicesFiltres.length} résultat${servicesFiltres.length > 1 ? "s" : ""} —`
+                                            : "— Sélectionnez un processus existant —"}
+                                    </option>
+                                    {servicesFiltres.map((s) => (
                                         <option key={s.id} value={s.id}>
-                                            {s.libelle} ({s.code})
+                                            {libelleOption(s)}
                                         </option>
                                     ))}
                                 </select>
@@ -368,6 +403,12 @@ export default function DeclarationNc({ utilisateur }) {
                                     ))}
                                 </select>
                             </div>
+
+                            <span className="nc-aide">
+                                Un même code peut être utilisé pour plusieurs processus, à condition que la
+                                description (ou le libellé) soit différente. Vérifiez d'abord, avec la recherche,
+                                que le processus n'existe pas déjà.
+                            </span>
 
                             <div>
                                 <label>Libellé du processus *</label>

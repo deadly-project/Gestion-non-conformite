@@ -53,9 +53,13 @@ public class NonConformiteController {
     public PageResponse<NcListeItem> lister(
             @RequestParam(defaultValue = "") String statut,
             @RequestParam(defaultValue = "") String q,
+            /** true : uniquement les NC où le responsable connecté est responsable d'une action CAPA. */
+            @RequestParam(defaultValue = "false") boolean mesCapa,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int taille) {
-        return consultationService.lister(statut, q, page, taille);
+            @RequestParam(defaultValue = "10") int taille,
+            Authentication authentication) {
+        Long responsableCapaId = mesCapa ? utilisateurCourant(authentication).getId() : null;
+        return consultationService.lister(statut, q, responsableCapaId, page, taille);
     }
 
     @GetMapping("/mes-nc")

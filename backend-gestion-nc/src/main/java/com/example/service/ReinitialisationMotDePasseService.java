@@ -1,5 +1,6 @@
 package com.example.service;
 
+import com.example.domain.TypeNotification;
 import com.example.dto.reinitialisation.DemandeReinitialisationResponse;
 import com.example.entity.DemandeReinitialisation;
 import com.example.entity.enums.StatutDemande;
@@ -50,6 +51,7 @@ public class ReinitialisationMotDePasseService {
     private final NotificationEmailService emailService;
     private final ApplicationEventPublisher eventPublisher;
     private final JournalActionsService journal;
+    private final NotificationService notifications;
 
     public ReinitialisationMotDePasseService(
             UtilisateurRepository utilisateurRepository,
@@ -57,13 +59,15 @@ public class ReinitialisationMotDePasseService {
             PasswordEncoder passwordEncoder,
             NotificationEmailService emailService,
             ApplicationEventPublisher eventPublisher,
-            JournalActionsService journal) {
+            JournalActionsService journal,
+            NotificationService notifications) {
         this.utilisateurRepository = utilisateurRepository;
         this.demandeRepository = demandeRepository;
         this.passwordEncoder = passwordEncoder;
         this.emailService = emailService;
         this.eventPublisher = eventPublisher;
         this.journal = journal;
+        this.notifications = notifications;
     }
 
     // ------------------------------------------------------------------
@@ -93,8 +97,13 @@ public class ReinitialisationMotDePasseService {
         demande.setUtilisateur(utilisateur);
         demande = demandeRepository.save(demande);
 
-        journal.enregistrer(utilisateur.getId(), "REQUEST_RESET_PASSWORD", "REINITIALISATION", demande.getId(),
-                java.util.Map.of("matricule", utilisateur.getMatricule()));
+        journal.enregistrerModification(utilisateur.getId(), "REQUEST_RESET_PASSWORD", "REINITIALISATION",
+                demande.getId(), null, Instantane.de(demande), null);
+
+        notifications.notifierRole("ADMINISTRATEUR", null, TypeNotification.DEMANDE_REINIT_RECUE,
+                "Nouvelle demande de réinitialisation : " + NotificationService.nom(utilisateur)
+                        + " (matricule " + utilisateur.getMatricule() + ").",
+                NotificationService.ENTITE_REINITIALISATION, demande.getId());
 
         // Notification admin (WebSocket) + accusé de réception : après le commit, en asynchrone
         eventPublisher.publishEvent(new DemandeReinitialisationRecueEvent(
@@ -129,6 +138,7 @@ public class ReinitialisationMotDePasseService {
         utilisateur.setMotDePasse(passwordEncoder.encode(nouveauMotDePasse));
         utilisateurRepository.save(utilisateur);
 
+        var demandeAvant = Instantane.de(demande);
         demande.setStatut(StatutDemande.VALIDEE);
         demande.setDateTraitement(LocalDateTime.now());
         demande.setTraitePar(resoudreActeur(administrateur));
@@ -149,8 +159,14 @@ public class ReinitialisationMotDePasseService {
         }
 
         Users admin = resoudreActeur(administrateur);
-        journal.enregistrer(admin == null ? null : admin.getId(), "VALIDATE_RESET_PASSWORD", "REINITIALISATION",
-                demande.getId(), java.util.Map.of("matricule", utilisateur.getMatricule()));
+        java.util.Map<String, Object> contexte = new java.util.LinkedHashMap<>();
+        contexte.put("matriculeDemandeur", utilisateur.getMatricule());
+        journal.enregistrerModification(admin == null ? null : admin.getId(), "VALIDATE_RESET_PASSWORD",
+                "REINITIALISATION", demande.getId(), demandeAvant, Instantane.de(demande), contexte);
+
+        notifications.notifier(utilisateur.getId(), TypeNotification.DEMANDE_REINIT_VALIDEE,
+                "Votre demande de réinitialisation a été validée : un nouveau mot de passe vous a été envoyé par e-mail.",
+                NotificationService.ENTITE_REINITIALISATION, demande.getId());
 
         DemandeReinitialisationResponse reponse = DemandeReinitialisationResponse.from(demande);
         eventPublisher.publishEvent(new DemandeReinitialisationTraiteeEvent(
@@ -166,14 +182,21 @@ public class ReinitialisationMotDePasseService {
         DemandeReinitialisation demande = chargerEnAttente(demandeId);
         Users utilisateur = demande.getUtilisateur();
 
+        var demandeAvant = Instantane.de(demande);
         demande.setStatut(StatutDemande.REFUSEE);
         demande.setDateTraitement(LocalDateTime.now());
         demande.setTraitePar(resoudreActeur(administrateur));
         demandeRepository.save(demande);
 
         Users adminRefus = resoudreActeur(administrateur);
-        journal.enregistrer(adminRefus == null ? null : adminRefus.getId(), "REFUSE_RESET_PASSWORD",
-                "REINITIALISATION", demande.getId(), java.util.Map.of("matricule", utilisateur.getMatricule()));
+        java.util.Map<String, Object> contexte = new java.util.LinkedHashMap<>();
+        contexte.put("matriculeDemandeur", utilisateur.getMatricule());
+        journal.enregistrerModification(adminRefus == null ? null : adminRefus.getId(), "REFUSE_RESET_PASSWORD",
+                "REINITIALISATION", demande.getId(), demandeAvant, Instantane.de(demande), contexte);
+
+        notifications.notifier(utilisateur.getId(), TypeNotification.DEMANDE_REINIT_REFUSEE,
+                "Votre demande de réinitialisation de mot de passe a été refusée par l'administrateur.",
+                NotificationService.ENTITE_REINITIALISATION, demande.getId());
 
         DemandeReinitialisationResponse reponse = DemandeReinitialisationResponse.from(demande);
         eventPublisher.publishEvent(new DemandeReinitialisationTraiteeEvent(

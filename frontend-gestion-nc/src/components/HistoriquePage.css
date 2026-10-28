@@ -745,3 +745,35 @@
   .histo-filtres-tags { flex-direction: column; align-items: stretch; }
   .histo-filtre-tag { justify-content: space-between; }
 }
+/* ===== Comparaison avant / après (HistoriqueDetails) ===== */
+.histo-compare {
+    margin-top: 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #fff;
+    font-size: 13px;
+}
+.histo-compare > summary {
+    padding: 8px 12px;
+    font-weight: 600;
+    color: #334155;
+    cursor: pointer;
+}
+.histo-compare-scroll { overflow-x: auto; border-top: 1px solid #e2e8f0; }
+.histo-compare-table { width: 100%; border-collapse: collapse; }
+.histo-compare-table th,
+.histo-compare-table td {
+    padding: 6px 12px;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid #f1f5f9;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+.histo-compare-table thead th { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: #64748b; background: #f8fafc; }
+.histo-compare-table tbody th { font-weight: 600; color: #475569; width: 28%; }
+.histo-compare-table td { color: #64748b; }
+.histo-compare-table tr.est-modifie { background: #fffbeb; }
+.histo-compare-table tr.est-modifie th { color: #92400e; }
+.histo-compare-table tr.est-modifie .val-avant { color: #b91c1c; text-decoration: line-through; }
+.histo-compare-table tr.est-modifie .val-apres { color: #15803d; font-weight: 600; }

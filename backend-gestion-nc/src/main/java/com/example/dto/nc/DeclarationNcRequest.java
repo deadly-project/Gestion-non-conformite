@@ -31,13 +31,13 @@ public record DeclarationNcRequest(
         @Size(max = 5000, message = "La description ne doit pas dépasser 5000 caractères")
         String descriptionDetaillee
 ) {
-    public record NouveauProcessusDto(
-            @NotBlank(message = "Le code du processus est obligatoire")
-            String code,
+        public record NouveauProcessusDto(
+                @NotBlank(message = "Le code du processus est obligatoire")
+                String code,
 
-            @NotBlank(message = "Le libellé du processus est obligatoire")
-            String libelle,
+                @NotBlank(message = "Le libellé du processus est obligatoire")
+                String libelle,
 
-            String description
-    ) {}
+                String description
+        ) {}
 }

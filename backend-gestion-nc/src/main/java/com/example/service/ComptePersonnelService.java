@@ -1,5 +1,6 @@
 package com.example.service;
 
+import com.example.domain.TypeNotification;
 import com.example.dto.utilisateur.*;
 import com.example.entity.Users;
 import com.example.repository.UtilisateurRepository;
@@ -19,16 +20,19 @@ public class ComptePersonnelService {
     private final PasswordEncoder passwordEncoder;
     private final NotificationEmailService emailService;
     private final JournalActionsService journal;
+    private final NotificationService notifications;
 
     public ComptePersonnelService(
             UtilisateurRepository repository,
             PasswordEncoder passwordEncoder,
             NotificationEmailService emailService,
-            JournalActionsService journal) {
+            JournalActionsService journal,
+            NotificationService notifications) {
         this.repository = repository;
         this.passwordEncoder = passwordEncoder;
         this.emailService = emailService;
         this.journal = journal;
+        this.notifications = notifications;
     }
 
     private Users utilisateurConnecte(Authentication authentication) {
@@ -67,14 +71,19 @@ public class ComptePersonnelService {
                             HttpStatus.CONFLICT, "Ce matricule est déjà utilisé");
                 });
 
+        var avant = Instantane.de(user);   // avant les setters : l'entité est modifiée sur place
         user.setNom(request.nom().trim());
         user.setPrenom(request.prenom().trim());
         user.setEmail(email);
         user.setMatricule(matricule);
-        Users enregistre = repository.save(user);
+        Users enregistre = repository.saveAndFlush(user);
 
-        journal.enregistrer(user.getId(), "UPDATE_PROFILE", "UTILISATEUR", user.getId(),
-                java.util.Map.of("matricule", enregistre.getMatricule(), "email", enregistre.getEmail()));
+        journal.enregistrerModification(user.getId(), "UPDATE_PROFILE", "UTILISATEUR", user.getId(),
+                avant, Instantane.de(enregistre), null);
+
+        notifications.notifier(user.getId(), TypeNotification.PROFIL_MODIFIE,
+                "Vos informations personnelles ont été modifiées.",
+                NotificationService.ENTITE_UTILISATEUR, user.getId());
 
         return UtilisateurResponse.from(enregistre);
     }
@@ -115,8 +124,16 @@ public class ComptePersonnelService {
                 passwordEncoder.encode(request.nouveauMotDePasse()));
         repository.save(user);
 
-        journal.enregistrer(user.getId(), "UPDATE_PASSWORD", "UTILISATEUR", user.getId(),
-                java.util.Map.of("matricule", user.getMatricule()));
+        // Le mot de passe (même chiffré) n'est jamais copié dans l'historique : seule la trace de l'action l'est.
+        var etat = Instantane.de(user);
+        java.util.Map<String, Object> contexte = new java.util.LinkedHashMap<>();
+        contexte.put("motDePasseModifie", true);
+        journal.enregistrerModification(user.getId(), "UPDATE_PASSWORD", "UTILISATEUR", user.getId(),
+                etat, etat, contexte);
+
+        notifications.notifier(user.getId(), TypeNotification.MOT_DE_PASSE_MODIFIE,
+                "Votre mot de passe a été modifié.",
+                NotificationService.ENTITE_UTILISATEUR, user.getId());
 
         // Une notification est envoyée après la modification.
         try {

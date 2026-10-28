@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { apiRequest } from "../../api/api";
 import { STATUTS_NC, GRAVITES, formaterDate } from "../constantes";
 import { useNotificationsAdmin } from "../../hooks/useNotificationsAdmin";
@@ -32,7 +33,10 @@ export default function ListeNonConformites({ utilisateur }) {
   const [saisie, setSaisie] = useState("");
   const [recherche, setRecherche] = useState("");
   const [statut, setStatut] = useState("");
+  // true : seulement les NC où je suis responsable d'au moins une action CAPA
+  const [mesCapa, setMesCapa] = useState(false);
   const [page, setPage] = useState(0);
+  const [parametresUrl, setParametresUrl] = useSearchParams();
 
   const [donnees, setDonnees] = useState(null);
   const [chargement, setChargement] = useState(true);
@@ -43,6 +47,15 @@ export default function ListeNonConformites({ utilisateur }) {
   const [ncVisualisation, setNcVisualisation] = useState(null);
   const [ncTraitement, setNcTraitement] = useState(null);
   const [ncAvancement, setNcAvancement] = useState(null);
+
+  // Lien d'une notification : /responsable/non-conformites?visualiser=ID ouvre directement la NC
+  useEffect(() => {
+    const id = Number(parametresUrl.get("visualiser"));
+    if (id > 0) {
+      setNcVisualisation(id);
+      setParametresUrl({}, { replace: true });
+    }
+  }, [parametresUrl, setParametresUrl]);
 
   useNotificationsAdmin({
     topic: "/topic/admin/nc",
@@ -66,6 +79,7 @@ export default function ListeNonConformites({ utilisateur }) {
     const parametres = new URLSearchParams({
       statut,
       q: recherche,
+      mesCapa: String(mesCapa),
       page: String(page),
       taille: String(TAILLE_PAGE),
     });
@@ -85,7 +99,7 @@ export default function ListeNonConformites({ utilisateur }) {
     return () => {
       actif = false;
     };
-  }, [statut, recherche, page, version]);
+  }, [statut, mesCapa, recherche, page, version]);
 
   function apresTraitement(detail) {
     setNcTraitement(null);
@@ -93,7 +107,7 @@ export default function ListeNonConformites({ utilisateur }) {
     setVersion((v) => v + 1);
   }
 
-  const total = donnees?.totalElements ?? 0;
+  const total = donnees?.total ?? donnees?.totalElements ?? 0;
   const nbPages = Math.max(1, Math.ceil(total / TAILLE_PAGE));
 
   return (
@@ -141,6 +155,20 @@ export default function ListeNonConformites({ utilisateur }) {
                 {libelle}
               </option>
             ))}
+          </select>
+        </div>
+        <div className="nc-champ">
+          <label htmlFor="filtreCapa">Responsabilité CAPA</label>
+          <select
+            id="filtreCapa"
+            value={mesCapa ? "mes" : ""}
+            onChange={(e) => {
+              setMesCapa(e.target.value === "mes");
+              setPage(0);
+            }}
+          >
+            <option value="">Toutes les non-conformités</option>
+            <option value="mes">Où je suis responsable d'actions CAPA</option>
           </select>
         </div>
       </div>

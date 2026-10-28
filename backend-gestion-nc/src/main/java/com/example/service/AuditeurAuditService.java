@@ -2,6 +2,7 @@ package com.example.service;
 
 import com.example.domain.StatutAction;
 import com.example.domain.StatutNc;
+import com.example.domain.TypeNotification;
 import com.example.dto.audit.AuditDtos.*;
 import com.example.entity.*;
 import com.example.repository.*;
@@ -37,6 +38,7 @@ public class AuditeurAuditService {
     private final AuditAssembleur assembleur;
     private final CapaEvenementService evenements;
     private final JournalActionsService journal;
+    private final NotificationService notifications;
 
     public AuditeurAuditService(AuditRepository auditRepository,
                                 ConstatAuditRepository constatRepository,
@@ -44,7 +46,8 @@ public class AuditeurAuditService {
                                 NonConformiteRepository ncRepository,
                                 AuditAssembleur assembleur,
                                 CapaEvenementService evenements,
-                                JournalActionsService journal) {
+                                JournalActionsService journal,
+                                NotificationService notifications) {
         this.auditRepository = auditRepository;
         this.constatRepository = constatRepository;
         this.capaRepository = capaRepository;
@@ -52,6 +55,7 @@ public class AuditeurAuditService {
         this.assembleur = assembleur;
         this.evenements = evenements;
         this.journal = journal;
+        this.notifications = notifications;
     }
 
     // ------------------------------------------------------------------ lecture
@@ -88,6 +92,7 @@ public class AuditeurAuditService {
         if (!PLANIFIE.equals(audit.getStatut())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Cet audit est déjà démarré");
         }
+        var auditAvant = Instantane.de(audit);   // avant les setters : l'entité est modifiée sur place
         LocalDateTime maintenant = LocalDateTime.now();
         audit.setStatut(EN_COURS);
         audit.setDateModification(maintenant);
@@ -100,8 +105,8 @@ public class AuditeurAuditService {
             capaRepository.save(etape);
         }
 
-        journal.enregistrer(auditeur.getId(), "START_AUDIT", "AUDIT", audit.getId(),
-                Map.of("titre", audit.getTitre()));
+        journal.enregistrerModification(auditeur.getId(), "START_AUDIT", "AUDIT", audit.getId(),
+                auditAvant, Instantane.de(audit), null);
         publier(etape, audit, "AUDIT_DEMARRE", nom(auditeur) + " a démarré l'audit « " + audit.getTitre() + " »");
         return construireDetail(audit);
     }
@@ -112,12 +117,13 @@ public class AuditeurAuditService {
         Audit audit = pourModification(auditId, auditeur);
         exigerEnCours(audit);
 
+        var auditAvant = Instantane.de(audit);
         appliquerTextes(audit, req, etapeDe(audit) != null);
         audit.setDateModification(LocalDateTime.now());
         auditRepository.save(audit);
 
-        journal.enregistrer(auditeur.getId(), "UPDATE_AUDIT", "AUDIT", audit.getId(),
-                Map.of("titre", audit.getTitre()));
+        journal.enregistrerModification(auditeur.getId(), "UPDATE_AUDIT", "AUDIT", audit.getId(),
+                auditAvant, Instantane.de(audit), null);
         publier(etapeDe(audit), audit, "AUDIT_ENREGISTRE",
                 nom(auditeur) + " a mis à jour le compte rendu de « " + audit.getTitre() + " »");
         return construireDetail(audit);
@@ -135,8 +141,8 @@ public class AuditeurAuditService {
         constat.setAuteurId(auditeur.getId());
         constatRepository.save(constat);
 
-        journal.enregistrer(auditeur.getId(), "ADD_CONSTAT", "CONSTAT_AUDIT", constat.getId(),
-                Map.of("auditId", audit.getId(), "type", req.type()));
+        journal.enregistrerModification(auditeur.getId(), "ADD_CONSTAT", "CONSTAT_AUDIT", constat.getId(),
+                null, Instantane.de(constat), null);
         publier(etapeDe(audit), audit, "CONSTAT_AJOUTE",
                 nom(auditeur) + " a ajouté un constat (" + libelleConstat(req.type()) + ") sur « " + audit.getTitre() + " »");
         return construireDetail(audit);
@@ -148,12 +154,13 @@ public class AuditeurAuditService {
         exigerEnCours(audit);
 
         ConstatAudit constat = constatDe(audit, constatId);
+        var constatAvant = Instantane.de(constat);
         constat.setTypeConstat(req.type());
         constat.setDescriptionConstat(req.description().trim());
         constatRepository.save(constat);
 
-        journal.enregistrer(auditeur.getId(), "UPDATE_CONSTAT", "CONSTAT_AUDIT", constat.getId(),
-                Map.of("auditId", audit.getId(), "type", req.type()));
+        journal.enregistrerModification(auditeur.getId(), "UPDATE_CONSTAT", "CONSTAT_AUDIT", constat.getId(),
+                constatAvant, Instantane.de(constat), null);
         publier(etapeDe(audit), audit, "CONSTAT_MODIFIE",
                 nom(auditeur) + " a modifié un constat de « " + audit.getTitre() + " »");
         return construireDetail(audit);
@@ -165,10 +172,11 @@ public class AuditeurAuditService {
         exigerEnCours(audit);
 
         ConstatAudit constat = constatDe(audit, constatId);
+        var constatAvant = Instantane.de(constat);
         constatRepository.delete(constat);   // ses commentaires partent avec lui (ON DELETE CASCADE)
 
-        journal.enregistrer(auditeur.getId(), "DELETE_CONSTAT", "CONSTAT_AUDIT", constatId,
-                Map.of("auditId", audit.getId()));
+        journal.enregistrerModification(auditeur.getId(), "DELETE_CONSTAT", "CONSTAT_AUDIT", constatId,
+                constatAvant, null, null);
         publier(etapeDe(audit), audit, "CONSTAT_SUPPRIME",
                 nom(auditeur) + " a supprimé un constat de « " + audit.getTitre() + " »");
         return construireDetail(audit);
@@ -184,6 +192,7 @@ public class AuditeurAuditService {
         exigerEnCours(audit);
 
         ActionCapa etape = etapeDe(audit);
+        var auditAvant = Instantane.de(audit);
         appliquerTextes(audit, req, etape != null);
 
         if (isBlank(audit.getCompteRendu())) {
@@ -214,9 +223,8 @@ public class AuditeurAuditService {
             capaRepository.save(etape);
         }
 
-        journal.enregistrer(auditeur.getId(), "CLOSE_AUDIT", "AUDIT", audit.getId(),
-                Map.of("titre", audit.getTitre(),
-                        "resultat", audit.getResultatTraitement() == null ? "" : audit.getResultatTraitement()));
+        journal.enregistrerModification(auditeur.getId(), "CLOSE_AUDIT", "AUDIT", audit.getId(),
+                auditAvant, Instantane.de(audit), null);
         publier(etape, audit, "AUDIT_TERMINE",
                 nom(auditeur) + " a terminé l'audit « " + audit.getTitre() + " »"
                         + (audit.getResultatTraitement() == null ? "" : " : " + libelleResultat(audit.getResultatTraitement())));
@@ -262,11 +270,14 @@ public class AuditeurAuditService {
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "La non-conformité est clôturée");
             }
         }
+        var auditAvant = Instantane.de(audit);
         audit.setStatut(EN_COURS);
         audit.setDateModification(LocalDateTime.now());
         auditRepository.save(audit);
-        journal.enregistrer(auditeur.getId(), "REOPEN_AUDIT", "AUDIT", audit.getId(),
-                Map.of("resultatPrecedent", audit.getResultatTraitement(), "echeance", etape.getDateEcheance().toString()));
+        Map<String, Object> contexteReouverture = new java.util.LinkedHashMap<>();
+        contexteReouverture.put("echeanceEtape", etape.getDateEcheance().toString());
+        journal.enregistrerModification(auditeur.getId(), "REOPEN_AUDIT", "AUDIT", audit.getId(),
+                auditAvant, Instantane.de(audit), contexteReouverture);
         publier(etape, audit, "AUDIT_REOUVERT",
                 nom(auditeur) + " a réouvert l'audit « " + audit.getTitre() + " » pour reprendre le traitement");
         return construireDetail(audit);
@@ -341,8 +352,18 @@ public class AuditeurAuditService {
                 motif == null, motif, constats);
     }
 
+    /**
+     * Chaque action de l'auditeur sur une étape CAPA est diffusée au suivi temps réel
+     * et notifiée au responsable qualité en charge de la non-conformité.
+     */
     private void publier(ActionCapa etape, Audit audit, String type, String message) {
-        if (etape != null) evenements.publier(etape.getNcId(), etape.getId(), audit.getId(), type, message);
+        if (etape == null) return;
+        evenements.publier(etape.getNcId(), etape.getId(), audit.getId(), type, message);
+        if (etape.getNcId() == null) return;
+        String typeNotification = "AUDIT_ENREGISTRE".equals(type)
+                ? TypeNotification.COMPTE_RENDU_ENREGISTRE : type;
+        ncRepository.findById(etape.getNcId())
+                .ifPresent(nc -> notifications.notifierResponsablesNc(nc, typeNotification, message));
     }
 
     private static String nom(Users u) {

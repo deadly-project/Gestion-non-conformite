@@ -13,6 +13,7 @@ import {
 import { apiRequest } from "../api/api";
 import { formaterDate } from "./constantes";
 import { formaterDateHeure } from "./Auditeur/libelles";
+import HistoriqueDetails from "./HistoriqueDetails";
 import "./HistoriquePage.css";
 
 const TAILLE_PAGE = 20;
@@ -86,16 +87,6 @@ const libelleAction = (code) => getConfigAction(code).libelle || code;
 /* ==========================================================================
    Helpers
    ========================================================================== */
-function extraireDetails(details) {
-    if (!details || Object.keys(details).length === 0) return [];
-    return Object.entries(details).map(([cle, valeur]) => {
-        const texte = valeur !== null && typeof valeur === "object"
-            ? JSON.stringify(valeur)
-            : String(valeur ?? "—");
-        return { cle, texte };
-    });
-}
-
 function formatRelatif(dateStr) {
     if (!dateStr) return "";
     const diffSec = Math.floor((new Date() - new Date(dateStr)) / 1000);
@@ -398,7 +389,6 @@ export default function HistoriquePage({ utilisateur }) {
                     {donnees.contenu.map((h, idx) => {
                         const cfg = getConfigAction(h.actionType);
                         const Icone = cfg.icone;
-                        const details = extraireDetails(h.details);
                         const relatif = formatRelatif(h.date);
                         const actionLibelle = cfg.libelle || h.actionType;
 
@@ -463,18 +453,7 @@ export default function HistoriquePage({ utilisateur }) {
                                     </div>
 
                                     {/* Ligne 3 : détails */}
-                                    {details.length > 0 && (
-                                        <div className="histo-tl-details">
-                                            {details.map(({ cle, texte }, i) => (
-                                                <span key={i} className="histo-detail-chip" title={texte}>
-                                                    <span className="histo-detail-chip-cle">{cle}</span>
-                                                    <span className="histo-detail-chip-val">
-                                                        {texte.length > 50 ? texte.slice(0, 50) + "…" : texte}
-                                                    </span>
-                                                </span>
-                                            ))}
-                                        </div>
-                                    )}
+                                    <HistoriqueDetails details={h.details} />
                                 </div>
                             </article>
                         );

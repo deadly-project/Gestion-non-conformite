@@ -5,6 +5,7 @@ import com.example.dto.utilisateur.UtilisateurCreationResponse;
 import com.example.dto.utilisateur.UtilisateurModificationRequest;
 import com.example.dto.utilisateur.UtilisateurResponse;
 import com.example.entity.Users;
+import com.example.domain.TypeNotification;
 import com.example.event.UtilisateurCreeEvent;
 import com.example.repository.UtilisateurRepository;
 
@@ -26,16 +27,29 @@ public class UtilisateurService {
     private final PasswordEncoder passwordEncoder;
     private final NotificationEmailService notificationEmailService;
     private final JournalActionsService journal;
+    private final NotificationService notifications;
 
     public UtilisateurService(
             UtilisateurRepository repository,
             PasswordEncoder passwordEncoder,
             NotificationEmailService notificationEmailService,
-            JournalActionsService journal) {
+            JournalActionsService journal,
+            NotificationService notifications) {
         this.repository = repository;
         this.passwordEncoder = passwordEncoder;
         this.notificationEmailService = notificationEmailService;
         this.journal = journal;
+        this.notifications = notifications;
+    }
+
+    /** Prévient tous les administrateurs (celui qui agit compris : sa cloche garde la trace de l'action). */
+    private void notifierAdmins(String type, String message, Long utilisateurId) {
+        notifications.notifierRole("ADMINISTRATEUR", null, type, message,
+                NotificationService.ENTITE_UTILISATEUR, utilisateurId);
+    }
+
+    private String nomActeur(Long acteurId) {
+        return repository.findById(acteurId).map(NotificationService::nom).orElse("un administrateur");
     }
 
     private String normaliserEmail(String email) {
@@ -95,8 +109,13 @@ public class UtilisateurService {
 
         Users cree = repository.save(u);
 
-        journal.enregistrer(acteurId, "ADD_USER", "UTILISATEUR", cree.getId(), java.util.Map.of(
-                "matricule", cree.getMatricule(), "role", cree.getRole(), "email", cree.getEmail()));
+        journal.enregistrerModification(acteurId, "ADD_USER", "UTILISATEUR", cree.getId(),
+                null, Instantane.de(cree), null);
+
+        notifierAdmins(TypeNotification.UTILISATEUR_CREE,
+                "Compte créé : " + NotificationService.nom(cree) + " (matricule " + cree.getMatricule()
+                        + ", rôle " + cree.getRole() + ") par " + nomActeur(acteurId) + ".",
+                cree.getId());
 
         UtilisateurCreeEvent event = new UtilisateurCreeEvent(
                 cree.getId(),
@@ -145,16 +164,21 @@ public class UtilisateurService {
                     throw new ResponseStatusException(HttpStatus.CONFLICT, "Ce matricule existe déjà");
                 });
 
+        var avant = Instantane.de(u);      // à prendre avant les setters : l'entité est modifiée sur place
         u.setNom(request.nom().trim());
         u.setPrenom(request.prenom().trim());
         u.setEmail(email);
         u.setMatricule(matricule);
-        String ancienRole = u.getRole();
         u.setRole(validerRole(request.role()));
-        Users enregistre = repository.save(u);
+        Users enregistre = repository.saveAndFlush(u);
 
-        journal.enregistrer(acteurId, "UPDATE_USER", "UTILISATEUR", enregistre.getId(), java.util.Map.of(
-                "matricule", enregistre.getMatricule(), "roleAvant", ancienRole, "roleApres", enregistre.getRole()));
+        journal.enregistrerModification(acteurId, "UPDATE_USER", "UTILISATEUR", enregistre.getId(),
+                avant, Instantane.de(enregistre), null);
+
+        notifierAdmins(TypeNotification.UTILISATEUR_MODIFIE,
+                "Compte modifié : " + NotificationService.nom(enregistre) + " (matricule "
+                        + enregistre.getMatricule() + ") par " + nomActeur(acteurId) + ".",
+                enregistre.getId());
 
         return UtilisateurResponse.from(enregistre);
     }
@@ -162,10 +186,15 @@ public class UtilisateurService {
     @Transactional
     public void desactiver(Long id, Long acteurId) {
         Users u = rechercher(id);
+        var avant = Instantane.de(u);
         u.setActif(false);
-        repository.save(u);
-        journal.enregistrer(acteurId, "DISABLE_USER", "UTILISATEUR", u.getId(),
-                java.util.Map.of("matricule", u.getMatricule()));
+        repository.saveAndFlush(u);
+        journal.enregistrerModification(acteurId, "DISABLE_USER", "UTILISATEUR", u.getId(),
+                avant, Instantane.de(u), null);
+        notifierAdmins(TypeNotification.UTILISATEUR_DESACTIVE,
+                "Compte désactivé : " + NotificationService.nom(u) + " (matricule " + u.getMatricule()
+                        + ") par " + nomActeur(acteurId) + ".",
+                u.getId());
     }
 
     private Users rechercher(Long id) {
@@ -176,9 +205,14 @@ public class UtilisateurService {
     @Transactional
     public void activer(Long id, Long acteurId) {
         Users u = rechercher(id);
+        var avant = Instantane.de(u);
         u.setActif(true);
-        repository.save(u);
-        journal.enregistrer(acteurId, "ENABLE_USER", "UTILISATEUR", u.getId(),
-                java.util.Map.of("matricule", u.getMatricule()));
+        repository.saveAndFlush(u);
+        journal.enregistrerModification(acteurId, "ENABLE_USER", "UTILISATEUR", u.getId(),
+                avant, Instantane.de(u), null);
+        notifierAdmins(TypeNotification.UTILISATEUR_ACTIVE,
+                "Compte réactivé : " + NotificationService.nom(u) + " (matricule " + u.getMatricule()
+                        + ") par " + nomActeur(acteurId) + ".",
+                u.getId());
     }
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { apiRequest } from "../../api/api";
 import { STATUTS_NC, GRAVITES, formaterDate } from "../constantes";
 import VisualisationNcModal from "../responsable_qualite/VisualisationNcModal";
@@ -7,6 +7,7 @@ import "./nc.css";
 
 export default function MesNonConformites({ utilisateur }) {
     const navigate = useNavigate();
+    const [parametresUrl, setParametresUrl] = useSearchParams();
     const [liste, setListe] = useState([]);
     const [chargement, setChargement] = useState(true);
     const [erreur, setErreur] = useState("");
@@ -36,6 +37,15 @@ export default function MesNonConformites({ utilisateur }) {
     useEffect(() => {
         chargerDonnees();
     }, []);
+
+    // Lien d'une notification : /declarant/non-conformites?voir=ID ouvre la NC en visualisation seule
+    useEffect(() => {
+        const id = Number(parametresUrl.get("voir"));
+        if (id > 0) {
+            setNcVisualisationId(id);
+            setParametresUrl({}, { replace: true });
+        }
+    }, [parametresUrl, setParametresUrl]);
 
     function preparerModification(nc) {
         setNcSelectionnee(nc);

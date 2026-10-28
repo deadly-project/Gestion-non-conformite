@@ -1,5 +1,6 @@
 package com.example.service;
 
+import com.example.domain.TypeNotification;
 import com.example.entity.ActionCapa;
 import com.example.entity.Audit;
 import com.example.entity.NonConformite;
@@ -28,6 +29,9 @@ import java.util.stream.Collectors;
 @Service
 public class AuditCapaService {
 
+    private static final java.time.format.DateTimeFormatter FORMAT_DATE =
+            java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
     /** Audit d'une étape CAPA renvoyé au frontend. */
     public record EntreePlanning(Long id, Long etapeId, LocalDate date, String typeAudit, String statut) {}
 
@@ -42,15 +46,18 @@ public class AuditCapaService {
     private final ActionCapaRepository capaRepository;
     private final NonConformiteRepository ncRepository;
     private final JournalActionsService journal;
+    private final NotificationService notifications;
 
     public AuditCapaService(AuditRepository auditRepository,
                             ActionCapaRepository capaRepository,
                             NonConformiteRepository ncRepository,
-                            JournalActionsService journal) {
+                            JournalActionsService journal,
+                            NotificationService notifications) {
         this.auditRepository = auditRepository;
         this.capaRepository = capaRepository;
         this.ncRepository = ncRepository;
         this.journal = journal;
+        this.notifications = notifications;
     }
 
     @Transactional(readOnly = true)
@@ -119,9 +126,10 @@ public class AuditCapaService {
 
         List<Audit> crees = auditRepository.saveAll(aCreer);
         for (Audit audit : crees) {
-            journal.enregistrer(acteur.getId(), "ADD_AUDIT_PLANNING", "AUDIT", audit.getId(),
-                    Map.of("etapeId", audit.getActionCapaId(), "date", audit.getDatePlanifiee().toString()));
+            journal.enregistrerModification(acteur.getId(), "ADD_AUDIT_PLANNING", "AUDIT", audit.getId(),
+                    null, Instantane.de(audit), null);
         }
+        notifierAuditeurs(crees);
         return crees.stream().map(this::versDto).toList();
     }
 
@@ -135,9 +143,39 @@ public class AuditCapaService {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Un audit en cours ou terminé ne peut pas être retiré du calendrier");
         }
-        journal.enregistrer(acteur.getId(), "DELETE_AUDIT_PLANNING", "AUDIT", audit.getId(),
-                Map.of("etapeId", audit.getActionCapaId()));
+        journal.enregistrerModification(acteur.getId(), "DELETE_AUDIT_PLANNING", "AUDIT", audit.getId(),
+                Instantane.de(audit), null, null);
         auditRepository.delete(audit);
+
+        // L'auditeur ne doit pas se présenter à un audit qui n'existe plus : entiteId null -> son calendrier
+        notifications.notifier(audit.getAuditeurId(), TypeNotification.AUDIT_RETIRE,
+                "L'audit « " + audit.getTitre() + " » prévu le " + audit.getDatePlanifiee().format(FORMAT_DATE)
+                        + " a été retiré du planning par " + NotificationService.nom(acteur) + ".",
+                NotificationService.ENTITE_AUDIT, null);
+    }
+
+    /**
+     * Prévient chaque auditeur des audits qui lui sont attribués. Un seul audit : lien direct vers lui ;
+     * plusieurs audits planifiés d'un coup : une seule notification qui renvoie vers son calendrier.
+     */
+    private void notifierAuditeurs(List<Audit> crees) {
+        Map<Long, List<Audit>> parAuditeur = crees.stream()
+                .collect(Collectors.groupingBy(Audit::getAuditeurId));
+        parAuditeur.forEach((auditeurId, audits) -> {
+            if (audits.size() == 1) {
+                Audit a = audits.get(0);
+                notifications.notifier(auditeurId, TypeNotification.AUDIT_ATTRIBUE,
+                        "Un audit vous a été attribué : « " + a.getTitre() + " » le "
+                                + a.getDatePlanifiee().format(FORMAT_DATE) + ".",
+                        NotificationService.ENTITE_AUDIT, a.getId());
+            } else {
+                notifications.notifier(auditeurId, TypeNotification.AUDIT_ATTRIBUE,
+                        audits.size() + " audits vous ont été attribués, à partir du "
+                                + audits.stream().map(Audit::getDatePlanifiee).min(LocalDate::compareTo).get()
+                                .format(FORMAT_DATE) + ". Consultez votre calendrier.",
+                        NotificationService.ENTITE_AUDIT, null);
+            }
+        });
     }
 
     private EntreePlanning versDto(Audit a) {

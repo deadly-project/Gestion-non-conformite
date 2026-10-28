@@ -108,7 +108,7 @@ public class AuditeurAuditController {
     @GetMapping("/pieces-jointes/{pieceId}")
     @PreAuthorize("hasAnyRole('AUDITEUR','RESPONSABLE_QUALITE','ADMINISTRATEUR')")
     public ResponseEntity<org.springframework.core.io.Resource> pieceJointe(@PathVariable Long pieceId,
-                                                                           Authentication authentication) {
+                                                                            Authentication authentication) {
         ConstatPieceJointeService.PieceJointeLue pj =
                 pieceJointeService.lire(pieceId, utilisateurCourant(authentication));
         return ResponseEntity.ok()

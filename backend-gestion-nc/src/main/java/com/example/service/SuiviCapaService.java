@@ -2,6 +2,7 @@ package com.example.service;
 
 import com.example.domain.StatutAction;
 import com.example.domain.StatutNc;
+import com.example.domain.TypeNotification;
 import com.example.dto.audit.AuditDtos.*;
 import com.example.entity.*;
 import com.example.repository.*;
@@ -31,6 +32,7 @@ public class SuiviCapaService {
     private final AuditAssembleur assembleur;
     private final CapaEvenementService evenements;
     private final JournalActionsService journal;
+    private final NotificationService notifications;
 
     public SuiviCapaService(NonConformiteRepository ncRepository,
                             ActionCapaRepository capaRepository,
@@ -40,7 +42,8 @@ public class SuiviCapaService {
                             NcStatutHistoriqueRepository statutHistoriqueRepository,
                             AuditAssembleur assembleur,
                             CapaEvenementService evenements,
-                            JournalActionsService journal) {
+                            JournalActionsService journal,
+                            NotificationService notifications) {
         this.ncRepository = ncRepository;
         this.capaRepository = capaRepository;
         this.auditRepository = auditRepository;
@@ -50,6 +53,7 @@ public class SuiviCapaService {
         this.assembleur = assembleur;
         this.evenements = evenements;
         this.journal = journal;
+        this.notifications = notifications;
     }
 
     // ------------------------------------------------------------------ lecture
@@ -108,8 +112,17 @@ public class SuiviCapaService {
         c.setCommentaire(texte.trim());
         commentaireRepository.save(c);
 
-        journal.enregistrer(rq.getId(), "ADD_COMMENT", "CONSTAT_AUDIT", constatId,
-                Map.of("auditId", audit.getId(), "ncId", nc.getId()));
+        Map<String, Object> contexte = new LinkedHashMap<>();
+        contexte.put("auditId", audit.getId());
+        contexte.put("ncId", nc.getId());
+        journal.enregistrerModification(rq.getId(), "ADD_COMMENT", "CONSTAT_AUDIT", constatId,
+                null, Instantane.de(c), contexte);
+
+        // L'auditeur de l'audit est prévenu du commentaire du responsable qualité
+        notifications.notifier(audit.getAuditeurId(), TypeNotification.COMMENTAIRE_CONSTAT,
+                NotificationService.nom(rq) + " a commenté un constat de l'audit « " + audit.getTitre()
+                        + " » : « " + NotificationService.extrait(c.getCommentaire(), 140) + " »",
+                NotificationService.ENTITE_AUDIT, audit.getId());
         evenements.publier(nc.getId(), etape.getId(), audit.getId(), "COMMENTAIRE_AJOUTE",
                 nom(rq) + " a commenté un constat de « " + audit.getTitre() + " »");
         return construire(nc);
@@ -134,6 +147,7 @@ public class SuiviCapaService {
                     "Un commentaire est obligatoire lorsque le traitement n'est pas efficace");
         }
 
+        var etapeAvant = Instantane.de(etape);   // avant les setters : l'entité est modifiée sur place
         LocalDateTime maintenant = LocalDateTime.now();
         etape.setStatutAction(StatutAction.VERIFIEE.name());
         etape.setEfficace(req.efficace());
@@ -144,8 +158,10 @@ public class SuiviCapaService {
         etape.setDateModification(maintenant);
         capaRepository.save(etape);
 
-        journal.enregistrer(rq.getId(), "VALIDATE_CAPA", "ACTION_CAPA", etape.getId(),
-                Map.of("ncId", nc.getId(), "efficace", req.efficace()));
+        Map<String, Object> contexteValidation = new LinkedHashMap<>();
+        contexteValidation.put("ncId", nc.getId());
+        journal.enregistrerModification(rq.getId(), "VALIDATE_CAPA", "ACTION_CAPA", etape.getId(),
+                etapeAvant, Instantane.de(etape), contexteValidation);
         evenements.publier(nc.getId(), etape.getId(), null, "CAPA_VALIDEE",
                 nom(rq) + " a validé une étape CAPA (" + (req.efficace() ? "efficace" : "non efficace") + ")");
         return construire(nc);
@@ -163,6 +179,7 @@ public class SuiviCapaService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Cette étape n'est pas validée");
         }
 
+        var etapeAvant = Instantane.de(etape);
         etape.setStatutAction(StatutAction.TERMINEE.name());
         etape.setEfficace(null);
         etape.setCommentaireEfficacite(null);
@@ -171,8 +188,10 @@ public class SuiviCapaService {
         etape.setDateModification(LocalDateTime.now());
         capaRepository.save(etape);
 
-        journal.enregistrer(rq.getId(), "CANCEL_CAPA_VALIDATION", "ACTION_CAPA", etape.getId(),
-                Map.of("ncId", nc.getId()));
+        Map<String, Object> contexteAnnulation = new LinkedHashMap<>();
+        contexteAnnulation.put("ncId", nc.getId());
+        journal.enregistrerModification(rq.getId(), "CANCEL_CAPA_VALIDATION", "ACTION_CAPA", etape.getId(),
+                etapeAvant, Instantane.de(etape), contexteAnnulation);
         evenements.publier(nc.getId(), etape.getId(), null, "VALIDATION_ANNULEE",
                 nom(rq) + " a annulé la validation d'une étape CAPA");
         return construire(nc);
@@ -190,6 +209,7 @@ public class SuiviCapaService {
         String motif = motifNonCloturable(capaRepository.findByNcIdOrderByIdAsc(ncId));
         if (motif != null) throw new ResponseStatusException(HttpStatus.CONFLICT, motif);
 
+        var ncAvant = Instantane.de(nc);     // avant les setters : l'entité est modifiée sur place
         LocalDateTime maintenant = LocalDateTime.now();
         String ancienStatut = nc.getStatut();
         nc.setStatut(StatutNc.CLOTUREE.name());
@@ -206,11 +226,44 @@ public class SuiviCapaService {
         h.setDateChangement(maintenant);
         statutHistoriqueRepository.save(h);
 
-        journal.enregistrer(rq.getId(), "CLOSE_NC", "NON_CONFORMITE", nc.getId(),
-                Map.of("statutAvant", ancienStatut, "statutApres", StatutNc.CLOTUREE.name()));
+        Map<String, Object> contexteCloture = new LinkedHashMap<>();
+        contexteCloture.put("commentaire", h.getCommentaire());
+        journal.enregistrerModification(rq.getId(), "CLOSE_NC", "NON_CONFORMITE", nc.getId(),
+                ncAvant, Instantane.de(nc), contexteCloture);
+
+        notifierCloture(nc, rq, ancienStatut);
         evenements.publier(nc.getId(), null, null, "NC_CLOTUREE",
                 nom(rq) + " a clôturé la non-conformité " + nc.getReference());
         return construire(nc);
+    }
+
+    /**
+     * Clôture : tous les responsables qualité (celui qui clôture compris), les auditeurs concernés
+     * et le déclarant (changement de statut de sa déclaration).
+     */
+    private void notifierCloture(NonConformite nc, Users rq, String ancienStatut) {
+        String designation = NotificationService.designation(nc);
+
+        notifications.notifierRole("RESPONSABLE_QUALITE", null, TypeNotification.NC_CLOTUREE,
+                "La non-conformité " + designation + " (« " + nc.getTitre() + " ») a été clôturée par "
+                        + NotificationService.nom(rq) + ".",
+                NotificationService.ENTITE_NC, nc.getId());
+
+        Set<Long> auditeurs = new LinkedHashSet<>();
+        if (nc.getAuditeurId() != null) auditeurs.add(nc.getAuditeurId());
+        auditRepository.findByNcId(nc.getId()).forEach(a -> auditeurs.add(a.getAuditeurId()));
+        notifications.notifierPlusieurs(auditeurs, TypeNotification.NC_CLOTUREE,
+                "La non-conformité " + designation + " (« " + nc.getTitre() + " »), dont vous êtes l'auditeur, "
+                        + "a été clôturée par " + NotificationService.nom(rq) + ".",
+                NotificationService.ENTITE_NC, nc.getId());
+
+        if (!nc.getDeclarantId().equals(rq.getId())) {
+            notifications.notifier(nc.getDeclarantId(), TypeNotification.NC_STATUT_CHANGE,
+                    "Votre déclaration « " + nc.getTitre() + " » est passée de « "
+                            + NotificationService.libelleStatut(ancienStatut) + " » à « "
+                            + NotificationService.libelleStatut(StatutNc.CLOTUREE.name()) + " ».",
+                    NotificationService.ENTITE_NC, nc.getId());
+        }
     }
 
     // ------------------------------------------------------------------ règles

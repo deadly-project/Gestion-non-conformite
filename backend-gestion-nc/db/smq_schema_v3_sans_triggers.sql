@@ -44,11 +44,15 @@ CREATE TABLE users (
 -- ---------------------------------------------------------------------
 CREATE TABLE processus (
     id          BIGSERIAL PRIMARY KEY,
-    code        VARCHAR(30)  NOT NULL UNIQUE,
-    libelle     VARCHAR(150) NOT NULL UNIQUE,
+    code        VARCHAR(30)  NOT NULL,                 -- plusieurs processus peuvent partager un code
+    libelle     VARCHAR(150) NOT NULL,
     description TEXT,
     actif       BOOLEAN NOT NULL DEFAULT TRUE
 );
+
+-- Seul un doublon strict (même code, même libellé, même description) est interdit
+CREATE UNIQUE INDEX uq_processus_code_libelle_description
+    ON processus (upper(code), lower(libelle), md5(coalesce(description, '')));
 
 CREATE TABLE categories_nc (
     id      BIGSERIAL PRIMARY KEY,
@@ -240,9 +244,7 @@ CREATE TABLE documents_qualite (
 CREATE TABLE notifications (
     id            BIGSERIAL PRIMARY KEY,
     user_id       BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    type          VARCHAR(30) NOT NULL
-                  CHECK (type IN ('ASSIGNATION','ECHEANCE_PROCHE','ECHEANCE_DEPASSEE',
-                                  'CHANGEMENT_STATUT','AUDIT_PLANIFIE','AUTRE')),
+    type          VARCHAR(40) NOT NULL,                -- type libre, géré par l'application
     message       TEXT NOT NULL,
     entite        VARCHAR(30),
     entite_id     BIGINT,
@@ -282,6 +284,7 @@ CREATE INDEX idx_audits_processus ON audits(processus_id, date_planifiee);
 CREATE INDEX idx_constats_audit   ON constats_audit(audit_id);
 CREATE INDEX idx_docs_processus   ON documents_qualite(processus_id, statut);
 CREATE INDEX idx_notif_user       ON notifications(user_id, lue);
+CREATE INDEX idx_notif_user_date  ON notifications(user_id, date_creation DESC);
 CREATE INDEX idx_histo_entite     ON historique_actions(entite_concernee, entite_id);
 CREATE INDEX idx_histo_user       ON historique_actions(utilisateur_id, date_action);
 

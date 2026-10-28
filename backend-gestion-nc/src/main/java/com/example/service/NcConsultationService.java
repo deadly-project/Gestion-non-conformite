@@ -52,7 +52,8 @@ public class NcConsultationService {
     // Liste paginée (responsable qualité)
     // ------------------------------------------------------------------
     @Transactional(readOnly = true)
-    public PageResponse<NcListeItem> lister(String statut, String recherche, int page, int taille) {
+    public PageResponse<NcListeItem> lister(String statut, String recherche, Long responsableCapaId,
+                                            int page, int taille) {
         int tailleSure = Math.min(Math.max(taille, 1), 50);
         int pageSure = Math.max(page, 0);
         String statutSur = statut == null ? "" : statut.trim().toUpperCase(Locale.ROOT);
@@ -64,8 +65,10 @@ public class NcConsultationService {
             }
         }
 
+        // null = pas de filtre ; sinon uniquement les NC dont cet utilisateur est responsable d'une action CAPA
         Page<NcListeItem> resultat = ncRepository.rechercher(
-                statutSur, motif(recherche), PageRequest.of(pageSure, tailleSure));
+                statutSur, motif(recherche), responsableCapaId == null ? -1L : responsableCapaId,
+                PageRequest.of(pageSure, tailleSure));
         return new PageResponse<>(resultat.getContent(), resultat.getNumber(), resultat.getSize(),
                 resultat.getTotalElements(), resultat.getTotalPages());
     }

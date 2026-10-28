@@ -2,6 +2,7 @@ package com.example.service;
 
 import com.example.domain.StatutAction;
 import com.example.domain.StatutNc;
+import com.example.domain.TypeNotification;
 import com.example.dto.nc.*;
 import com.example.entity.*;
 import com.example.repository.*;
@@ -35,6 +36,7 @@ public class NcTraitementService {
     private final NcCompteurRepository compteurRepository;
     private final NcConsultationService consultationService;
     private final JournalActionsService journal;
+    private final NotificationService notifications;
 
     public NcTraitementService(NonConformiteRepository ncRepository,
                                CategorieNcRepository categorieRepository,
@@ -44,7 +46,8 @@ public class NcTraitementService {
                                NcStatutHistoriqueRepository statutHistoriqueRepository,
                                NcCompteurRepository compteurRepository,
                                NcConsultationService consultationService,
-                               JournalActionsService journal) {
+                               JournalActionsService journal,
+                               NotificationService notifications) {
         this.ncRepository = ncRepository;
         this.categorieRepository = categorieRepository;
         this.utilisateurRepository = utilisateurRepository;
@@ -54,6 +57,7 @@ public class NcTraitementService {
         this.compteurRepository = compteurRepository;
         this.consultationService = consultationService;
         this.journal = journal;
+        this.notifications = notifications;
     }
 
     @Transactional
@@ -66,6 +70,9 @@ public class NcTraitementService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Non-conformité introuvable"));
 
         StatutNc statutActuel = StatutNc.valueOf(nc.getStatut());
+        // État complet de la NC avant modification (l'entité est modifiée sur place plus bas)
+        var etatAvant = Instantane.de(nc);
+        Long ancienAuditeurId = nc.getAuditeurId();
         if (statutActuel == StatutNc.CLOTUREE) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Cette non-conformité est clôturée : elle ne peut plus être modifiée ici");
@@ -161,13 +168,28 @@ public class NcTraitementService {
         nc.setDateModification(maintenant);
         ncRepository.save(nc);
 
-        Map<String, Object> detailsTraitement = new HashMap<>();
-        detailsTraitement.put("statutAvant", statutActuel.name());
-        detailsTraitement.put("statutApres", req.statut().name());
-        detailsTraitement.put("gravite", req.gravite() != null ? req.gravite().name() : "");
-        detailsTraitement.put("etapesCapa", req.etapesCapa().size());
-        if (referenceAttribuee != null) detailsTraitement.put("referenceAttribuee", referenceAttribuee);
-        journal.enregistrer(acteur.getId(), "UPDATE_NC", "NON_CONFORMITE", nc.getId(), detailsTraitement);
+        Map<String, Object> contexte = new LinkedHashMap<>();
+        contexte.put("etapesCapa", req.etapesCapa().size());
+        if (referenceAttribuee != null) contexte.put("referenceAttribuee", referenceAttribuee);
+        journal.enregistrerModification(acteur.getId(), "UPDATE_NC", "NON_CONFORMITE", nc.getId(),
+                etatAvant, Instantane.de(nc), contexte);
+
+        // --- Notifications ---
+        // Déclarant : informé de chaque changement de statut (simple visualisation de sa déclaration)
+        if (req.statut() != statutActuel && !nc.getDeclarantId().equals(acteur.getId())) {
+            notifications.notifier(nc.getDeclarantId(), TypeNotification.NC_STATUT_CHANGE,
+                    "Votre déclaration « " + nc.getTitre() + " » est passée de « "
+                            + NotificationService.libelleStatut(statutActuel.name()) + " » à « "
+                            + NotificationService.libelleStatut(req.statut().name()) + " ».",
+                    NotificationService.ENTITE_NC, nc.getId());
+        }
+        // Auditeur nouvellement désigné sur cette non-conformité
+        if (req.auditeurId() != null && !req.auditeurId().equals(ancienAuditeurId)) {
+            notifications.notifier(req.auditeurId(), TypeNotification.NC_AUDITEUR_ASSIGNE,
+                    "Vous avez été désigné auditeur de la non-conformité " + NotificationService.designation(nc)
+                            + " (« " + nc.getTitre() + " ») par " + NotificationService.nom(acteur) + ".",
+                    NotificationService.ENTITE_NC, nc.getId());
+        }
 
         return consultationService.detail(nc.getId());
     }

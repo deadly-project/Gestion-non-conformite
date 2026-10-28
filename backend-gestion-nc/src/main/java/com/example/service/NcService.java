@@ -1,6 +1,7 @@
 package com.example.service;
 
 import com.example.domain.StatutNc;
+import com.example.domain.TypeNotification;
 import com.example.dto.nc.DeclarationNcRequest;
 import com.example.dto.nc.NcCreeResponse;
 import com.example.entity.NcStatutHistorique;
@@ -40,13 +41,15 @@ public class NcService {
     private final JournalActionsService journal;
     private final SimpMessagingTemplate messagingTemplate;
     private final NcConsultationService consultationService;
+    private final NotificationService notifications;
 
     public NcService(NonConformiteRepository ncRepository,
                      NcStatutHistoriqueRepository statutHistoriqueRepository,
                      ProcessusRepository processusRepository,
                      PieceJointeService pieceJointeService,
                      JournalActionsService journal,
-                     SimpMessagingTemplate messagingTemplate, NcConsultationService consultationService) {
+                     SimpMessagingTemplate messagingTemplate, NcConsultationService consultationService,
+                     NotificationService notifications) {
         this.ncRepository = ncRepository;
         this.statutHistoriqueRepository = statutHistoriqueRepository;
         this.processusRepository = processusRepository;
@@ -54,6 +57,7 @@ public class NcService {
         this.journal = journal;
         this.messagingTemplate = messagingTemplate;
         this.consultationService =consultationService;
+        this.notifications = notifications;
     }
 
     @Transactional
@@ -85,18 +89,35 @@ public class NcService {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Le libellé du nouveau processus est obligatoire");
             }
 
+            // Un même code peut être réutilisé avec une autre description ; seul un doublon STRICT est refusé.
+            String code = npDto.code().trim().toUpperCase(java.util.Locale.ROOT);
+            String libelle = npDto.libelle().trim();
+            String description = npDto.description() == null ? "" : npDto.description().trim();
+            if (code.length() > 30 || libelle.length() > 150) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Le code (30 caractères max.) ou le libellé (150 caractères max.) du processus est trop long");
+            }
+            if (processusRepository.existeDoublon(code, libelle, description)) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "Un processus identique (même code, même libellé et même description) existe déjà : "
+                                + "recherchez-le dans la liste et sélectionnez-le.");
+            }
+
             Processus nouveauP = new Processus();
-            nouveauP.setCode(npDto.code());
-            nouveauP.setLibelle(npDto.libelle().trim());
-            nouveauP.setDescription(npDto.description());
+            nouveauP.setCode(code);
+            nouveauP.setLibelle(libelle);
+            nouveauP.setDescription(description.isEmpty() ? null : description);
             nouveauP.setActif(true);
 
             try {
-                nouveauP = processusRepository.save(nouveauP);
+                nouveauP = processusRepository.saveAndFlush(nouveauP);
                 processusIdFinal = nouveauP.getId();
             } catch (Exception e) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Erreur lors de la création du processus (code ou libellé probablement déjà existant)");
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "Ce processus existe déjà (même code, même libellé et même description)");
             }
+            journal.enregistrerModification(declarant.getId(), "ADD_PROCESSUS", "PROCESSUS", nouveauP.getId(),
+                    null, Instantane.de(nouveauP), null);
         } else {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Veuillez sélectionner ou créer un processus");
         }
@@ -132,11 +153,17 @@ public class NcService {
         pieceJointeService.enregistrer(nc.getId(), fichiers, declarant.getId(), maintenant);
 
         // 7. Journalisation
-        Map<String, Object> detailsCreation = new java.util.HashMap<>();
-        detailsCreation.put("reference", nc.getReference() == null ? "" : nc.getReference());
-        detailsCreation.put("referenceAttenteAttribution", nc.getReference() == null);
-        detailsCreation.put("piecesJointes", fichiers.size());
-        journal.enregistrer(declarant.getId(), "ADD_NC", "NON_CONFORMITE", nc.getId(), detailsCreation);
+        Map<String, Object> contexteCreation = new java.util.LinkedHashMap<>();
+        contexteCreation.put("referenceAttenteAttribution", nc.getReference() == null);
+        contexteCreation.put("piecesJointes", fichiers.size());
+        journal.enregistrerModification(declarant.getId(), "ADD_NC", "NON_CONFORMITE", nc.getId(),
+                null, Instantane.de(nc), contexteCreation);
+
+        // Notification des responsables qualité (sauf le déclarant lui-même s'il en est un)
+        notifications.notifierRole("RESPONSABLE_QUALITE", declarant.getId(), TypeNotification.NC_DECLAREE,
+                "Nouvelle non-conformité déclarée par " + NotificationService.nom(declarant)
+                        + " : « " + nc.getTitre() + " ».",
+                NotificationService.ENTITE_NC, nc.getId());
 
 
         // 8. Notification WebSocket après validation de la transaction
@@ -179,6 +206,7 @@ public class NcService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "La non-conformité ne peut plus être modifiée car son traitement a débuté");
         }
 
+        var avant = Instantane.de(nc);     // avant les setters : l'entité est modifiée sur place
         nc.setTitre(req.titre().trim());
         nc.setDescriptionDetaillee(req.descriptionDetaillee().trim());
         nc.setGraviteDeclaree(req.graviteDeclaree().name());
@@ -186,9 +214,12 @@ public class NcService {
         nc.setDateModification(LocalDateTime.now());
         ncRepository.save(nc);
 
-        journal.enregistrer(declarant.getId(), "UPDATE_NC", "NON_CONFORMITE", nc.getId(), Map.of(
-                "titre", nc.getTitre(),
-                "graviteDeclaree", nc.getGraviteDeclaree()));
+        journal.enregistrerModification(declarant.getId(), "UPDATE_NC", "NON_CONFORMITE", nc.getId(),
+                avant, Instantane.de(nc), null);
+
+        notifications.notifierRole("RESPONSABLE_QUALITE", declarant.getId(), TypeNotification.NC_MODIFIEE,
+                NotificationService.nom(declarant) + " a modifié sa déclaration « " + nc.getTitre() + " ».",
+                NotificationService.ENTITE_NC, nc.getId());
 
         // Notification WebSocket en temps réel
         Map<String, Object> payloadNotification = Map.of(

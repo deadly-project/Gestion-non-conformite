@@ -62,6 +62,7 @@ public class ConstatPieceJointeService {
 
         List<PieceJointeService.FichierValide> fichiers = stockage.valider(images, pdf);
         LocalDateTime maintenant = LocalDateTime.now();
+        List<Map<String, Object>> ajoutees = new java.util.ArrayList<>();
         for (PieceJointeService.FichierValide f : fichiers) {
             String cle = stockage.stocker("constat/" + constatId, f);
             ConstatPieceJointe pj = new ConstatPieceJointe();
@@ -74,10 +75,15 @@ public class ConstatPieceJointeService {
             pj.setUploadedBy(acteur.getId());
             pj.setDateCreation(maintenant);
             repository.save(pj);
+            ajoutees.add(Instantane.de(pj));     // toutes les colonnes de chaque fichier enregistré
         }
 
-        journal.enregistrer(acteur.getId(), "ADD_CONSTAT_ATTACHMENT", "CONSTAT_AUDIT", constat.getId(),
-                Map.of("auditId", auditId, "nombre", fichiers.size()));
+        Map<String, Object> apres = new java.util.LinkedHashMap<>();
+        apres.put("piecesJointesAjoutees", ajoutees);
+        Map<String, Object> contexte = new java.util.LinkedHashMap<>();
+        contexte.put("auditId", auditId);
+        journal.enregistrerModification(acteur.getId(), "ADD_CONSTAT_ATTACHMENT", "CONSTAT_AUDIT", constat.getId(),
+                null, apres, contexte);
 
         com.example.dto.audit.AuditDtos.AuditItem item = assembleur.items(List.of(audit)).get(0);
         return new AuditDetail(item, audit.getCompteRendu(), audit.getTraitementRealise(),
