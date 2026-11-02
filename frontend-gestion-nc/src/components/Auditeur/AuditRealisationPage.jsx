@@ -4,6 +4,7 @@ import { apiBlob, apiRequest } from "../../api/api";
 import { STATUTS_ACTION, TYPES_ACTION, formaterDate } from "../constantes";
 import ConstatsAudit from "./ConstatsAudit";
 import Modal from "../Modal";
+import VisualisationNcModal from "../responsable_qualite/VisualisationNcModal";
 import { RESULTATS_TRAITEMENT, STATUTS_AUDIT, TYPES_AUDIT, TYPES_CONSTAT } from "./libelles";
 import "../Declarant/nc.css";
 import "./audits.css";
@@ -35,6 +36,9 @@ export default function AuditRealisationPage() {
 
     const [afficherModalSaisie, setAfficherModalSaisie] = useState(false);
     const [afficherModalConfirmation, setAfficherModalConfirmation] = useState(false);
+    
+    // État pour gérer l'affichage de la modale de visualisation de la NC
+    const [ncVisualisationId, setNcVisualisationId] = useState(null);
 
     const charger = useCallback(async (initialiserFormulaire) => {
         try {
@@ -314,7 +318,18 @@ export default function AuditRealisationPage() {
                     <div className="area-carte-ligne-titre">
                         <h2 id="area-titre-etape" className="area-carte-titre">
                             Étape CAPA n°{etape.numero}
-                            {nc?.reference ? ` · Réf NC : ${nc.reference}` : ""}
+                            {nc?.reference && (
+                                <>
+                                    {" · Réf NC : "}
+                                    <button
+                                        type="button"
+                                        style={{ background: "none", border: "none", color: "#2563eb", cursor: "pointer", textDecoration: "underline", padding: 0, font: "inherit" }}
+                                        onClick={() => setNcVisualisationId(nc.id)}
+                                    >
+                                        {nc.reference}
+                                    </button>
+                                </>
+                            )}
                         </h2>
                         <span className={`aud-badge aud-badge--${etape.statut}`}>
                             {STATUTS_ACTION[etape.statut] ?? etape.statut}
@@ -531,6 +546,15 @@ export default function AuditRealisationPage() {
                         {erreur && <p className="nc-erreur" role="alert">{erreur}</p>}
                     </div>
                 </Modal>
+            )}
+
+            {/* MODALE DE VISUALISATION DE LA NON-CONFORMITÉ */}
+            {ncVisualisationId && (
+                <VisualisationNcModal
+                    ncId={ncVisualisationId}
+                    actionsResponsable={false}
+                    onFermer={() => setNcVisualisationId(null)}
+                />
             )}
         </main>
     );
