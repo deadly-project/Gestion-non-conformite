@@ -26,6 +26,8 @@ public class ConstatPieceJointeService {
     private final ConstatPieceJointeRepository repository;
     private final ConstatAuditRepository constatRepository;
     private final AuditRepository auditRepository;
+    private final ActionCapaRepository actionCapaRepository;
+    private final NonConformiteRepository ncRepository;
     private final PieceJointeService stockage;
     private final AuditAssembleur assembleur;
     private final JournalActionsService journal;
@@ -33,12 +35,16 @@ public class ConstatPieceJointeService {
     public ConstatPieceJointeService(ConstatPieceJointeRepository repository,
                                      ConstatAuditRepository constatRepository,
                                      AuditRepository auditRepository,
+                                     ActionCapaRepository actionCapaRepository,
+                                     NonConformiteRepository ncRepository,
                                      PieceJointeService stockage,
                                      AuditAssembleur assembleur,
                                      JournalActionsService journal) {
         this.repository = repository;
         this.constatRepository = constatRepository;
         this.auditRepository = auditRepository;
+        this.actionCapaRepository = actionCapaRepository;
+        this.ncRepository = ncRepository;
         this.stockage = stockage;
         this.assembleur = assembleur;
         this.journal = journal;
@@ -102,12 +108,25 @@ public class ConstatPieceJointeService {
 
         boolean autorise = switch (acteur.getRole()) {
             case "ADMINISTRATEUR", "RESPONSABLE_QUALITE" -> true;
-            case "AUDITEUR" -> audit.getAuditeurId().equals(acteur.getId());
+            // Auteur de l'audit, ou auditeur concerné par la NC (avancement consulté en lecture seule)
+            case "AUDITEUR" -> audit.getAuditeurId().equals(acteur.getId()) || auditeurConcerneParNc(audit, acteur);
             default -> false;
         };
         if (!Boolean.TRUE.equals(acteur.getActif()) || !autorise) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Accès refusé à cette pièce jointe");
         }
         return new PieceJointeLue(stockage.lireParCle(pj.getFileUrl()), pj.getNomOriginal(), pj.getMimeType());
+    }
+
+    /** Vrai si l'audit porte sur une étape CAPA d'une NC dont cet auditeur est l'auditeur. */
+    private boolean auditeurConcerneParNc(Audit audit, Users acteur) {
+        if (audit.getActionCapaId() == null) return false;
+        Long ncId = actionCapaRepository.findById(audit.getActionCapaId())
+                .map(ActionCapa::getNcId).orElse(null);
+        if (ncId == null) return false;
+        boolean designe = ncRepository.findById(ncId)
+                .map(nc -> acteur.getId().equals(nc.getAuditeurId())).orElse(false);
+        return designe || auditRepository.findByNcId(ncId).stream()
+                .anyMatch(a -> acteur.getId().equals(a.getAuditeurId()));
     }
 }

@@ -16,7 +16,12 @@ import "../Auditeur/audits.css";
 import "./SuiviCapaPage.css";
 import "./AvancementNcModal.css";
 
-export default function AvancementNcModal({ ncId, onFermer }) {
+/**
+ * Avancement d'une NC (étapes CAPA, audits, constats).
+ * lectureSeule : affichage pour l'auditeur, sans aucun lien vers le suivi terrain
+ * (réservé au responsable qualité).
+ */
+export default function AvancementNcModal({ ncId, onFermer, lectureSeule = false }) {
     const navigate = useNavigate();
     const [suivi, setSuivi] = useState(null);
     const [erreur, setErreur] = useState("");
@@ -47,9 +52,11 @@ export default function AvancementNcModal({ ncId, onFermer }) {
 
     const pied = suivi && (
         <div className="AV-pied">
-            <button type="button" className="AV-btn AV-btn--primaire" onClick={() => ouvrirSuivi(null)}>
-                <FaArrowRightLong /> Ouvrir le suivi terrain
-            </button>
+            {!lectureSeule && (
+                <button type="button" className="AV-btn AV-btn--primaire" onClick={() => ouvrirSuivi(null)}>
+                    <FaArrowRightLong /> Ouvrir le suivi terrain
+                </button>
+            )}
             <button type="button" className="AV-btn AV-btn--secondaire" onClick={onFermer}>
                 <FaXmark /> Fermer
             </button>
@@ -142,13 +149,15 @@ export default function AvancementNcModal({ ncId, onFermer }) {
                                         <span><FaCalendarDays /> Échéance : {formaterDate(etape.dateEcheance)}</span>
                                     </div>
 
-                                    <button
-                                        type="button"
-                                        className="AV-btn AV-btn--secondaire AV-btn--petit"
-                                        onClick={() => ouvrirSuivi(etape.id)}
-                                    >
-                                        <FaLocationArrow /> Ouvrir le suivi de cette étape
-                                    </button>
+                                    {!lectureSeule && (
+                                        <button
+                                            type="button"
+                                            className="AV-btn AV-btn--secondaire AV-btn--petit"
+                                            onClick={() => ouvrirSuivi(etape.id)}
+                                        >
+                                            <FaLocationArrow /> Ouvrir le suivi de cette étape
+                                        </button>
+                                    )}
 
                                     {/* ---- Audits ---- */}
                                     {etape.audits.length === 0 ? (
@@ -199,7 +208,9 @@ export default function AvancementNcModal({ ncId, onFermer }) {
 
                                     <footer className="AV-etape-pied">
                                         <span className="AV-aide">
-                                            {constats.length} constat(s) consultable(s) en lecture seule dans le suivi terrain.
+                                            {lectureSeule
+                                                ? `${constats.length} constat(s) en lecture seule.`
+                                                : `${constats.length} constat(s) consultable(s) en lecture seule dans le suivi terrain.`}
                                         </span>
                                         <span className="AV-aide">
                                             Dernière mise à jour : {formaterDateHeure(etape.dateVerification) || "—"}

@@ -122,6 +122,15 @@ public class ReinitialisationMotDePasseService {
                 .toList();
     }
 
+    /** Toutes les demandes, quel que soit leur statut (les plus récentes d'abord). */
+    @Transactional(readOnly = true)
+    public List<DemandeReinitialisationResponse> listerToutes() {
+        return demandeRepository.findAllByOrderByDateDemandeDesc()
+                .stream()
+                .map(DemandeReinitialisationResponse::from)
+                .toList();
+    }
+
     // ------------------------------------------------------------------
     // 3. Validation : nouveau mot de passe aléatoire envoyé par email
     // ------------------------------------------------------------------

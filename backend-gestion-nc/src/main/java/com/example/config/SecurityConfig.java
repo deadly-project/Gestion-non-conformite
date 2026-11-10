@@ -88,6 +88,22 @@ public class SecurityConfig {
                                 "ADMINISTRATEUR"
                         )
 
+                        // Tableau de bord qualité (indicateurs globaux)
+                        .requestMatchers("/api/dashboard/**")
+                        .hasAnyRole(
+                                "RESPONSABLE_QUALITE",
+                                "ADMINISTRATEUR"
+                        )
+
+                        // Avancement d'une NC en lecture seule : ouvert aussi à l'auditeur
+                        // (le service vérifie qu'il est bien concerné par cette NC)
+                        .requestMatchers(HttpMethod.GET, "/api/capa/nc/*/suivi")
+                        .hasAnyRole(
+                                "AUDITEUR",
+                                "RESPONSABLE_QUALITE",
+                                "ADMINISTRATEUR"
+                        )
+
                         // Actions correctives et préventives
                         .requestMatchers("/api/capa/**")
                         .hasAnyRole(

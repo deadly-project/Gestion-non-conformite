@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { apiRequest } from "../../api/api";
 import { useNotificationsAdmin } from "../../hooks/useNotificationsAdmin";
 import { 
@@ -15,12 +16,38 @@ import "./ReinitialisationsAdmin.css";
 
 const TOPIC = "/topic/admin/reinitialisations";
 
+const FILTRES = [
+    { code: "TOUTES", libelle: "Toutes" },
+    { code: "EN_ATTENTE", libelle: "En attente" },
+    { code: "VALIDEE", libelle: "Validées" },
+    { code: "REFUSEE", libelle: "Refusées" },
+];
+
+const LIBELLES_STATUT = {
+    EN_ATTENTE: "En attente",
+    VALIDEE: "Validée",
+    REFUSEE: "Refusée",
+};
+
+const MESSAGES_VIDES = {
+    TOUTES: "Aucune demande de réinitialisation pour le moment.",
+    EN_ATTENTE: "Aucune demande de réinitialisation en attente.",
+    VALIDEE: "Aucune demande validée.",
+    REFUSEE: "Aucune demande refusée.",
+};
+
 function formaterDate(valeur) {
     return valeur ? new Date(valeur).toLocaleString("fr-FR") : "";
 }
 
 export default function ReinitialisationsAdmin() {
+    const [parametresUrl] = useSearchParams();
     const [demandes, setDemandes] = useState([]);
+    // ?filtre=TOUTES (tableau de bord) ; sans paramètre : les demandes à traiter (en attente)
+    const [filtre, setFiltre] = useState(() => {
+        const demande = parametresUrl.get("filtre");
+        return FILTRES.some((f) => f.code === demande) ? demande : "EN_ATTENTE";
+    });
     const [chargement, setChargement] = useState(true);
     const [erreur, setErreur] = useState("");
     const [info, setInfo] = useState("");
@@ -29,9 +56,8 @@ export default function ReinitialisationsAdmin() {
 
     const charger = useCallback(async () => {
         try {
-            const donnees = await apiRequest(
-                "/api/admin/reinitialisations?statut=EN_ATTENTE"
-            );
+            // Toutes les demandes : le filtre et les compteurs sont calculés ici
+            const donnees = await apiRequest("/api/admin/reinitialisations");
             setDemandes(donnees);
             setErreur("");
         } catch (error) {
@@ -57,6 +83,18 @@ export default function ReinitialisationsAdmin() {
         topic: TOPIC,
         onMessage: surNotification,
     });
+
+    const compteurs = useMemo(() => ({
+        TOUTES: demandes.length,
+        EN_ATTENTE: demandes.filter((d) => d.statut === "EN_ATTENTE").length,
+        VALIDEE: demandes.filter((d) => d.statut === "VALIDEE").length,
+        REFUSEE: demandes.filter((d) => d.statut === "REFUSEE").length,
+    }), [demandes]);
+
+    const demandesAffichees = useMemo(
+        () => (filtre === "TOUTES" ? demandes : demandes.filter((d) => d.statut === filtre)),
+        [demandes, filtre]
+    );
 
     async function confirmerTraitement() {
         if (!modalAction) return;
@@ -153,16 +191,31 @@ export default function ReinitialisationsAdmin() {
                 </div>
             )}
 
+            <div className="admin-reinit-filtres" role="group" aria-label="Filtrer les demandes par statut">
+                {FILTRES.map(({ code, libelle }) => (
+                    <button
+                        key={code}
+                        type="button"
+                        className={`admin-reinit-filtre ${filtre === code ? "actif" : ""}`}
+                        aria-pressed={filtre === code}
+                        onClick={() => setFiltre(code)}
+                    >
+                        {libelle}
+                        <span className="admin-reinit-filtre-nb">{compteurs[code]}</span>
+                    </button>
+                ))}
+            </div>
+
             <section className="admin-reinit-panel">
                 {chargement ? (
                     <div className="admin-reinit-state">
                         <div className="loader-dot"></div>
                         Chargement des demandes...
                     </div>
-                ) : demandes.length === 0 ? (
+                ) : demandesAffichees.length === 0 ? (
                     <div className="admin-reinit-state">
                         <FiClock className="empty-icon" />
-                        <p>Aucune demande de réinitialisation en attente.</p>
+                        <p>{MESSAGES_VIDES[filtre]}</p>
                     </div>
                 ) : (
                     <div className="admin-table-wrap">
@@ -173,11 +226,12 @@ export default function ReinitialisationsAdmin() {
                                     <th>Collaborateur</th>
                                     <th>Rôle</th>
                                     <th>Demandée le</th>
+                                    <th>Statut</th>
                                     <th className="th-actions">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {demandes.map((demande) => (
+                                {demandesAffichees.map((demande) => (
                                     <tr key={demande.id}>
                                         <td data-label="Matricule">
                                             <span className="admin-badge-matricule">
@@ -204,7 +258,20 @@ export default function ReinitialisationsAdmin() {
                                                 <FiClock /> {formaterDate(demande.dateDemande)}
                                             </span>
                                         </td>
+                                        <td data-label="Statut">
+                                            <span className={`admin-statut-badge admin-statut-${demande.statut}`}>
+                                                {LIBELLES_STATUT[demande.statut] ?? demande.statut}
+                                            </span>
+                                            {demande.dateTraitement && (
+                                                <span className="admin-statut-date">
+                                                    le {formaterDate(demande.dateTraitement)}
+                                                </span>
+                                            )}
+                                        </td>
                                         <td data-label="Actions">
+                                            {demande.statut !== "EN_ATTENTE" ? (
+                                                <span className="admin-statut-date">Traitée</span>
+                                            ) : (
                                             <div className="action-buttons">
                                                 <button
                                                     type="button"
@@ -225,6 +292,7 @@ export default function ReinitialisationsAdmin() {
                                                     <FiX /> <span>Refuser</span>
                                                 </button>
                                             </div>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}

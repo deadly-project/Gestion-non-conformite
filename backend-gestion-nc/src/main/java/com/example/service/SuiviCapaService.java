@@ -62,6 +62,26 @@ public class SuiviCapaService {
         return construire(trouverNc(ncId));
     }
 
+    /**
+     * Lecture du suivi par un utilisateur donné. Un auditeur n'y accède que pour les NC
+     * dont il est l'auditeur (désigné sur la NC ou titulaire d'un audit de ses étapes).
+     */
+    @Transactional(readOnly = true)
+    public SuiviNc suivi(Long ncId, Users lecteur) {
+        NonConformite nc = trouverNc(ncId);
+        if ("AUDITEUR".equals(lecteur.getRole()) && !auditeurConcerne(nc, lecteur.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Cette non-conformité ne vous est pas attribuée");
+        }
+        return construire(nc);
+    }
+
+    private boolean auditeurConcerne(NonConformite nc, Long auditeurId) {
+        if (auditeurId.equals(nc.getAuditeurId())) return true;
+        return auditRepository.findByNcId(nc.getId()).stream()
+                .anyMatch(a -> auditeurId.equals(a.getAuditeurId()));
+    }
+
     /** Toutes les étapes CAPA attribuées, pour la page « Actions correctives ». */
     @Transactional(readOnly = true)
     public List<CapaListItem> listerToutes() {

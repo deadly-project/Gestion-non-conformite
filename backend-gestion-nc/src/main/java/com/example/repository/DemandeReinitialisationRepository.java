@@ -19,6 +19,12 @@ public interface DemandeReinitialisationRepository extends JpaRepository<Demande
     @EntityGraph(attributePaths = "utilisateur")
     List<DemandeReinitialisation> findByStatutOrderByDateDemandeAsc(StatutDemande statut);
 
+    /** Toutes les demandes, les plus récentes d'abord (filtre « Toutes »). */
+    @EntityGraph(attributePaths = "utilisateur")
+    List<DemandeReinitialisation> findAllByOrderByDateDemandeDesc();
+
+    long countByStatut(StatutDemande statut);
+
     /** Verrou d'écriture : deux administrateurs ne peuvent pas traiter la même demande. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select d from DemandeReinitialisation d where d.id = :id")

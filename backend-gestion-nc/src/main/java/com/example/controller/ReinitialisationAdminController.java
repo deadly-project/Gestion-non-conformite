@@ -20,10 +20,14 @@ public class ReinitialisationAdminController {
         this.service = service;
     }
 
+    /**
+     * Sans paramètre « statut » : toutes les demandes (en attente, validées, refusées).
+     * Avec « statut » : uniquement les demandes de ce statut.
+     */
     @GetMapping
     public List<DemandeReinitialisationResponse> lister(
-            @RequestParam(defaultValue = "EN_ATTENTE") StatutDemande statut) {
-        return service.lister(statut);
+            @RequestParam(required = false) StatutDemande statut) {
+        return statut == null ? service.listerToutes() : service.lister(statut);
     }
 
     @PostMapping("/{id}/valider")

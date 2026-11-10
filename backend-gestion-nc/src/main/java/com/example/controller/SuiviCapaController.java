@@ -12,8 +12,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
- * Suivi des CAPA par le responsable qualité. /api/capa/** est déjà ouvert à
- * RESPONSABLE_QUALITE et ADMINISTRATEUR dans SecurityConfig ; seules les lectures
+ * Suivi des CAPA par le responsable qualité. /api/capa/** est ouvert à
+ * RESPONSABLE_QUALITE et ADMINISTRATEUR dans SecurityConfig (sauf la lecture du suivi d'une NC,
+ * aussi ouverte à l'auditeur concerné) ; seules les lectures
  * restent accessibles à l'administrateur, les actions sont réservées au responsable qualité.
  * Chaque action renvoie le suivi complet à jour de la non-conformité.
  */
@@ -35,10 +36,14 @@ public class SuiviCapaController {
         return service.listerToutes();
     }
 
+    /**
+     * Avancement d'une NC. Responsable qualité et administrateur : toutes les NC.
+     * Auditeur : lecture seule, uniquement les NC dont il est l'auditeur (contrôlé dans le service).
+     */
     @GetMapping("/nc/{ncId}/suivi")
-    @PreAuthorize("hasAnyRole('RESPONSABLE_QUALITE','ADMINISTRATEUR')")
-    public SuiviNc suivi(@PathVariable Long ncId) {
-        return service.suivi(ncId);
+    @PreAuthorize("hasAnyRole('AUDITEUR','RESPONSABLE_QUALITE','ADMINISTRATEUR')")
+    public SuiviNc suivi(@PathVariable Long ncId, Authentication authentication) {
+        return service.suivi(ncId, utilisateurCourant(authentication));
     }
 
     @PostMapping("/constats/{constatId}/commentaires")

@@ -605,3 +605,70 @@
         padding: 10px 8px;
     }
 }
+/* =====================
+   FILTRES PAR STATUT
+===================== */
+.admin-reinit-filtres {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.admin-reinit-filtre {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 999px;
+    background: #ffffff;
+    color: #475569;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.admin-reinit-filtre:hover {
+    background: #f1f5f9;
+}
+
+.admin-reinit-filtre.actif {
+    background: #1e6fd9;
+    border-color: #1e6fd9;
+    color: #ffffff;
+}
+
+.admin-reinit-filtre-nb {
+    min-width: 22px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.08);
+    font-size: 0.75rem;
+    text-align: center;
+}
+
+.admin-reinit-filtre.actif .admin-reinit-filtre-nb {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+/* Badge de statut d'une demande */
+.admin-statut-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.admin-statut-EN_ATTENTE { background: #fef3c7; color: #92400e; }
+.admin-statut-VALIDEE { background: #dcfce7; color: #166534; }
+.admin-statut-REFUSEE { background: #fee2e2; color: #991b1b; }
+
+.admin-statut-date {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.75rem;
+    color: #64748b;
+}

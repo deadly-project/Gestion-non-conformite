@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { apiRequest } from "../../api/api";
 import { TYPES_ACTION, dateAujourdhui, formaterDate } from "../constantes";
 import { STATUTS_AUDIT, TYPES_AUDIT } from "./libelles";
+import VisualisationNcModal from "../responsable_qualite/VisualisationNcModal";
+import AvancementNcModal from "../responsable_qualite/AvancementNcModal";
 import { FiCalendar, FiMapPin, FiArrowRight, FiX } from "react-icons/fi";
 import "../Declarant/nc.css";
 import "../responsable_qualite/CalendrierAudits.css";   // grille du calendrier (classes cal-*)
@@ -47,7 +49,22 @@ function libelleCourt(audit) {
 
 export default function MesAuditsPage() {
     const navigate = useNavigate();
+    const [parametresUrl, setParametresUrl] = useSearchParams();
     const aujourdhui = dateAujourdhui();
+
+    // Fenêtres ouvertes depuis une notification (lecture seule)
+    const [ncVisualisationId, setNcVisualisationId] = useState(null);
+    const [ncAvancementId, setNcAvancementId] = useState(null);
+
+    // /auditeur/audits?voir=ID : visualisation de la NC (comme le déclarant)
+    // /auditeur/audits?avancement=ID : avancement d'une NC clôturée, sans lien vers le suivi terrain
+    useEffect(() => {
+        const voir = Number(parametresUrl.get("voir"));
+        const avancement = Number(parametresUrl.get("avancement"));
+        if (voir > 0) setNcVisualisationId(voir);
+        if (avancement > 0) setNcAvancementId(avancement);
+        if (voir > 0 || avancement > 0) setParametresUrl({}, { replace: true });
+    }, [parametresUrl, setParametresUrl]);
 
     const [annee, setAnnee] = useState(Number(aujourdhui.slice(0, 4)));
     const [mois, setMois] = useState(Number(aujourdhui.slice(5, 7)) - 1);
@@ -399,6 +416,22 @@ export default function MesAuditsPage() {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {ncVisualisationId && (
+                <VisualisationNcModal
+                    ncId={ncVisualisationId}
+                    actionsResponsable={false}
+                    onFermer={() => setNcVisualisationId(null)}
+                />
+            )}
+
+            {ncAvancementId && (
+                <AvancementNcModal
+                    ncId={ncAvancementId}
+                    lectureSeule
+                    onFermer={() => setNcAvancementId(null)}
+                />
             )}
         </main>
     );

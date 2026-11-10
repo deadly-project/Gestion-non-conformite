@@ -33,6 +33,8 @@ import AuditRealisationPage from "./components/Auditeur/AuditRealisationPage";
 import SuiviCapaPage from "./components/responsable_qualite/SuiviCapaPage";
 import HistoriquePage from "./components/HistoriquePage";
 
+import DashboardPage from "./components/dashboard/DashboardPage";
+
 import './App.css'
 
 function Page({ titre }) {
@@ -221,7 +223,7 @@ function Application() {
                     >
                         <Route
                             path="/admin/dashboard"
-                            element={<Page titre="Administration du SMQ" />}
+                            element={<DashboardPage/>}
                         />
                         <Route
                             path="/admin/utilisateurs/nouveau"
