@@ -1,0 +1,705 @@
+/* ===================================================================
+   STYLES MODERNISÉS - DÉCLARATION DE NON-CONFORMITÉ
+   Design : light, fonds blancs neutres, accents orange Déclarant
+   =================================================================== */
+
+:root {
+    /* Couleurs principales (accent orange Déclarant) */
+    --dec-primary: #ea580c;
+    --dec-primary-hover: #c2410c;
+    --dec-accent: #fb923c;
+
+    /* Fonds & surfaces (neutres) */
+    --dec-bg-page: #ffffff;
+    --dec-bg-page-2: #ffffff;
+    --dec-bg-card: #ffffff;
+    --dec-bg-subtle: #f8fafc;
+    --dec-bg-input: #ffffff;
+    --dec-bg-input-disabled: #f8fafc;
+
+    /* Texte */
+    --dec-text-main: #0f172a;
+    --dec-text-muted: #64748b;
+    --dec-text-label: #334155;
+
+    /* Bordures */
+    --dec-border: #e2e8f0;
+    --dec-border-hover: #fdba74;      /* orange clair au survol */
+    --dec-border-focus: #f97316;      /* orange vif au focus */
+
+    /* Rayons & ombres */
+    --dec-radius: 14px;
+    --dec-radius-sm: 10px;
+    --dec-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+    --dec-shadow-md: 0 6px 18px -8px rgba(15, 23, 42, 0.12);
+    --dec-shadow-lg: 0 20px 40px -18px rgba(234, 88, 12, 0.18);
+    --dec-glow: 0 0 0 4px rgba(249, 115, 22, 0.15);
+}
+
+/* =========================================================
+   Conteneur principal
+   ========================================================= */
+.dec-page {
+    width: 100%;
+    min-height: 100vh;
+    padding: 2rem 1rem 4rem;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--dec-text-main);
+    box-sizing: border-box;
+    position: relative;
+    isolation: isolate;
+}
+
+.dec-page::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background:
+        radial-gradient(1000px 500px at 5% -10%, rgba(234, 88, 12, 0.04), transparent 60%),
+        radial-gradient(900px 500px at 110% 10%, rgba(251, 146, 60, 0.03), transparent 60%),
+        linear-gradient(180deg, #ffffff 0%, #ffffff 55%);
+    pointer-events: none;
+}
+
+@media (min-width: 768px) {
+    .dec-page {
+        padding: 3rem 1.5rem 5rem;
+    }
+}
+
+/* =========================================================
+   En-tête
+   ========================================================= */
+.dec-header-titre {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--dec-border);
+    position: relative;
+}
+
+.dec-header-titre h1 {
+    font-size: 1.85rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin: 0 0 0.5rem 0;
+    color: var(--dec-text-main);
+    background: linear-gradient(120deg, #0f172a 0%, #c2410c 70%, #ea580c 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.dec-soustitre {
+    font-size: 0.95rem;
+    color: var(--dec-text-muted);
+    margin: 0;
+}
+
+/* =========================================================
+   Formulaire
+   ========================================================= */
+.dec-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+}
+
+.dec-grille {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+}
+
+@media (min-width: 640px) {
+    .dec-grille {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.dec-champ {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.dec-champ label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--dec-text-label);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: 0.01em;
+}
+
+.dec-champ label svg {
+    color: var(--dec-primary);
+    flex-shrink: 0;
+}
+
+/* Champs standard */
+.dec-champ input[type="text"],
+.dec-champ input[type="date"],
+.dec-champ textarea,
+.dec-select,
+.dec-input-recherche {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    border: 1px solid var(--dec-border);
+    border-radius: var(--dec-radius-sm);
+    font-size: 0.95rem;
+    font-family: inherit;
+    color: var(--dec-text-main);
+    background-color: var(--dec-bg-input);
+    box-sizing: border-box;
+    box-shadow: var(--dec-shadow-sm);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.dec-champ input::placeholder,
+.dec-champ textarea::placeholder,
+.dec-input-recherche::placeholder {
+    color: #94a3b8;
+}
+
+.dec-champ input:hover,
+.dec-champ textarea:hover,
+.dec-select:hover,
+.dec-input-recherche:hover {
+    border-color: var(--dec-border-hover);
+}
+
+.dec-champ input:focus,
+.dec-champ textarea:focus,
+.dec-select:focus,
+.dec-input-recherche:focus {
+    outline: none;
+    border-color: var(--dec-border-focus);
+    box-shadow: var(--dec-glow);
+}
+
+/* Select personnalisé */
+.dec-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ea580c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 0.9rem center;
+    padding-right: 2.2rem;
+}
+
+/* =========================================================
+   INPUT AUTEUR — lecture seule, encadré neutre + avatar orange
+   ========================================================= */
+.dec-champ-auteur .dec-input-auteur-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.dec-input-auteur-icon {
+    position: absolute;
+    left: 12px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ea580c, #c2410c);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    pointer-events: none;
+    box-shadow: 0 2px 6px rgba(234, 88, 12, 0.28);
+}
+
+.dec-input-auteur {
+    width: 100%;
+    padding: 0.85rem 1rem 0.85rem 3.4rem;
+    border: 1px solid var(--dec-border);
+    border-radius: var(--dec-radius-sm);
+    background-color: var(--dec-bg-input-disabled);   /* #f8fafc neutre */
+    color: var(--dec-text-main);
+    font-size: 0.95rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: not-allowed;
+    box-sizing: border-box;
+    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
+    background-image: repeating-linear-gradient(
+        135deg,
+        rgba(148, 163, 184, 0.06) 0px,        /* rayures grises, plus d'orange */
+        rgba(148, 163, 184, 0.06) 8px,
+        transparent 8px,
+        transparent 16px
+    );
+}
+
+.dec-input-auteur:focus {
+    outline: none;
+    border-color: var(--dec-border-focus);
+    box-shadow: var(--dec-glow);
+}
+
+/* =========================================================
+   INPUT TITRE — champ principal, fond blanc
+   ========================================================= */
+.dec-champ-titre input {
+    padding: 0.95rem 1rem;
+    font-size: 1rem;
+    font-weight: 500;
+    border-radius: var(--dec-radius-sm);
+    background: #ffffff;
+    border: 1px solid var(--dec-border);
+    box-shadow: var(--dec-shadow-sm);
+}
+
+.dec-champ-titre input:hover {
+    border-color: var(--dec-border-hover);
+}
+
+.dec-champ-titre input:focus {
+    border-color: var(--dec-border-focus);
+    box-shadow: var(--dec-glow);
+    background: #ffffff;
+}
+
+.dec-champ-titre input::placeholder {
+    font-weight: 400;
+    color: #94a3b8;
+}
+
+/* =========================================================
+   Fieldset
+   ========================================================= */
+.dec-fieldset {
+    border: 1px solid var(--dec-border);
+    border-radius: var(--dec-radius);
+    padding: 1.5rem;
+    background: var(--dec-bg-card);      /* blanc */
+    box-shadow: var(--dec-shadow-md);
+    margin: 0;
+    position: relative;
+}
+
+.dec-fieldset legend {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--dec-text-main);
+    padding: 0 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.dec-fieldset legend svg {
+    color: var(--dec-primary);
+}
+
+/* =========================================================
+   Section processus
+   ========================================================= */
+.dec-processus-conteneur {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.dec-recherche-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.dec-search-icon {
+    position: absolute;
+    left: 14px;
+    color: var(--dec-primary);
+    font-size: 1rem;
+    pointer-events: none;
+}
+
+.dec-input-recherche {
+    padding-left: 2.6rem;
+    background-color: var(--dec-bg-input);   /* blanc */
+}
+
+.dec-select-action-ligne {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.dec-select-action-ligne select {
+    flex: 1;
+    min-width: 220px;
+}
+
+.dec-processus-selectionne-info {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-left: 4px solid #10b981;
+    padding: 1rem 1.15rem;
+    border-radius: var(--dec-radius-sm);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    color: #065f46;
+}
+
+.dec-processus-selectionne-info strong {
+    color: #064e3b;
+}
+
+.dec-processus-desc {
+    font-size: 0.85rem;
+    color: #166534;
+    margin-top: 4px;
+    line-height: 1.45;
+}
+
+.dec-nouveau-processus-bloc {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.dec-btn-retour {
+    align-self: flex-start;
+    margin-bottom: 0.25rem;
+}
+
+/* =========================================================
+   Upload & fichiers
+   ========================================================= */
+.dec-fichiers-grid {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.85rem;
+}
+
+.dec-champ-upload {
+    flex: 1;
+    min-width: 220px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.dec-champ-upload label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--dec-text-muted);
+}
+
+.dec-file-input {
+    font-size: 0.875rem;
+    color: var(--dec-text-muted);
+    padding: 0.5rem 0;
+}
+
+.dec-file-input::file-selector-button {
+    background: #ffffff;
+    color: var(--dec-primary);
+    border: 1px solid var(--dec-border);
+    border-radius: 8px;
+    padding: 0.45rem 0.9rem;
+    margin-right: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.dec-file-input::file-selector-button:hover {
+    background: var(--dec-bg-subtle);
+    border-color: var(--dec-border-hover);
+}
+
+.dec-btn-plein {
+    width: 100%;
+}
+
+.dec-info-compteur {
+    font-size: 0.825rem;
+    color: var(--dec-text-muted);
+    margin-bottom: 0.75rem;
+    font-weight: 500;
+    padding: 0.4rem 0.75rem;
+    background: var(--dec-bg-subtle);
+    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid var(--dec-border);
+}
+
+/* =========================================================
+   Caméra
+   ========================================================= */
+.dec-camera-box {
+    margin: 1.25rem 0;
+    text-align: center;
+    background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+    padding: 1rem;
+    border-radius: var(--dec-radius);
+    box-shadow: var(--dec-shadow-md);
+    border: 1px solid #1e293b;
+}
+
+.dec-camera-box video {
+    width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+    border-radius: 8px;
+}
+
+.dec-camera-actions {
+    margin-top: 1rem;
+}
+
+/* =========================================================
+   Aperçus d'images
+   ========================================================= */
+.dec-apercus {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+}
+
+.dec-apercu-item {
+    position: relative;
+    width: 92px;
+    height: 92px;
+    border-radius: var(--dec-radius-sm);
+    overflow: hidden;
+    border: 1px solid var(--dec-border);
+    background-color: var(--dec-bg-subtle);
+    box-shadow: var(--dec-shadow-sm);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.dec-apercu-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--dec-shadow-md);
+    border-color: var(--dec-border-focus);
+}
+
+.dec-apercu-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.dec-apercu-item button {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: rgba(15, 23, 42, 0.8);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.75rem;
+    transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.dec-apercu-item button:hover {
+    background: #dc2626;
+    transform: scale(1.1);
+}
+
+.dec-pdf-choisi {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #ffffff;
+    border: 1px solid var(--dec-border);
+    border-left: 3px solid var(--dec-primary);
+    padding: 0.75rem 1rem;
+    border-radius: var(--dec-radius-sm);
+    font-size: 0.9rem;
+    margin-top: 0.75rem;
+    color: var(--dec-text-main);
+}
+
+.dec-pdf-choisi span {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+}
+
+/* =========================================================
+   Boutons
+   ========================================================= */
+.dec-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #fb923c 0%, #ea580c 55%, #c2410c 100%);
+    color: #ffffff;
+    border: 1px solid rgba(194, 65, 12, 0.9);
+    border-radius: var(--dec-radius-sm);
+    padding: 0.7rem 1.3rem;
+    font-size: 0.925rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 6px 18px -8px rgba(234, 88, 12, 0.5);
+    transition: transform 0.1s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.dec-btn:hover {
+    filter: brightness(1.05);
+    box-shadow: 0 10px 24px -8px rgba(234, 88, 12, 0.6);
+}
+
+.dec-btn:focus-visible {
+    outline: 2px solid #fdba74;
+    outline-offset: 2px;
+}
+
+.dec-btn:active {
+    transform: translateY(1px);
+}
+
+.dec-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+    filter: grayscale(0.2);
+}
+
+.dec-btn-secondaire {
+    background: #ffffff;
+    color: var(--dec-text-label);
+    border-color: var(--dec-border);
+    box-shadow: var(--dec-shadow-sm);
+}
+
+.dec-btn-secondaire:hover {
+    background: var(--dec-bg-subtle);
+    color: var(--dec-primary);
+    border-color: var(--dec-border-hover);
+    box-shadow: var(--dec-shadow-sm);
+    filter: none;
+}
+
+.dec-btn-danger-clair {
+    background: #fef2f2;
+    color: #dc2626;
+    border-color: #fecaca;
+    box-shadow: var(--dec-shadow-sm);
+}
+
+.dec-btn-danger-clair:hover {
+    background: #fee2e2;
+    color: #b91c1c;
+    border-color: #fca5a5;
+    filter: none;
+}
+
+.dec-btn-petit {
+    padding: 0.45rem 0.85rem;
+    font-size: 0.825rem;
+}
+
+.dec-actions-submit {
+    margin-top: 1.5rem;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.dec-btn-principal {
+    width: 100%;
+    padding: 0.95rem 1.75rem;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+@media (min-width: 640px) {
+    .dec-btn-principal {
+        width: auto;
+        min-width: 260px;
+    }
+}
+
+/* =========================================================
+   Alertes & succès
+   ========================================================= */
+.dec-alerte-erreur {
+    background-color: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+    border-left: 4px solid #ef4444;
+    padding: 0.85rem 1.15rem;
+    border-radius: var(--dec-radius-sm);
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin: 0;
+}
+
+.dec-succes-carte {
+    background: var(--dec-bg-card);      /* blanc */
+    border: 1px solid var(--dec-border);
+    border-radius: var(--dec-radius);
+    padding: 3rem 2rem;
+    text-align: center;
+    box-shadow: var(--dec-shadow-lg);
+    max-width: 580px;
+    margin: 3rem auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+}
+
+.dec-succes-icone {
+    font-size: 3.5rem;
+    color: #16a34a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at 30% 30%, #dcfce7 0%, #f0fdf4 100%);
+    width: 92px;
+    height: 92px;
+    border-radius: 50%;
+    box-shadow: 0 0 0 6px rgba(22, 163, 74, 0.1);
+}
+
+.dec-succes-carte h1 {
+    font-size: 1.65rem;
+    margin: 0;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    background: linear-gradient(120deg, #0f172a, #15803d);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.dec-succes-texte {
+    color: var(--dec-text-muted);
+    font-size: 1rem;
+    line-height: 1.65;
+    margin: 0 0 0.5rem 0;
+}
+
+.dec-succes-texte strong {
+    color: #15803d;
+    font-weight: 700;
+}

@@ -1,0 +1,52 @@
+/* Liste CAPA : une carte par non-conformité, étapes en frise numérotée (style historique de commits) */
+
+.capa-legende { display: flex; gap: 1.2rem; flex-wrap: wrap; list-style: none; margin: 0 0 1rem; padding: 0; font-size: .85rem; color: #475569; }
+.capa-legende li { display: flex; align-items: center; gap: .4rem; }
+.capa-legende-point { width: 12px; height: 12px; border-radius: 50%; display: inline-block; background: var(--capa-couleur); }
+
+.capa-etat--efficace { --capa-couleur: #16a34a; --capa-fond: #dcfce7; --capa-texte: #14532d; }
+.capa-etat--inefficace { --capa-couleur: #dc2626; --capa-fond: #fee2e2; --capa-texte: #7f1d1d; }
+.capa-etat--attente { --capa-couleur: #94a3b8; --capa-fond: #f1f5f9; --capa-texte: #475569; }
+
+.capa-nc { border: 1px solid #dde1e7; border-radius: 12px; background: #fff; padding: 1.1rem 1.2rem 1.3rem; margin-bottom: 1.4rem; box-shadow: 0 1px 3px rgba(15, 23, 42, .05); }
+.capa-nc-entete { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1rem; }
+.capa-nc-titre { margin: 0; font-size: 1.45rem; line-height: 1.25; overflow-wrap: anywhere; }
+.capa-nc-reference {
+    display: block; font-size: .85rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    color: #1f4e9c; margin-bottom: .15rem;
+}
+
+.capa-frise { list-style: none; margin: 0; padding: 0; }
+.capa-frise-item { position: relative; display: flex; gap: .9rem; padding-bottom: 1rem; }
+.capa-frise-item:last-child { padding-bottom: 0; }
+/* Trait vertical qui relie les étapes */
+.capa-frise-item::before {
+    content: ""; position: absolute; left: 15px; top: 32px; bottom: -2px; width: 2px; background: #cbd5e1;
+}
+.capa-frise-item:last-child::before { display: none; }
+
+.capa-frise-noeud {
+    flex: 0 0 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: .9rem; color: #fff; background: var(--capa-couleur);
+    box-shadow: 0 0 0 4px #fff; z-index: 1;
+}
+
+.capa-frise-carte {
+    flex: 1; min-width: 0; text-align: left; font: inherit; cursor: pointer;
+    border: 1px solid #dde1e7; border-left: 4px solid var(--capa-couleur); border-radius: 8px;
+    background: #fff; padding: .65rem .85rem; display: grid; gap: .4rem; transition: background .12s, box-shadow .12s;
+}
+.capa-frise-carte:hover { background: var(--capa-fond); box-shadow: 0 4px 12px -6px rgba(15, 23, 42, .3); }
+.capa-frise-carte:focus-visible { outline: 3px solid rgba(30, 111, 217, .4); outline-offset: 2px; }
+
+.capa-frise-haut { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem; }
+.capa-frise-description { margin: 0; overflow-wrap: anywhere; }
+.capa-frise-bas { display: flex; flex-wrap: wrap; gap: .3rem 1.1rem; font-size: .85rem; color: #64748b; }
+
+.capa-resultat { margin-left: auto; padding: .1rem .55rem; border-radius: 999px; font-size: .78rem; font-weight: 700; background: var(--capa-fond); color: var(--capa-texte); }
+
+@media (max-width: 600px) {
+    .capa-nc { padding: .9rem .8rem 1rem; }
+    .capa-nc-entete { flex-direction: column; }
+    .capa-resultat { margin-left: 0; }
+}

@@ -11,21 +11,41 @@ import "./ListeNonConformites.css";
 
 const TAILLE_PAGE = 10;
 
-/* ---- Utilitaire : date relative ---- */
+/* ---- Utilitaire : date relative (robuste) ---- */
 function dateRelative(dateStr) {
   if (!dateStr) return "—";
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return formaterDate(dateStr);
 
-  const diffMs = Date.now() - date.getTime();
-  const diffMin = Math.floor(diffMs / 60000);
-  const diffH = Math.floor(diffMin / 60);
-  const diffJ = Math.floor(diffH / 24);
+  // new Date() gère nativement l'ISO 8601 (Z, offset ±HH:MM, millis…)
+  const dateCible = new Date(dateStr);
+  if (Number.isNaN(dateCible.getTime())) return formaterDate(dateStr);
 
-  if (diffMin < 1) return "à l'instant";
-  if (diffMin < 60) return `il y a ${diffMin} minute${diffMin > 1 ? "s" : ""}`;
-  if (diffH < 24) return `il y a ${diffH} heure${diffH > 1 ? "s" : ""}`;
-  if (diffJ < 7) return `il y a ${diffJ} jour${diffJ > 1 ? "s" : ""}`;
+  const diffSecondes = Math.floor((Date.now() - dateCible.getTime()) / 1000);
+
+  // Sécurité : date "future" (dérive d'horloge serveur/client)
+  if (diffSecondes < 0) {
+    if (Math.abs(diffSecondes) < 60) return "à l'instant";
+    return formaterDate(dateStr);
+  }
+
+  if (diffSecondes < 60) {
+    return `il y a ${diffSecondes} seconde${diffSecondes > 1 ? "s" : ""}`;
+  }
+
+  const diffMinutes = Math.floor(diffSecondes / 60);
+  if (diffMinutes < 60) {
+    return `il y a ${diffMinutes} minute${diffMinutes > 1 ? "s" : ""}`;
+  }
+
+  const diffHeures = Math.floor(diffMinutes / 60);
+  if (diffHeures < 24) {
+    return `il y a ${diffHeures} heure${diffHeures > 1 ? "s" : ""}`;
+  }
+
+  const diffJours = Math.floor(diffHeures / 24);
+  if (diffJours <= 7) {
+    return `il y a ${diffJours} jour${diffJours > 1 ? "s" : ""}`;
+  }
+
   return formaterDate(dateStr);
 }
 

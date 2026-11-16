@@ -15,6 +15,8 @@ import {
     FiClock,
     FiLogOut 
 } from "react-icons/fi";
+import { TbFileUploadFilled } from "react-icons/tb";
+import { IoMdListBox } from "react-icons/io";
 import NotificationBell from "./NotificationBell";
 import NotificationToast from "./NotificationToast";
 import { useNotifications } from "../hooks/useNotifications";
@@ -45,6 +47,9 @@ const liensParRole = {
     ],
 
     RESPONSABLE_QUALITE: [
+        { to: "/responsable/dashboard", label: "Dashboard", icon: <FiGrid /> },
+        { to: "/responsable/documents/nouveau", label: "Nouveau Document", icon: <TbFileUploadFilled /> },
+        { to: "/responsable/documents", label: "Listes des documents", icon: <IoMdListBox /> },
         { to: "/responsable/non-conformites", label: "Non-conformités", icon: <FiAlertTriangle /> },
         { to: "/responsable/capa", label: "Actions correctives (CAPA)", icon: <FiCheckSquare /> },
         { to: "/historique", label: "Mon historique", icon: <FiClock /> },

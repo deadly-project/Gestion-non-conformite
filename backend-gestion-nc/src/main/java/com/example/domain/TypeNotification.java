@@ -45,4 +45,10 @@ public final class TypeNotification {
 
     // ----- Déclarant -----
     public static final String NC_STATUT_CHANGE = "NC_STATUT_CHANGE";
+
+    // ----- Gestion documentaire qualité -----
+    public static final String DOCUMENT_AJOUTE = "DOCUMENT_AJOUTE";
+    public static final String DOCUMENT_MODIFIE = "DOCUMENT_MODIFIE";
+    public static final String DOCUMENT_STATUT_CHANGE = "DOCUMENT_STATUT_CHANGE";
+    public static final String DOCUMENT_ARCHIVE = "DOCUMENT_ARCHIVE";
 }

@@ -1,10 +1,26 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { apiRequest } from "../../api/api";
 import {
     GRAVITES, MAX_IMAGES, TAILLE_MAX_IMAGE, TAILLE_MAX_PDF, TYPES_IMAGES,
     dateAujourdhui, formaterTaille,
 } from "../constantes";
-import "./nc.css";
+import {
+    FiPlus,
+    FiCamera,
+    FiX,
+    FiTrash2,
+    FiFileText,
+    FiAlertTriangle,
+    FiCalendar,
+    FiUser,
+    FiUpload,
+    FiArrowLeft,
+    FiCheckCircle,
+    FiCameraOff,
+    FiSearch,
+} from "react-icons/fi";
+import "./DeclarationNc.css";
 
 const CODES_PROCESSUS_DISPONIBLES = [
     { code: "PRD", libelleType: "Production" },
@@ -15,14 +31,14 @@ const CODES_PROCESSUS_DISPONIBLES = [
     { code: "MAI", libelleType: "Maintenance" },
 ];
 
-/** Minuscules sans accents : « qualité » trouve « QUALITE ». */
 function normaliser(texte) {
     return (texte ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
 
-/** Libellé d'une option : plusieurs processus peuvent partager un code, la description les distingue. */
 function libelleOption(s) {
-    const resume = s.description ? ` — ${s.description.replace(/\s+/g, " ").slice(0, 40)}${s.description.length > 40 ? "…" : ""}` : "";
+    const resume = s.description
+        ? ` — ${s.description.replace(/\s+/g, " ").slice(0, 40)}${s.description.length > 40 ? "…" : ""}`
+        : "";
     return `${s.libelle} (${s.code})${resume}`;
 }
 
@@ -40,6 +56,7 @@ function formaterDescriptionProcessus(description) {
 }
 
 export default function DeclarationNc({ utilisateur }) {
+    const navigate = useNavigate();
     const [titre, setTitre] = useState("");
     const [dateDetection, setDateDetection] = useState(dateAujourdhui());
     const [gravite, setGravite] = useState("");
@@ -51,7 +68,7 @@ export default function DeclarationNc({ utilisateur }) {
     const [processusSelectionneId, setProcessusSelectionneId] = useState("");
     const [modeNouveauProcessus, setModeNouveauProcessus] = useState(false);
     const [rechercheProcessus, setRechercheProcessus] = useState("");
-    
+
     const [nouveauCode, setNouveauCode] = useState("PRD");
     const [nouveauLibelle, setNouveauLibelle] = useState("");
     const [nouvelleDescription, setNouvelleDescription] = useState("");
@@ -67,7 +84,7 @@ export default function DeclarationNc({ utilisateur }) {
 
     const imagesRef = useRef([]);
     useEffect(() => { imagesRef.current = images; }, [images]);
-    
+
     useEffect(() => {
         return () => {
             imagesRef.current.forEach((i) => URL.revokeObjectURL(i.url));
@@ -83,9 +100,8 @@ export default function DeclarationNc({ utilisateur }) {
         return () => { actif = false; };
     }, []);
 
-    const processusActifSelectionne = services.find(s => s.id.toString() === processusSelectionneId);
+    const processusActifSelectionne = services.find((s) => s.id.toString() === processusSelectionneId);
 
-    // Recherche dans code, libellé et description ; le processus déjà choisi reste toujours dans la liste
     const termes = normaliser(rechercheProcessus).split(/\s+/).filter(Boolean);
     const servicesFiltres = services.filter((s) => {
         if (s.id.toString() === processusSelectionneId) return true;
@@ -135,9 +151,9 @@ export default function DeclarationNc({ utilisateur }) {
         }
         setErreurFichiers("");
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: "environment" }, 
-                audio: false 
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: "environment" },
+                audio: false,
             });
             mediaStreamRef.current = stream;
             setCameraActive(true);
@@ -153,7 +169,7 @@ export default function DeclarationNc({ utilisateur }) {
 
     function arreterCamera() {
         if (mediaStreamRef.current) {
-            mediaStreamRef.current.getTracks().forEach(track => track.stop());
+            mediaStreamRef.current.getTracks().forEach((track) => track.stop());
             mediaStreamRef.current = null;
         }
         setCameraActive(false);
@@ -211,7 +227,6 @@ export default function DeclarationNc({ utilisateur }) {
         setProcessusSelectionneId("");
         setModeNouveauProcessus(false);
         setRechercheProcessus("");
-        // Le processus créé avec la déclaration doit apparaître dans la recherche suivante
         apiRequest("/api/referentiels/processus").then(setServices).catch(() => {});
         setNouveauLibelle("");
         setNouvelleDescription("");
@@ -232,7 +247,7 @@ export default function DeclarationNc({ utilisateur }) {
 
         try {
             const formData = new FormData();
-            
+
             const payload = {
                 titre: titre.trim(),
                 dateDetection,
@@ -244,12 +259,12 @@ export default function DeclarationNc({ utilisateur }) {
                 payload.nouveauProcessus = {
                     code: nouveauCode,
                     libelle: nouveauLibelle.trim(),
-                    description: nouvelleDescription.trim()
+                    description: nouvelleDescription.trim(),
                 };
             } else if (processusSelectionneId) {
                 payload.processusId = Number(processusSelectionneId);
             } else {
-                throw new Error("Veuillez sélectionner ou créer un processus.");
+                throw new Error("Veuillez sélectionner un processus existant ou en créer un nouveau.");
             }
 
             formData.append("donnees", new Blob([JSON.stringify(payload)], { type: "application/json" }));
@@ -271,39 +286,63 @@ export default function DeclarationNc({ utilisateur }) {
 
     if (cree) {
         return (
-            <main className="nc-page">
-                <h1>Déclaration enregistrée</h1>
-                <p className="nc-succes" role="status">
-                    Votre non-conformité a bien été enregistrée
-                    {cree.reference ? <> sous la référence <strong>{cree.reference}</strong></> : <> sans référence</>}.
-                    Le responsable qualité lui attribuera une référence lors de son traitement.
-                </p>
-                <button type="button" className="nc-btn" onClick={reinitialiser}>
-                    Déclarer une autre non-conformité
-                </button>
+            <main className="dec-page">
+                <div className="dec-succes-carte">
+                    <div className="dec-succes-icone">
+                        <FiCheckCircle />
+                    </div>
+                    <h1>Déclaration enregistrée</h1>
+                    <p className="dec-succes-texte" role="status">
+                        Votre non-conformité a bien été enregistrée
+                        {cree.reference ? (
+                            <> sous la référence <strong>{cree.reference}</strong></>
+                        ) : (
+                            <> sans référence</>
+                        )}
+                        . Le responsable qualité lui attribuera une référence lors de son traitement.
+                    </p>
+                    <button type="button" className="dec-btn" onClick={reinitialiser}>
+                        <FiPlus /> Déclarer une autre non-conformité
+                    </button>
+                </div>
             </main>
         );
     }
 
     return (
-        <main className="nc-page">
-            <h1>Déclarer une non-conformité</h1>
+        <main className="dec-page">
+            <div className="dec-header-titre">
+                <h1>Déclarer une non-conformité</h1>
+                <p className="dec-soustitre">
+                    Remplissez les informations ci-dessous pour signaler un dysfonctionnement.
+                </p>
+            </div>
 
-            <form className="nc-form" onSubmit={envoyer}>
-                <div className="nc-grille">
-                    <div className="nc-champ">
-                        <label htmlFor="auteur">Auteur de la déclaration</label>
-                        <input
-                            id="auteur"
-                            readOnly
-                            value={utilisateur
-                                ? `${utilisateur.prenom} ${utilisateur.nom} (matricule ${utilisateur.matricule})`
-                                : ""}
-                        />
+            <form className="dec-form" onSubmit={envoyer} noValidate>
+                <div className="dec-grille">
+                    <div className="dec-champ dec-champ-auteur">
+                        <label htmlFor="auteur"><FiUser /> Auteur de la déclaration</label>
+                        <div className="dec-input-auteur-wrap">
+                            <span className="dec-input-auteur-icon" aria-hidden="true">
+                                {utilisateur
+                                    ? `${utilisateur.prenom?.[0] ?? ""}${utilisateur.nom?.[0] ?? ""}`.toUpperCase()
+                                    : "?"}
+                            </span>
+                            <input
+                                id="auteur"
+                                className="dec-input-auteur"
+                                readOnly
+                                value={
+                                    utilisateur
+                                        ? `${utilisateur.prenom} ${utilisateur.nom} (matricule ${utilisateur.matricule})`
+                                        : ""
+                                }
+                            />
+                        </div>
                     </div>
 
-                    <div className="nc-champ">
-                        <label htmlFor="dateDetection">Date de détection *</label>
+                    <div className="dec-champ">
+                        <label htmlFor="dateDetection"><FiCalendar /> Date de détection *</label>
                         <input
                             id="dateDetection"
                             type="date"
@@ -315,41 +354,47 @@ export default function DeclarationNc({ utilisateur }) {
                     </div>
                 </div>
 
-                <div className="nc-champ">
-                    <label htmlFor="titre">Titre *</label>
+                <div className="dec-champ dec-champ-titre">
+                    <label htmlFor="titre"><FiFileText /> Titre de la non-conformité *</label>
                     <input
                         id="titre"
+                        type="text"
                         value={titre}
                         maxLength={200}
                         onChange={(e) => setTitre(e.target.value)}
-                        placeholder="Résumé en une phrase"
+                        placeholder="Résumé clair en une phrase"
                         required
                     />
                 </div>
 
-                <fieldset className="nc-champ" style={{ border: "1px solid #ccc", padding: "15px", borderRadius: "5px" }}>
+                <fieldset className="dec-fieldset">
                     <legend>Processus / Service concerné *</legend>
 
                     {!modeNouveauProcessus ? (
-                        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                            <input
-                                type="search"
-                                value={rechercheProcessus}
-                                onChange={(e) => setRechercheProcessus(e.target.value)}
-                                placeholder="Rechercher un processus (code, libellé, description)..."
-                                aria-label="Rechercher un processus existant"
-                                style={{ padding: "8px" }}
-                            />
-                            <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                                <select 
-                                    value={processusSelectionneId} 
+                        <div className="dec-processus-conteneur">
+                            <div className="dec-recherche-wrapper">
+                                <FiSearch className="dec-search-icon" aria-hidden="true" />
+                                <input
+                                    type="search"
+                                    className="dec-input-recherche"
+                                    value={rechercheProcessus}
+                                    onChange={(e) => setRechercheProcessus(e.target.value)}
+                                    placeholder="Rechercher un processus (code, libellé, description)…"
+                                    aria-label="Rechercher un processus existant"
+                                />
+                            </div>
+
+                            <div className="dec-select-action-ligne">
+                                <select
+                                    value={processusSelectionneId}
                                     onChange={(e) => setProcessusSelectionneId(e.target.value)}
-                                    style={{ flex: 1, padding: "8px" }}
+                                    className="dec-select"
+                                    aria-label="Sélectionner un processus existant"
                                 >
                                     <option value="">
                                         {termes.length > 0
-                                            ? `— ${servicesFiltres.length} résultat${servicesFiltres.length > 1 ? "s" : ""} —`
-                                            : "— Sélectionnez un processus existant —"}
+                                            ? `${servicesFiltres.length} résultat${servicesFiltres.length > 1 ? "s" : ""}`
+                                            : "Sélectionner un processus…"}
                                     </option>
                                     {servicesFiltres.map((s) => (
                                         <option key={s.id} value={s.id}>
@@ -357,27 +402,29 @@ export default function DeclarationNc({ utilisateur }) {
                                         </option>
                                     ))}
                                 </select>
-                                <button 
-                                    type="button" 
-                                    className="nc-btn nc-btn-secondaire"
+                                <button
+                                    type="button"
+                                    className="dec-btn dec-btn-secondaire"
                                     onClick={() => setModeNouveauProcessus(true)}
                                 >
-                                    + Nouveau processus
+                                    <FiPlus /> Nouveau processus
                                 </button>
                             </div>
 
                             {processusActifSelectionne && (
-                                <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", padding: "10px", borderRadius: "4px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                <div className="dec-processus-selectionne-info">
                                     <div>
-                                        <strong>{processusActifSelectionne.libelle}</strong> ({processusActifSelectionne.code})
-                                        <div style={{ fontSize: "0.85em", color: "#555", marginTop: "4px" }}>
+                                        <strong>{processusActifSelectionne.libelle}</strong>{" "}
+                                        ({processusActifSelectionne.code})
+                                        <div className="dec-processus-desc">
                                             {formaterDescriptionProcessus(processusActifSelectionne.description)}
                                         </div>
                                     </div>
-                                    <button 
-                                        type="button" 
-                                        className="nc-btn nc-btn-secondaire nc-btn-petit"
+                                    <button
+                                        type="button"
+                                        className="dec-btn dec-btn-secondaire dec-btn-petit"
                                         onClick={() => setProcessusSelectionneId("")}
+                                        aria-label="Désélectionner le processus"
                                     >
                                         Désélectionner
                                     </button>
@@ -385,48 +432,56 @@ export default function DeclarationNc({ utilisateur }) {
                             )}
                         </div>
                     ) : (
-                        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                            <button 
-                                type="button" 
-                                className="nc-btn nc-btn-secondaire" 
-                                style={{ alignSelf: "flex-start" }}
+                        <div className="dec-nouveau-processus-bloc">
+                            <button
+                                type="button"
+                                className="dec-btn dec-btn-secondaire dec-btn-retour"
                                 onClick={() => setModeNouveauProcessus(false)}
                             >
-                                ← Retour à la liste existante
+                                <FiArrowLeft /> Retour à la liste existante
                             </button>
 
-                            <div>
-                                <label>Code du processus *</label>
-                                <select value={nouveauCode} onChange={(e) => setNouveauCode(e.target.value)}>
-                                    {CODES_PROCESSUS_DISPONIBLES.map(c => (
-                                        <option key={c.code} value={c.code}>{c.code} - {c.libelleType}</option>
+                            <div className="dec-champ">
+                                <label htmlFor="codeProcessus">Code du processus *</label>
+                                <select
+                                    id="codeProcessus"
+                                    value={nouveauCode}
+                                    onChange={(e) => setNouveauCode(e.target.value)}
+                                    className="dec-select"
+                                >
+                                    {CODES_PROCESSUS_DISPONIBLES.map((c) => (
+                                        <option key={c.code} value={c.code}>
+                                            {c.code} — {c.libelleType}
+                                        </option>
                                     ))}
                                 </select>
                             </div>
 
-                            <span className="nc-aide">
+                            <span className="dec-aide" id="aide-code-processus">
                                 Un même code peut être utilisé pour plusieurs processus, à condition que la
                                 description (ou le libellé) soit différente. Vérifiez d'abord, avec la recherche,
                                 que le processus n'existe pas déjà.
                             </span>
 
-                            <div>
-                                <label>Libellé du processus *</label>
-                                <input 
-                                    type="text" 
-                                    value={nouveauLibelle} 
-                                    onChange={(e) => setNouveauLibelle(e.target.value)} 
-                                    placeholder="Ex: Ligne d'assemblage principale"
-                                    required 
+                            <div className="dec-champ">
+                                <label htmlFor="libelleProcessus">Libellé du processus *</label>
+                                <input
+                                    id="libelleProcessus"
+                                    type="text"
+                                    value={nouveauLibelle}
+                                    onChange={(e) => setNouveauLibelle(e.target.value)}
+                                    placeholder="Ex : Ligne d'assemblage principale"
+                                    required
                                 />
                             </div>
 
-                            <div>
-                                <label>Description du processus</label>
-                                <textarea 
-                                    value={nouvelleDescription} 
-                                    onChange={(e) => setNouvelleDescription(e.target.value)} 
-                                    placeholder="Détails sur ce processus..."
+                            <div className="dec-champ">
+                                <label htmlFor="descProcessus">Description du processus</label>
+                                <textarea
+                                    id="descProcessus"
+                                    value={nouvelleDescription}
+                                    onChange={(e) => setNouvelleDescription(e.target.value)}
+                                    placeholder="Détails sur ce processus…"
                                     rows={3}
                                 />
                             </div>
@@ -434,20 +489,28 @@ export default function DeclarationNc({ utilisateur }) {
                     )}
                 </fieldset>
 
-                <div className="nc-champ">
-                    <label htmlFor="gravite">Gravité *</label>
-                    <select id="gravite" value={gravite}
-                        onChange={(e) => setGravite(e.target.value)} required>
-                        <option value="">— Choisir —</option>
+                <div className="dec-champ">
+                    <label htmlFor="gravite"><FiAlertTriangle /> Gravité *</label>
+                    <select
+                        id="gravite"
+                        value={gravite}
+                        onChange={(e) => setGravite(e.target.value)}
+                        required
+                        className="dec-select"
+                        aria-describedby="aide-gravite"
+                    >
+                        <option value="">Sélectionner une gravité…</option>
                         {Object.entries(GRAVITES).map(([code, libelle]) => (
                             <option key={code} value={code}>{libelle}</option>
                         ))}
                     </select>
-                    <span className="nc-aide">Votre évaluation : le responsable qualité la confirmera.</span>
+                    <span className="dec-aide" id="aide-gravite">
+                        Votre évaluation indicative : le responsable qualité la confirmera.
+                    </span>
                 </div>
 
-                <div className="nc-champ">
-                    <label htmlFor="description">Description détaillée *</label>
+                <div className="dec-champ">
+                    <label htmlFor="description"><FiFileText /> Description détaillée *</label>
                     <textarea
                         id="description"
                         rows={6}
@@ -456,16 +519,19 @@ export default function DeclarationNc({ utilisateur }) {
                         onChange={(e) => setDescription(e.target.value)}
                         placeholder="Que s'est-il passé ? Où, quand, comment l'avez-vous constaté ?"
                         required
+                        aria-describedby="compteur-description"
                     />
-                    <span className="nc-aide">{description.length} / 5000 caractères</span>
+                    <div className="dec-compteur-caracteres" id="compteur-description">
+                        {description.length} / 5000 caractères
+                    </div>
                 </div>
 
-                <fieldset className="nc-champ">
-                    <legend>Pièces jointes (facultatives)</legend>
+                <fieldset className="dec-fieldset">
+                    <legend><FiUpload /> Pièces jointes (facultatives)</legend>
 
-                    <div style={{ display: "flex", gap: "15px", marginBottom: "10px", flexWrap: "wrap" }}>
-                        <div style={{ flex: 1, minWidth: "200px" }}>
-                            <label htmlFor="upload-images">Importer des images (Max {MAX_IMAGES})</label>
+                    <div className="dec-fichiers-grid">
+                        <div className="dec-champ-upload">
+                            <label htmlFor="upload-images">Importer des images (max {MAX_IMAGES})</label>
                             <input
                                 id="upload-images"
                                 type="file"
@@ -473,88 +539,103 @@ export default function DeclarationNc({ utilisateur }) {
                                 multiple
                                 disabled={images.length >= MAX_IMAGES || cameraActive}
                                 onChange={ajouterImages}
+                                className="dec-file-input"
                             />
                         </div>
-                        <div style={{ flex: 1, minWidth: "200px" }}>
+                        <div className="dec-champ-upload">
                             <label>Caméra en direct</label>
                             {!cameraActive ? (
-                                <button 
-                                    type="button" 
-                                    className="nc-btn nc-btn-secondaire" 
-                                    style={{ width: "100%", marginTop: "4px" }}
+                                <button
+                                    type="button"
+                                    className="dec-btn dec-btn-secondaire dec-btn-plein"
                                     disabled={images.length >= MAX_IMAGES}
                                     onClick={demarrerCamera}
                                 >
-                                    📷 Ouvrir la caméra
+                                    <FiCamera /> Ouvrir la caméra
                                 </button>
                             ) : (
-                                <button 
-                                    type="button" 
-                                    className="nc-btn nc-btn-secondaire" 
-                                    style={{ width: "100%", marginTop: "4px", background: "#fee2e2", color: "#991b1b" }}
+                                <button
+                                    type="button"
+                                    className="dec-btn dec-btn-danger-clair dec-btn-plein"
                                     onClick={arreterCamera}
                                 >
-                                    Fermer la caméra
+                                    <FiCameraOff /> Fermer la caméra
                                 </button>
                             )}
                         </div>
                     </div>
 
                     {cameraActive && (
-                        <div style={{ margin: "15px 0", textAlign: "center", background: "#000", padding: "10px", borderRadius: "6px" }}>
-                            <video 
-                                ref={videoRef} 
-                                autoPlay 
-                                playsInline 
-                                style={{ width: "100%", maxHeight: "300px", objectFit: "contain" }} 
-                            />
-                            <div style={{ marginTop: "10px" }}>
-                                <button 
-                                    type="button" 
-                                    className="nc-btn" 
-                                    onClick={capturerPhoto}
-                                >
-                                    📸 Capturer la photo
+                        <div className="dec-camera-box">
+                            <video ref={videoRef} autoPlay playsInline />
+                            <div className="dec-camera-actions">
+                                <button type="button" className="dec-btn" onClick={capturerPhoto}>
+                                    <FiCamera /> Capturer la photo
                                 </button>
                             </div>
                         </div>
                     )}
 
-                    <small style={{ color: "#666" }}>Total actuel : {images.length} / {MAX_IMAGES} images</small>
+                    <div
+                        className="dec-info-compteur"
+                        role="status"
+                        aria-live="polite"
+                    >
+                        <FiUpload aria-hidden="true" />
+                        Total actuel : {images.length} / {MAX_IMAGES} images
+                    </div>
 
                     {images.length > 0 && (
-                        <div className="nc-apercus" style={{ marginTop: "10px" }}>
+                        <div className="dec-apercus">
                             {images.map((i) => (
-                                <div className="nc-apercu" key={i.cle}>
+                                <div className="dec-apercu-item" key={i.cle}>
                                     <img src={i.url} alt={i.file.name} />
-                                    <button type="button" aria-label={`Retirer ${i.file.name}`}
-                                        onClick={() => retirerImage(i.cle)}>×</button>
+                                    <button
+                                        type="button"
+                                        aria-label={`Retirer ${i.file.name}`}
+                                        onClick={() => retirerImage(i.cle)}
+                                    >
+                                        <FiX />
+                                    </button>
                                     <span title={i.file.name}>{i.file.name}</span>
                                 </div>
                             ))}
                         </div>
                     )}
 
-                    <div style={{ marginTop: "15px" }}>
-                        <label htmlFor="pdf">Document PDF (1 maximum)</label>
-                        <input id="pdf" type="file" accept="application/pdf" onChange={choisirPdf} />
+                    <div className="dec-champ" style={{ marginTop: "1.25rem" }}>
+                        <label htmlFor="pdf"><FiFileText /> Document PDF (1 maximum)</label>
+                        <input
+                            id="pdf"
+                            type="file"
+                            accept="application/pdf"
+                            onChange={choisirPdf}
+                            className="dec-file-input"
+                        />
                         {pdf && (
-                            <div className="nc-choisi">
-                                <span>{pdf.name} ({formaterTaille(pdf.size)})</span>
-                                <button type="button" className="nc-btn nc-btn-secondaire nc-btn-petit"
-                                    onClick={() => setPdf(null)}>Retirer</button>
+                            <div className="dec-pdf-choisi">
+                                <span><FiFileText /> {pdf.name} ({formaterTaille(pdf.size)})</span>
+                                <button
+                                    type="button"
+                                    className="dec-btn dec-btn-secondaire dec-btn-petit"
+                                    onClick={() => setPdf(null)}
+                                >
+                                    <FiTrash2 /> Retirer
+                                </button>
                             </div>
                         )}
                     </div>
 
-                    {erreurFichiers && <p className="nc-erreur" role="alert">{erreurFichiers}</p>}
+                    {erreurFichiers && (
+                        <p className="dec-alerte-erreur" role="alert">{erreurFichiers}</p>
+                    )}
                 </fieldset>
 
-                {erreur && <p className="nc-erreur" role="alert">{erreur}</p>}
+                {erreur && <p className="dec-alerte-erreur" role="alert">{erreur}</p>}
 
-                <div className="nc-actions">
-                    <button type="submit" className="nc-btn" disabled={envoi}>
-                        {envoi ? "Envoi en cours..." : "Enregistrer la déclaration"}
+                <div className="dec-actions-submit">
+                    <button type="submit" className="dec-btn dec-btn-principal" disabled={envoi}>
+                        {envoi ? "Envoi en cours…" : "Enregistrer la déclaration"}
                     </button>
                 </div>
             </form>

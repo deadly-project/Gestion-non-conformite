@@ -43,6 +43,25 @@ export const STATUTS_ACTION = {
     VERIFIEE: "Vérifiée",
 };
 
+export const STATUTS_DOCUMENT = {
+    EN_VIGUEUR : "En vigueur",
+    EN_REVISION : "En revision", 
+    OBSOLETE : "Obsolete"
+}
+
+export const TYPES_DOCUMENT = {
+    PROCEDURE :"Procedure", 
+    INSTRUCTION : "Instruction", 
+    ENREGISTREMENT : "Enregistrement"
+}
+
+export const EXTENSIONS_DOCUMENT = [
+    "doc","docx","pdf","xls","xlsx","ppt","odt","ods", "txt","csv", "png", "jpg", "jpeg"
+
+]
+
+export const TAILLE_MAX_DOCUMENT = 20 * 1024 * 1024;
+
 // Mêmes limites que le serveur (PieceJointeService)
 export const MAX_IMAGES = 6;
 export const TAILLE_MAX_IMAGE = 8 * 1024 * 1024;

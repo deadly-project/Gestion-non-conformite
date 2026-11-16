@@ -37,18 +37,19 @@ body {
 
 .app-content-wrapper {
     flex: 1;
-    margin-left: 260px; /* Espace réservé pour le sidebar fixe */
-    width: calc(100% - 260px);
+    margin-left: 260px;              /* = largeur réelle de la navbar */
+    width: calc(100% - 260px);       /* cohérent avec le margin-left */
+    min-width: 0;                    /* indispensable en flex pour éviter le débordement */
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    box-sizing: border-box;
 }
 
-/* Sur mobile, le sidebar disparaît, donc le contenu prend toute la largeur */
 @media (max-width: 950px) {
     .app-content-wrapper {
         margin-left: 0;
-        margin-top: 50px;
+        margin-top: 60px;            /* hauteur de la barre mobile */
         width: 100%;
     }
 }
@@ -64,9 +65,7 @@ hr {
 ===================== */
 main {
     padding: 32px;
-    max-width: 1400px;
     width: 100%;
-    margin: 0 auto;
 }
 
 @media (max-width: 640px) {

@@ -35,6 +35,10 @@ import HistoriquePage from "./components/HistoriquePage";
 
 import DashboardPage from "./components/dashboard/DashboardPage";
 
+import AjoutDocumentPage from "./components/documents/AjoutDocumentPage";
+import DocumentsExplorateur from "./components/documents/DocumentsExplorateur";
+
+import Dashbboard_Responsable_qualite from "./components/dashboard/DashboardResponsableQualite";
 import './App.css'
 
 function Page({ titre }) {
@@ -318,6 +322,21 @@ function Application() {
                         <Route 
                             path="/responsable/nc/:id/suivi" 
                             element={<SuiviCapaPage />} 
+                        />
+
+                        <Route
+                            path="/responsable/documents/nouveau"
+                            element={<AjoutDocumentPage />}
+                        />
+
+                        <Route
+                            path="/responsable/documents"
+                            element={<DocumentsExplorateur />}
+                        />
+
+                        <Route
+                            path="/responsable/dashboard"
+                            element={<Dashbboard_Responsable_qualite />}
                         />
                     </Route>
                 </Route>

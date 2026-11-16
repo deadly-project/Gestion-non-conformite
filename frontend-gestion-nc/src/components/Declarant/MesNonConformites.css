@@ -1,0 +1,560 @@
+/* ==========================================================================
+   Conteneur principal
+   ========================================================================== */
+.mync-nc-page {
+    width: 100%;
+    padding: 1rem;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #1e293b;
+    box-sizing: border-box;
+}
+
+@media (min-width: 768px) {
+    .mync-nc-page {
+        padding: 2rem 1.5rem;
+    }
+}
+
+/* ==========================================================================
+   En-tête
+   ========================================================================== */
+.mync-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.mync-header h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+    letter-spacing: -0.02em;
+    position: relative;
+    padding-left: 0.75rem;
+}
+
+/* Accent orange (profil Déclarant) */
+.mync-header h1::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 1.4em;
+    border-radius: 2px;
+    background: linear-gradient(180deg, #fb923c, #ea580c);
+}
+
+@media (min-width: 768px) {
+    .mync-header h1 {
+        font-size: 1.75rem;
+    }
+}
+
+/* ==========================================================================
+   Messages
+   ========================================================================== */
+.mync-nc-succes,
+.mync-nc-erreur {
+    padding: 0.875rem 1rem 0.875rem 1.1rem;
+    border-radius: 8px;
+    margin-bottom: 1.25rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    border-left: 4px solid;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.mync-nc-succes {
+    background-color: #ecfdf5;
+    color: #065f46;
+    border-color: #10b981;
+    border-top: 1px solid #a7f3d0;
+    border-right: 1px solid #a7f3d0;
+    border-bottom: 1px solid #a7f3d0;
+}
+
+.mync-nc-erreur {
+    background-color: #fef2f2;
+    color: #991b1b;
+    border-color: #ef4444;
+    border-top: 1px solid #fecaca;
+    border-right: 1px solid #fecaca;
+    border-bottom: 1px solid #fecaca;
+}
+
+.mync-chargement {
+    text-align: center;
+    padding: 3rem 0;
+    color: #64748b;
+    font-size: 1rem;
+    font-style: italic;
+}
+
+/* ==========================================================================
+   Grille de cartes
+   ========================================================================== */
+.mync-liste-conteneur {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+@media (min-width: 640px) {
+    .mync-liste-conteneur {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .mync-liste-conteneur {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* ==========================================================================
+   Carte
+   ========================================================================== */
+.mync-carte-item {
+    background: #ffffff;
+    border-radius: 14px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05),
+                0 1px 3px rgba(15, 23, 42, 0.04);
+    border: 1px solid #e2e8f0;
+    padding: 1.15rem 1.15rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    position: relative;
+    overflow: hidden;
+    min-height: 200px;
+}
+
+.mync-carte-item::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #fb923c, #ea580c);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.mync-carte-item:hover {
+    box-shadow: 0 10px 24px -8px rgba(234, 88, 12, 0.18),
+                0 4px 10px -4px rgba(15, 23, 42, 0.06);
+    border-color: #fdba74;
+    transform: translateY(-2px);
+}
+
+.mync-carte-item:hover::before {
+    opacity: 1;
+}
+
+/* ==========================================================================
+   Ligne du haut : référence + statut
+   ========================================================================== */
+.mync-item-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.mync-item-reference {
+    font-weight: 600;
+    color: #475569;
+    font-size: 0.8rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.25rem 0.55rem;
+    background: #f8fafc;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    max-width: 100%;
+    min-width: 0;
+}
+
+.mync-item-reference > span,
+.mync-item-reference > *:not(svg) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mync-ref-icon {
+    color: #ea580c;
+    flex-shrink: 0;
+}
+
+.mync-ref-attente {
+    color: #b45309;
+    font-style: italic;
+    font-size: 0.8rem;
+    font-weight: 500;
+    background: transparent;
+    border: none;
+    padding: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ==========================================================================
+   Corps : titre + gravité
+   ========================================================================== */
+.mync-item-corps {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.mync-item-titre {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin: 0;
+    line-height: 1.4;
+    letter-spacing: -0.01em;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.mync-item-gravite-wrap {
+    display: flex;
+    align-items: center;
+}
+
+/* ==========================================================================
+   Footer : actions + date
+   ========================================================================== */
+.mync-item-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 0.75rem;
+    border-top: 1px dashed #e2e8f0;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: auto;
+}
+
+.mync-item-date {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.75rem;
+    color: #64748b;
+    white-space: nowrap;
+    background: #f8fafc;
+    padding: 0.28rem 0.55rem;
+    border-radius: 9999px;
+    border: 1px solid #e2e8f0;
+    font-weight: 500;
+}
+
+.mync-item-date svg {
+    color: #ea580c;
+}
+
+.mync-vide {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #64748b;
+    font-style: italic;
+    background: #ffffff;
+    border-radius: 14px;
+    border: 1px dashed #cbd5e1;
+}
+
+/* ==========================================================================
+   Badges (statuts et gravités)
+   ========================================================================== */
+.mync-nc-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.22rem 0.6rem;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    background-color: #e2e8f0;
+    color: #334155;
+    border: 1px solid transparent;
+}
+
+/* Statuts — couleurs sémantiques inchangées */
+.mync-nc-badge-EN_ATTENTE {
+    background-color: #fef3c7;
+    color: #92400e;
+    border-color: #fcd34d;
+}
+
+.mync-nc-badge-EN_COURS,
+.mync-nc-badge-PRIS_EN_CHARGE {
+    background-color: #dbeafe;
+    color: #1e40af;
+    border-color: #93c5fd;
+}
+
+.mync-nc-badge-CLOTUREE,
+.mync-nc-badge-RESOLUE {
+    background-color: #dcfce7;
+    color: #166534;
+    border-color: #86efac;
+}
+
+.mync-nc-badge-REJETEE {
+    background-color: #f1f5f9;
+    color: #475569;
+    border-color: #cbd5e1;
+}
+
+/* Gravités */
+.mync-nc-badge-MINEURE {
+    background-color: #fff7ed;
+    color: #c2410c;
+    border-color: #fdba74;
+}
+
+.mync-nc-badge-MAJEURE {
+    background-color: #ffedd5;
+    color: #9a3412;
+    border-color: #fb923c;
+}
+
+.mync-nc-badge-CRITIQUE {
+    background-color: #fee2e2;
+    color: #b91c1c;
+    border-color: #fca5a5;
+}
+
+/* ==========================================================================
+   Boutons
+   ========================================================================== */
+.mync-nc-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: linear-gradient(135deg, #fb923c 0%, #ea580c 55%, #c2410c 100%);
+    color: #ffffff;
+    border: 1px solid rgba(194, 65, 12, 0.9);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+    box-shadow: 0 1px 2px rgba(234, 88, 12, 0.25);
+}
+
+.mync-nc-btn:hover {
+    filter: brightness(1.05);
+    box-shadow: 0 4px 10px -2px rgba(234, 88, 12, 0.4);
+}
+
+.mync-nc-btn:focus-visible {
+    outline: 2px solid #fdba74;
+    outline-offset: 2px;
+}
+
+.mync-nc-btn:active {
+    transform: translateY(1px);
+}
+
+.mync-nc-btn-secondaire {
+    background: #ffffff;
+    color: #475569;
+    border-color: #cbd5e1;
+    box-shadow: none;
+}
+
+.mync-nc-btn-secondaire:hover {
+    background: #fff7ed;
+    color: #c2410c;
+    border-color: #fdba74;
+    box-shadow: none;
+    filter: none;
+}
+
+.mync-nc-btn-secondaire:focus-visible {
+    outline-color: #fdba74;
+}
+
+.mync-nc-btn-petit {
+    padding: 0.35rem 0.7rem;
+    font-size: 0.78rem;
+}
+
+.mync-nc-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.mync-verrouille {
+    font-size: 0.78rem;
+    color: #64748b;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0.35rem 0.6rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px dashed #cbd5e1;
+    font-weight: 500;
+}
+
+.mync-verrouille svg {
+    color: #94a3b8;
+}
+
+/* ==========================================================================
+   Modale
+   ========================================================================== */
+.mync-nc-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(3px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    z-index: 1000;
+}
+
+.mync-nc-modal {
+    background-color: #ffffff;
+    padding: 1.5rem;
+    border-radius: 14px;
+    width: 100%;
+    max-width: 500px;
+    box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35);
+    animation: myncFadeIn 0.15s ease-out;
+    box-sizing: border-box;
+    border: 1px solid #e2e8f0;
+}
+
+@media (min-width: 600px) {
+    .mync-nc-modal {
+        padding: 2rem;
+    }
+}
+
+.mync-nc-modal-large {
+    max-width: 650px;
+}
+
+.mync-nc-modal h2 {
+    margin-top: 0;
+    margin-bottom: 1.25rem;
+    font-size: 1.2rem;
+    color: #0f172a;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 0.75rem;
+    letter-spacing: -0.01em;
+    position: relative;
+    padding-left: 0.75rem;
+}
+
+.mync-nc-modal h2::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.2em;
+    width: 3px;
+    height: 1em;
+    border-radius: 2px;
+    background: linear-gradient(180deg, #fb923c, #ea580c);
+}
+
+@media (min-width: 600px) {
+    .mync-nc-modal h2 {
+        font-size: 1.3rem;
+    }
+}
+
+/* Champs du formulaire */
+.mync-nc-champ {
+    margin-bottom: 1.15rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.mync-nc-champ label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 0.4rem;
+}
+
+.mync-nc-champ input,
+.mync-nc-champ textarea,
+.mync-nc-champ select {
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    color: #0f172a;
+    background-color: #ffffff;
+    box-sizing: border-box;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mync-nc-champ input:hover,
+.mync-nc-champ textarea:hover,
+.mync-nc-champ select:hover {
+    border-color: #fdba74;
+}
+
+.mync-nc-champ input:focus,
+.mync-nc-champ textarea:focus,
+.mync-nc-champ select:focus {
+    outline: none;
+    border-color: #ea580c;
+    box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15);
+}
+
+.mync-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 1.5rem;
+}
+
+@keyframes myncFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}

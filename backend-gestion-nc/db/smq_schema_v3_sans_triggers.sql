@@ -220,19 +220,20 @@ CREATE TABLE actions_capa (
 -- ---------------------------------------------------------------------
 CREATE TABLE documents_qualite (
     id                BIGSERIAL PRIMARY KEY,
-    code              VARCHAR(50)  NOT NULL UNIQUE,            -- ex : PR-PROD-001
+    reference         VARCHAR(50)  NOT NULL UNIQUE,            -- ex : PR-PROD-001
     titre             VARCHAR(255) NOT NULL,
+    description       TEXT,
     type_document     VARCHAR(15)  NOT NULL
                       CHECK (type_document IN ('PROCEDURE','INSTRUCTION','ENREGISTREMENT')),
     processus_id      BIGINT NOT NULL REFERENCES processus(id),
     statut            VARCHAR(12)  NOT NULL DEFAULT 'EN_VIGUEUR'
                       CHECK (statut IN ('EN_VIGUEUR','EN_REVISION','OBSOLETE')),
     version           VARCHAR(10)  NOT NULL DEFAULT '1.0',
-    file_url          VARCHAR(500) NOT NULL,
-    nom_original      VARCHAR(255),
+    nom_fichier       VARCHAR(255),
+    chemin_fichier    VARCHAR(500) NOT NULL,
     mime_type         VARCHAR(100),
     taille_octets     BIGINT,
-    auteur_id         BIGINT NOT NULL REFERENCES users(id),
+    createur_id       BIGINT NOT NULL REFERENCES users(id),
     date_application  DATE,
     date_creation     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     date_modification TIMESTAMP
@@ -283,6 +284,8 @@ CREATE INDEX idx_capa_echeance    ON actions_capa(date_echeance) WHERE statut_ac
 CREATE INDEX idx_audits_processus ON audits(processus_id, date_planifiee);
 CREATE INDEX idx_constats_audit   ON constats_audit(audit_id);
 CREATE INDEX idx_docs_processus   ON documents_qualite(processus_id, statut);
+CREATE UNIQUE INDEX uq_docs_reference_upper ON documents_qualite(upper(reference));
+CREATE INDEX idx_docs_type        ON documents_qualite(type_document);
 CREATE INDEX idx_notif_user       ON notifications(user_id, lue);
 CREATE INDEX idx_notif_user_date  ON notifications(user_id, date_creation DESC);
 CREATE INDEX idx_histo_entite     ON historique_actions(entite_concernee, entite_id);

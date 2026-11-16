@@ -1,211 +1,702 @@
-/* ============ En-tête liste ============ */
+/* ==========================================================================
+   Conteneur principal — remplit simplement son parent
+   ========================================================================== */
+.nc-page {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;                    /* évite le débordement en flex */
+  margin: 0;
+  padding: 1.25rem 1.5rem 2rem;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: #1e293b;
+  box-sizing: border-box;
+  flex: 1;
+  align-self: stretch;
+  min-height: 100%;
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(900px 500px at 8% -10%, rgba(96, 165, 250, 0.28), transparent 60%),
+    radial-gradient(800px 500px at 105% 5%, rgba(147, 197, 253, 0.22), transparent 60%),
+    radial-gradient(700px 500px at 50% 120%, rgba(191, 219, 254, 0.25), transparent 60%),
+    linear-gradient(180deg, #f5f9ff 0%, #eaf2fd 100%);
+}
+
+@media (min-width: 951px) {
+  .nc-page {
+    padding: 2rem 2rem 2.5rem;
+  }
+}
+
+@media (max-width: 950px) {
+  .nc-page {
+    padding: 1.25rem 1rem 2rem;
+  }
+}
+/* ==========================================================================
+   En-tête
+   ========================================================================== */
 .nc-entete-liste {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
   gap: 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
   flex-wrap: wrap;
+  padding: 1.1rem 1.25rem;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 16px;
+  box-shadow: 0 8px 24px -12px rgba(37, 99, 235, 0.25);
 }
-.nc-entete-liste h1 { margin: 0; font-size: 1.6rem; }
-.nc-sous-titre { margin: .2rem 0 0; color: #5b6472; font-size: .9rem; }
-.nc-champ-flex { flex: 1 1 260px; }
-.nc-barre { display: flex; gap: .75rem; flex-wrap: wrap; align-items: end; margin-bottom: 1.25rem; }
-.nc-vide { text-align: center; color: #5b6472; padding: 2rem 0; }
 
-/* ============ Grille de cartes ============ */
+.nc-entete-liste h1 {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  position: relative;
+  padding-left: 0.85rem;
+}
+
+.nc-entete-liste h1::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 1.4em;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #60a5fa, #2563eb);
+}
+
+.nc-sous-titre {
+  margin: 0.25rem 0 0;
+  color: #475569;
+  font-size: 0.9rem;
+}
+
+/* ==========================================================================
+   Barre de filtres — verre
+   ========================================================================== */
+.nc-barre {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: end;
+  margin-bottom: 1.25rem;
+  padding: 1rem 1.1rem;
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 14px;
+  box-shadow: 0 6px 18px -10px rgba(37, 99, 235, 0.18);
+}
+
+.nc-champ-flex {
+  flex: 1 1 260px;
+}
+
+.nc-vide {
+  text-align: center;
+  color: #475569;
+  padding: 2rem 0;
+  font-style: italic;
+  grid-column: 1 / -1;
+}
+
+/* ==========================================================================
+   Grille de cartes
+   ========================================================================== */
 .nc-cartes {
   display: grid;
   gap: 1rem;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  width: 100%;
 }
 
+@media (min-width: 1400px) {
+  .nc-cartes {
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  }
+}
+
+/* ==========================================================================
+   Carte — glass card
+   ========================================================================== */
 .nc-carte {
-  background: #fff;
-  border: 1px solid #e1e5ea;
-  border-radius: 12px;
-  padding: 1rem 1.1rem;
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 16px;
+  padding: 1.15rem 1.2rem;
   display: flex;
   flex-direction: column;
-  gap: .6rem;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
-  transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease;
-}
-.nc-carte:hover {
-  box-shadow: 0 8px 24px rgba(15, 23, 42, .08);
-  transform: translateY(-2px);
-  border-color: #c8d2de;
+  gap: 0.6rem;
+  box-shadow:
+    0 4px 20px -10px rgba(37, 99, 235, 0.18),
+    0 1px 2px rgba(15, 23, 42, 0.04);
+  transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  position: relative;
+  overflow: hidden;
 }
 
+/* Liseré lumineux en haut de la carte */
+.nc-carte::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(96, 165, 250, 0.7), rgba(37, 99, 235, 0.7), transparent);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.nc-carte:hover {
+  background: rgba(255, 255, 255, 0.78);
+  transform: translateY(-2px);
+  box-shadow:
+    0 14px 32px -12px rgba(37, 99, 235, 0.35),
+    0 2px 6px rgba(15, 23, 42, 0.05);
+  border-color: rgba(147, 197, 253, 0.9);
+}
+
+.nc-carte:hover::before {
+  opacity: 1;
+}
+
+/* ==========================================================================
+   Haut de carte
+   ========================================================================== */
 .nc-carte-haut {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: .75rem;
+  gap: 0.75rem;
 }
+
 .nc-carte-titre {
   margin: 0;
   font-size: 1.05rem;
   font-weight: 700;
   line-height: 1.3;
-  color: #0f172a;
+  color: #0b1220;
+  letter-spacing: -0.01em;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
+/* ==========================================================================
+   Date
+   ========================================================================== */
 .nc-carte-date {
   margin: 0;
-  font-size: .85rem;
-  color: #5b6472;
+  font-size: 0.8rem;
+  color: #334155;
   display: inline-flex;
   align-items: center;
-  gap: .25rem;
+  gap: 0.3rem;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  padding: 0.28rem 0.65rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(191, 219, 254, 0.9);
+  font-weight: 500;
+  align-self: flex-start;
 }
 
-.nc-carte-meta { font-size: .9rem; }
-.nc-carte-ref { color: #334155; }
-.nc-carte-ref strong { color: #0f172a; }
+.nc-carte-date svg {
+  color: #2563eb;
+}
+
+/* ==========================================================================
+   Référence + infos
+   ========================================================================== */
+.nc-carte-meta {
+  font-size: 0.88rem;
+}
+
+.nc-carte-ref {
+  color: #334155;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.6rem;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-radius: 8px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  font-size: 0.82rem;
+}
+
+.nc-carte-ref strong {
+  color: #0b1220;
+}
 
 .nc-carte-infos {
   list-style: none;
   padding: 0;
   margin: 0;
   display: grid;
-  gap: .35rem;
-  font-size: .88rem;
+  gap: 0.4rem;
+  font-size: 0.86rem;
   color: #334155;
 }
-.nc-carte-infos li { display: flex; align-items: center; gap: .5rem; }
-.nc-icone { color: #1f4e9c; flex-shrink: 0; }
 
+.nc-carte-infos li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nc-icone {
+  color: #2563eb;
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   Bas de carte
+   ========================================================================== */
 .nc-carte-bas {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: .5rem;
+  gap: 0.5rem;
   margin-top: auto;
-  padding-top: .6rem;
-  border-top: 1px solid #eef1f5;
+  padding-top: 0.75rem;
+  border-top: 1px dashed rgba(148, 163, 184, 0.35);
   flex-wrap: wrap;
 }
-.nc-carte-actions { display: flex; gap: .4rem; flex-wrap: wrap; }
-.nc-carte-actions .nc-btn { display: inline-flex; align-items: center; gap: .35rem; }
 
-/* ============ Boutons icônes ============ */
-.nc-btn svg { vertical-align: -2px; }
-
-/* ============ Modales modernisées ============ */
-.nc-overlay {
-  backdrop-filter: blur(4px);
-  background: rgba(15, 23, 42, .55);
+.nc-carte-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
 }
-.nc-modal {
+
+.nc-carte-actions .nc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* ==========================================================================
+   Boutons — glass + accent bleu
+   ========================================================================== */
+.nc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.95), rgba(37, 99, 235, 0.95));
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 10px;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow:
+    0 4px 12px -4px rgba(37, 99, 235, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transition: transform 0.1s ease, box-shadow 0.2s ease, filter 0.15s ease;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.nc-btn:hover {
+  filter: brightness(1.06);
+  box-shadow:
+    0 8px 20px -6px rgba(37, 99, 235, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.nc-btn:focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: 2px;
+}
+
+.nc-btn:active {
+  transform: translateY(1px);
+}
+
+.nc-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  filter: grayscale(0.2);
+}
+
+.nc-btn svg {
+  vertical-align: -2px;
+}
+
+/* Bouton secondaire — pur verre */
+.nc-btn-secondaire {
+  background: rgba(255, 255, 255, 0.55);
+  color: #334155;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow:
+    0 2px 8px -4px rgba(37, 99, 235, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px) saturate(150%);
+  -webkit-backdrop-filter: blur(10px) saturate(150%);
+}
+
+.nc-btn-secondaire:hover {
+  background: rgba(239, 246, 255, 0.85);
+  color: #1d4ed8;
+  border-color: rgba(191, 219, 254, 0.95);
+  filter: none;
+  box-shadow:
+    0 6px 16px -6px rgba(37, 99, 235, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.nc-btn-secondaire:focus-visible {
+  outline-color: #93c5fd;
+}
+
+.nc-btn-petit {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.78rem;
+  border-radius: 8px;
+}
+
+/* ==========================================================================
+   Pagination
+   ========================================================================== */
+.nc-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.75rem;
+  padding: 0.8rem 1rem;
+  color: #334155;
+  font-size: 0.9rem;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(10px) saturate(150%);
+  -webkit-backdrop-filter: blur(10px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.75);
   border-radius: 14px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, .25);
-  animation: nc-fade-in .18s ease;
-}
-@keyframes nc-fade-in {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.nc-modal header {
-  background: #f8fafc;
-  border-radius: 14px 14px 0 0;
-}
-.nc-modal header h2 { font-weight: 700; color: #0f172a; }
-.nc-modal footer {
-  background: #f8fafc;
-  border-radius: 0 0 14px 14px;
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+  box-shadow: 0 6px 18px -10px rgba(37, 99, 235, 0.2);
 }
 
-/* ============ Pièces jointes : aperçus + lightbox ============ */
+/* ==========================================================================
+   Messages — glass colorés
+   ========================================================================== */
+.nc-succes {
+  background: rgba(209, 250, 229, 0.65);
+  color: #065f46;
+  border: 1px solid rgba(167, 243, 208, 0.9);
+  border-left: 4px solid #10b981;
+  padding: 0.85rem 1.15rem;
+  border-radius: 12px;
+  font-size: 0.92rem;
+  font-weight: 500;
+  margin: 0 0 1.25rem;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 14px -8px rgba(16, 185, 129, 0.3);
+}
+
+.nc-erreur {
+  background: rgba(254, 226, 226, 0.65);
+  color: #991b1b;
+  border: 1px solid rgba(252, 165, 165, 0.9);
+  border-left: 4px solid #ef4444;
+  padding: 0.85rem 1.15rem;
+  border-radius: 12px;
+  font-size: 0.92rem;
+  font-weight: 500;
+  margin: 0 0 1.25rem;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 14px -8px rgba(239, 68, 68, 0.3);
+}
+
+/* ==========================================================================
+   Modales — glass
+   ========================================================================== */
+.nc-overlay {
+  backdrop-filter: blur(6px) saturate(140%);
+  -webkit-backdrop-filter: blur(6px) saturate(140%);
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.nc-modal {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 18px;
+  box-shadow:
+    0 30px 60px -20px rgba(15, 23, 42, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.4) inset;
+  animation: nc-fade-in 0.18s ease;
+}
+
+@keyframes nc-fade-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.nc-modal header {
+  background: linear-gradient(180deg, rgba(239, 246, 255, 0.9), rgba(255, 255, 255, 0.6));
+  border-radius: 18px 18px 0 0;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.7);
+}
+
+.nc-modal header h2 {
+  font-weight: 700;
+  color: #0b1220;
+  position: relative;
+  padding-left: 0.7rem;
+}
+
+.nc-modal header h2::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 1em;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #60a5fa, #2563eb);
+}
+
+.nc-modal footer {
+  background: linear-gradient(0deg, rgba(239, 246, 255, 0.9), rgba(255, 255, 255, 0.6));
+  border-radius: 0 0 18px 18px;
+  border-top: 1px solid rgba(226, 232, 240, 0.7);
+}
+
+/* ==========================================================================
+   Pièces jointes : aperçus + lightbox
+   ========================================================================== */
 .nc-apercus {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: .6rem;
-  margin-top: .5rem;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
 }
+
 .nc-apercu {
   position: relative;
-  border: 1px solid #dde1e7;
-  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 10px;
   overflow: hidden;
-  background: #f8fafc;
+  background: rgba(255, 255, 255, 0.5);
   cursor: zoom-in;
-  transition: transform .15s ease, box-shadow .15s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
+
 .nc-apercu:hover {
   transform: scale(1.02);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, .12);
+  box-shadow: 0 8px 20px -8px rgba(37, 99, 235, 0.35);
+  border-color: rgba(191, 219, 254, 0.95);
 }
+
 .nc-apercu img {
   width: 100%;
   height: 100px;
   object-fit: cover;
   display: block;
 }
+
 .nc-apercu span {
   display: block;
-  font-size: .7rem;
+  font-size: 0.7rem;
   padding: 3px 6px;
   text-align: center;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  background: #fff;
-  border-top: 1px solid #eef1f5;
+  background: rgba(255, 255, 255, 0.85);
+  border-top: 1px solid rgba(226, 232, 240, 0.7);
 }
 
-/* Lightbox plein écran dans la même fenêtre */
+/* Lightbox plein écran */
 .nc-lightbox {
   position: fixed;
   inset: 0;
   z-index: 2000;
-  background: rgba(0, 0, 0, .88);
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
-  animation: nc-fade-in .15s ease;
+  animation: nc-fade-in 0.15s ease;
 }
+
 .nc-lightbox img {
   max-width: 92vw;
   max-height: 90vh;
   object-fit: contain;
-  border-radius: 6px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, .6);
-  transition: transform .2s ease;
+  border-radius: 10px;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(255, 255, 255, 0.15);
+  transition: transform 0.2s ease;
   cursor: zoom-in;
 }
+
 .nc-lightbox img.zoome {
   transform: scale(1.8);
   cursor: zoom-out;
 }
+
 .nc-lightbox-fermer {
   position: absolute;
   top: 1rem;
   right: 1rem;
-  border: 0;
-  width: 40px;
-  height: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, .15);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
   font-size: 1.4rem;
   cursor: pointer;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: background 0.15s ease;
 }
-.nc-lightbox-fermer:hover { background: rgba(255, 255, 255, .28); }
 
-/* ============ Badges (rappel) ============ */
-.nc-badge { display: inline-block; padding: .15rem .55rem; border-radius: 999px; font-size: .78rem; font-weight: 600; background: #e6e9ee; white-space: nowrap; }
-.nc-badge-EN_ATTENTE { background: #fff1d6; color: #7a4b00; }
-.nc-badge-OUVERT { background: #dbe8fb; color: #12407f; }
-.nc-badge-EN_COURS_D_ANALYSE { background: #e8e0fb; color: #43257f; }
-.nc-badge-EN_TRAITEMENT { background: #d9f2e6; color: #0f5132; }
-.nc-badge-CLOTUREE { background: #e2e5e9; color: #3a4250; }
-.nc-badge-CRITIQUE { background: #fbdcdc; color: #8a1114; }
-.nc-badge-MAJEURE { background: #ffe5cc; color: #8a4200; }
-.nc-badge-MINEURE { background: #e8f3d6; color: #3d5a0f; }
+.nc-lightbox-fermer:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+/* ==========================================================================
+   Badges — glass colorés (couleurs sémantiques conservées)
+   ========================================================================== */
+.nc-badge {
+  display: inline-block;
+  padding: 0.2rem 0.62rem;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  background: rgba(226, 232, 240, 0.75);
+  color: #334155;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+/* Statuts */
+.nc-badge-EN_ATTENTE {
+  background: rgba(254, 243, 199, 0.8);
+  color: #92400e;
+  border-color: rgba(252, 211, 77, 0.9);
+}
+
+.nc-badge-OUVERT {
+  background: rgba(219, 234, 254, 0.8);
+  color: #1e40af;
+  border-color: rgba(147, 197, 253, 0.9);
+}
+
+.nc-badge-EN_COURS_D_ANALYSE {
+  background: rgba(237, 233, 254, 0.8);
+  color: #5b21b6;
+  border-color: rgba(196, 181, 253, 0.9);
+}
+
+.nc-badge-EN_TRAITEMENT {
+  background: rgba(220, 252, 231, 0.8);
+  color: #166534;
+  border-color: rgba(134, 239, 172, 0.9);
+}
+
+.nc-badge-CLOTUREE {
+  background: rgba(241, 245, 249, 0.8);
+  color: #475569;
+  border-color: rgba(203, 213, 225, 0.9);
+}
+
+/* Gravités */
+.nc-badge-CRITIQUE {
+  background: rgba(254, 226, 226, 0.8);
+  color: #b91c1c;
+  border-color: rgba(252, 165, 165, 0.9);
+}
+
+.nc-badge-MAJEURE {
+  background: rgba(255, 237, 213, 0.8);
+  color: #9a3412;
+  border-color: rgba(253, 186, 116, 0.9);
+}
+
+.nc-badge-MINEURE {
+  background: rgba(224, 242, 254, 0.8);
+  color: #0369a1;
+  border-color: rgba(125, 211, 252, 0.9);
+}
+
+/* ==========================================================================
+   Champs de la barre de filtres — verre
+   ========================================================================== */
+.nc-champ {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.nc-champ label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.nc-champ input,
+.nc-champ select {
+  padding: 0.55rem 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  color: #0b1220;
+  background: rgba(255, 255, 255, 0.75);
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.nc-champ input:hover,
+.nc-champ select:hover {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(191, 219, 254, 0.95);
+}
+
+.nc-champ input:focus,
+.nc-champ select:focus {
+  outline: none;
+  border-color: #60a5fa;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.22);
+}

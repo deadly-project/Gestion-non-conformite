@@ -28,3 +28,17 @@ CREATE TABLE IF NOT EXISTS constat_pieces_jointes (
 
 CREATE INDEX IF NOT EXISTS idx_constat_pj_constat
     ON constat_pieces_jointes (constat_id, file_type);
+
+-- ---------------------------------------------------------------------
+-- Gestion documentaire qualité : alignement de documents_qualite sur le modèle DocumentQualite.
+-- Les RENAME échouent sans effet quand ils sont déjà appliqués (spring.sql.init.continue-on-error=true).
+-- ---------------------------------------------------------------------
+ALTER TABLE documents_qualite RENAME COLUMN code TO reference;
+ALTER TABLE documents_qualite RENAME COLUMN nom_original TO nom_fichier;
+ALTER TABLE documents_qualite RENAME COLUMN file_url TO chemin_fichier;
+ALTER TABLE documents_qualite RENAME COLUMN auteur_id TO createur_id;
+ALTER TABLE documents_qualite ADD COLUMN IF NOT EXISTS description TEXT;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_docs_reference_upper ON documents_qualite (upper(reference));
+CREATE INDEX IF NOT EXISTS idx_docs_type ON documents_qualite (type_document);
+CREATE INDEX IF NOT EXISTS idx_docs_statut ON documents_qualite (statut);
