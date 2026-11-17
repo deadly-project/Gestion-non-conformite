@@ -23,7 +23,6 @@ public class MotDePasseOublieController {
     @PostMapping("/mot-de-passe-oublie")
     public MessageResponse demander(@Valid @RequestBody MotDePasseOublieRequest request) {
         service.demander(request.matricule());
-        // Réponse identique que le matricule existe ou non (pas de fuite d'information)
         return new MessageResponse("Si ce matricule correspond à un compte actif, votre demande a été "
                 + "transmise à l'administrateur et un email de confirmation vous a été envoyé.");
     }

@@ -1,4 +1,4 @@
-.nc-page { max-width: 1100px; margin: 0 auto; padding: 1rem; }
+.nc-page {  padding: 1rem; }
 .nc-form { display: grid; gap: 1rem; }
 .nc-grille { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
 .nc-champ { display: flex; flex-direction: column; gap: .25rem; }

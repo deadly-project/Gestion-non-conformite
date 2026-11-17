@@ -83,14 +83,18 @@ public class ReinitialisationMotDePasseService {
         Optional<Users> trouve = utilisateurRepository.findByMatricule(matricule)
                 .filter(u -> Boolean.TRUE.equals(u.getActif()));
         if (trouve.isEmpty()) {
+            // On simule un succès (ou on ne fait rien) pour ne pas révéler si le matricule existe
             log.info("Demande de réinitialisation ignorée : matricule inconnu ou compte désactivé.");
             return;
         }
 
         Users utilisateur = trouve.get();
+
+        // MODIFICATION : On bloque et on lève une exception claire si une demande est déjà en attente
         if (demandeRepository.existsByUtilisateurIdAndStatut(utilisateur.getId(), StatutDemande.EN_ATTENTE)) {
-            log.info("Demande de réinitialisation ignorée : une demande est déjà en attente pour {}.", utilisateur.getMatricule());
-            return;
+            log.info("Demande de réinitialisation refusée : une demande est déjà en attente pour {}.", utilisateur.getMatricule());
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Votre demande n'a pas pu être prise en compte car une demande de réinitialisation est déjà en attente pour ce compte.");
         }
 
         DemandeReinitialisation demande = new DemandeReinitialisation();
@@ -105,7 +109,6 @@ public class ReinitialisationMotDePasseService {
                         + " (matricule " + utilisateur.getMatricule() + ").",
                 NotificationService.ENTITE_REINITIALISATION, demande.getId());
 
-        // Notification admin (WebSocket) + accusé de réception : après le commit, en asynchrone
         eventPublisher.publishEvent(new DemandeReinitialisationRecueEvent(
                 DemandeReinitialisationResponse.from(demande),
                 utilisateur.getEmail(), utilisateur.getPrenom(), utilisateur.getNom()));

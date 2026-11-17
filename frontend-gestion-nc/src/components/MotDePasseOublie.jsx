@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { FiKey, FiUser, FiArrowLeft, FiCheckCircle, FiAlertCircle } from "react-icons/fi";
 import { apiRequest } from "../api/api";
-import "./MotDePasseOublie.css"; // Vous pouvez créer ou adapter ce fichier CSS
+import "./MotDePasseOublie.css";
 
 export default function MotDePasseOublie() {
     const [matricule, setMatricule] = useState("");
@@ -28,6 +28,7 @@ export default function MotDePasseOublie() {
             );
             setEnvoye(true);
         } catch (error) {
+            // error.message contiendra le message du backend ("Votre demande n'a pas pu être prise en compte car...")
             setErreur(error.message || "Impossible d'envoyer la demande.");
         } finally {
             setChargement(false);
@@ -83,6 +84,7 @@ export default function MotDePasseOublie() {
                             </div>
                         </div>
 
+                        {/* Affichage de l'erreur (ex: demande déjà en attente) */}
                         {erreur && (
                             <div className="error-message" role="alert">
                                 <FiAlertCircle />

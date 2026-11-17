@@ -1,38 +1,28 @@
 /* ==========================================================================
-   Conteneur principal — remplit simplement son parent
+   Conteneur principal — palette alignée sur GestionUtilisateurs
    ========================================================================== */
 .nc-page {
   width: 100%;
   max-width: 100%;
-  min-width: 0;                    /* évite le débordement en flex */
+  min-width: 0;
   margin: 0;
   padding: 1.25rem 1.5rem 2rem;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  color: #1e293b;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: #0f172a;
   box-sizing: border-box;
   flex: 1;
   align-self: stretch;
   min-height: 100%;
-  position: relative;
-  isolation: isolate;
-  background:
-    radial-gradient(900px 500px at 8% -10%, rgba(96, 165, 250, 0.28), transparent 60%),
-    radial-gradient(800px 500px at 105% 5%, rgba(147, 197, 253, 0.22), transparent 60%),
-    radial-gradient(700px 500px at 50% 120%, rgba(191, 219, 254, 0.25), transparent 60%),
-    linear-gradient(180deg, #f5f9ff 0%, #eaf2fd 100%);
+  background: linear-gradient(180deg, #f8fafc 0%, #eef4fb 100%);
 }
 
 @media (min-width: 951px) {
-  .nc-page {
-    padding: 2rem 2rem 2.5rem;
-  }
+  .nc-page { padding: 2rem 2rem 2.5rem; }
+}
+@media (max-width: 950px) {
+  .nc-page { padding: 1.25rem 1rem 2rem; }
 }
 
-@media (max-width: 950px) {
-  .nc-page {
-    padding: 1.25rem 1rem 2rem;
-  }
-}
 /* ==========================================================================
    En-tête
    ========================================================================== */
@@ -44,44 +34,38 @@
   margin-bottom: 1.25rem;
   flex-wrap: wrap;
   padding: 1.1rem 1.25rem;
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(14px) saturate(160%);
-  -webkit-backdrop-filter: blur(14px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  border-radius: 16px;
-  box-shadow: 0 8px 24px -12px rgba(37, 99, 235, 0.25);
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 18px;
+  box-shadow: 0 4px 20px -6px rgba(15, 23, 42, 0.06);
 }
 
 .nc-entete-liste h1 {
   margin: 0;
   font-size: 1.6rem;
-  font-weight: 700;
+  font-weight: 800;
   color: #0f172a;
   letter-spacing: -0.02em;
   position: relative;
   padding-left: 0.85rem;
 }
-
 .nc-entete-liste h1::before {
   content: "";
   position: absolute;
-  left: 0;
-  top: 50%;
+  left: 0; top: 50%;
   transform: translateY(-50%);
-  width: 4px;
-  height: 1.4em;
+  width: 4px; height: 1.4em;
   border-radius: 2px;
-  background: linear-gradient(180deg, #60a5fa, #2563eb);
+  background: linear-gradient(180deg, #1e6fd9, #0b47a1);
 }
-
 .nc-sous-titre {
   margin: 0.25rem 0 0;
-  color: #475569;
+  color: #64748b;
   font-size: 0.9rem;
 }
 
 /* ==========================================================================
-   Barre de filtres — verre
+   Barre de filtres
    ========================================================================== */
 .nc-barre {
   display: flex;
@@ -90,21 +74,15 @@
   align-items: end;
   margin-bottom: 1.25rem;
   padding: 1rem 1.1rem;
-  background: rgba(255, 255, 255, 0.55);
-  backdrop-filter: blur(12px) saturate(150%);
-  -webkit-backdrop-filter: blur(12px) saturate(150%);
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  border-radius: 14px;
-  box-shadow: 0 6px 18px -10px rgba(37, 99, 235, 0.18);
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px -4px rgba(15, 23, 42, 0.05);
 }
-
-.nc-champ-flex {
-  flex: 1 1 260px;
-}
-
+.nc-champ-flex { flex: 1 1 260px; }
 .nc-vide {
   text-align: center;
-  color: #475569;
+  color: #64748b;
   padding: 2rem 0;
   font-style: italic;
   grid-column: 1 / -1;
@@ -119,59 +97,43 @@
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   width: 100%;
 }
-
 @media (min-width: 1400px) {
-  .nc-cartes {
-    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  }
+  .nc-cartes { grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); }
 }
 
 /* ==========================================================================
-   Carte — glass card
+   Carte
    ========================================================================== */
 .nc-carte {
-  background: rgba(255, 255, 255, 0.62);
-  backdrop-filter: blur(16px) saturate(160%);
-  -webkit-backdrop-filter: blur(16px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, 0.75);
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.07);
   border-radius: 16px;
   padding: 1.15rem 1.2rem;
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
-  box-shadow:
-    0 4px 20px -10px rgba(37, 99, 235, 0.18),
-    0 1px 2px rgba(15, 23, 42, 0.04);
-  transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  box-shadow: 0 4px 20px -4px rgba(15, 23, 42, 0.05);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
   position: relative;
   overflow: hidden;
+  contain: layout style paint;
 }
 
-/* Liseré lumineux en haut de la carte */
 .nc-carte::before {
   content: "";
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
+  top: 0; left: 0; right: 0;
   height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(96, 165, 250, 0.7), rgba(37, 99, 235, 0.7), transparent);
+  background: linear-gradient(90deg, transparent, #1e6fd9, #0b47a1, transparent);
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.15s ease;
 }
 
 .nc-carte:hover {
-  background: rgba(255, 255, 255, 0.78);
   transform: translateY(-2px);
-  box-shadow:
-    0 14px 32px -12px rgba(37, 99, 235, 0.35),
-    0 2px 6px rgba(15, 23, 42, 0.05);
-  border-color: rgba(147, 197, 253, 0.9);
+  box-shadow: 0 12px 28px -10px rgba(30, 111, 217, 0.25);
 }
-
-.nc-carte:hover::before {
-  opacity: 1;
-}
+.nc-carte:hover::before { opacity: 1; }
 
 /* ==========================================================================
    Haut de carte
@@ -182,13 +144,12 @@
   align-items: flex-start;
   gap: 0.75rem;
 }
-
 .nc-carte-titre {
   margin: 0;
   font-size: 1.05rem;
   font-weight: 700;
   line-height: 1.3;
-  color: #0b1220;
+  color: #0f172a;
   letter-spacing: -0.01em;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -202,48 +163,35 @@
 .nc-carte-date {
   margin: 0;
   font-size: 0.8rem;
-  color: #334155;
+  color: #475569;
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: #f8fafc;
   padding: 0.28rem 0.65rem;
   border-radius: 9999px;
-  border: 1px solid rgba(191, 219, 254, 0.9);
+  border: 1px solid #e2e8f0;
   font-weight: 500;
   align-self: flex-start;
 }
-
-.nc-carte-date svg {
-  color: #2563eb;
-}
+.nc-carte-date svg { color: #1e6fd9; }
 
 /* ==========================================================================
    Référence + infos
    ========================================================================== */
-.nc-carte-meta {
-  font-size: 0.88rem;
-}
-
+.nc-carte-meta { font-size: 0.88rem; }
 .nc-carte-ref {
-  color: #334155;
+  color: #475569;
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
   padding: 0.28rem 0.6rem;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: #f8fafc;
   border-radius: 8px;
-  border: 1px solid rgba(226, 232, 240, 0.9);
+  border: 1px solid #e2e8f0;
   font-size: 0.82rem;
 }
-
-.nc-carte-ref strong {
-  color: #0b1220;
-}
+.nc-carte-ref strong { color: #0f172a; }
 
 .nc-carte-infos {
   list-style: none;
@@ -254,17 +202,41 @@
   font-size: 0.86rem;
   color: #334155;
 }
-
 .nc-carte-infos li {
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
+.nc-icone { color: #1e6fd9; flex-shrink: 0; }
 
-.nc-icone {
-  color: #2563eb;
-  flex-shrink: 0;
+/* ---- Avatar auteur (aligné sur .admin-user-avatar) ---- */
+.nc-auteur {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
 }
+.nc-auteur-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.72rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #38bdf8, #1e6fd9);
+  box-shadow: 0 4px 12px rgba(30, 111, 217, 0.25);
+  letter-spacing: 0.02em;
+}
+.nc-auteur-texte {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+.nc-auteur-texte strong { color: #0f172a; font-size: 0.86rem; }
+.nc-auteur-texte small { color: #64748b; font-size: 0.74rem; }
 
 /* ==========================================================================
    Bas de carte
@@ -276,16 +248,14 @@
   gap: 0.5rem;
   margin-top: auto;
   padding-top: 0.75rem;
-  border-top: 1px dashed rgba(148, 163, 184, 0.35);
+  border-top: 1px dashed #e2e8f0;
   flex-wrap: wrap;
 }
-
 .nc-carte-actions {
   display: flex;
   gap: 0.4rem;
   flex-wrap: wrap;
 }
-
 .nc-carte-actions .nc-btn {
   display: inline-flex;
   align-items: center;
@@ -293,82 +263,53 @@
 }
 
 /* ==========================================================================
-   Boutons — glass + accent bleu
+   Boutons — palette GestionUtilisateurs
    ========================================================================== */
 .nc-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  background: linear-gradient(135deg, rgba(96, 165, 250, 0.95), rgba(37, 99, 235, 0.95));
+  background: linear-gradient(135deg, #1e6fd9 0%, #0b47a1 100%);
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  border: 1px solid transparent;
   border-radius: 10px;
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
-  box-shadow:
-    0 4px 12px -4px rgba(37, 99, 235, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4);
-  transition: transform 0.1s ease, box-shadow 0.2s ease, filter 0.15s ease;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 4px 12px rgba(30, 111, 217, 0.25);
+  transition: box-shadow 0.15s ease, filter 0.15s ease, transform 0.15s ease;
 }
-
 .nc-btn:hover {
-  filter: brightness(1.06);
-  box-shadow:
-    0 8px 20px -6px rgba(37, 99, 235, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  filter: brightness(1.04);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(30, 111, 217, 0.35);
 }
-
 .nc-btn:focus-visible {
   outline: 2px solid #93c5fd;
   outline-offset: 2px;
 }
-
-.nc-btn:active {
-  transform: translateY(1px);
-}
-
+.nc-btn:active { transform: translateY(1px); }
 .nc-btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
-  transform: none;
-  filter: grayscale(0.2);
+  transform: none !important;
 }
+.nc-btn svg { vertical-align: -2px; }
 
-.nc-btn svg {
-  vertical-align: -2px;
-}
-
-/* Bouton secondaire — pur verre */
 .nc-btn-secondaire {
-  background: rgba(255, 255, 255, 0.55);
+  background: #ffffff;
   color: #334155;
-  border: 1px solid rgba(255, 255, 255, 0.85);
-  box-shadow:
-    0 2px 8px -4px rgba(37, 99, 235, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(10px) saturate(150%);
-  -webkit-backdrop-filter: blur(10px) saturate(150%);
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
 }
-
 .nc-btn-secondaire:hover {
-  background: rgba(239, 246, 255, 0.85);
-  color: #1d4ed8;
-  border-color: rgba(191, 219, 254, 0.95);
-  filter: none;
-  box-shadow:
-    0 6px 16px -6px rgba(37, 99, 235, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  background: #f8fafc;
+  color: #0f172a;
+  border-color: #94a3b8;
+  box-shadow: 0 4px 12px -4px rgba(30, 111, 217, 0.2);
 }
-
-.nc-btn-secondaire:focus-visible {
-  outline-color: #93c5fd;
-}
-
 .nc-btn-petit {
   padding: 0.35rem 0.7rem;
   font-size: 0.78rem;
@@ -388,105 +329,81 @@
   color: #334155;
   font-size: 0.9rem;
   font-weight: 500;
-  background: rgba(255, 255, 255, 0.55);
-  backdrop-filter: blur(10px) saturate(150%);
-  -webkit-backdrop-filter: blur(10px) saturate(150%);
-  border: 1px solid rgba(255, 255, 255, 0.75);
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.07);
   border-radius: 14px;
   width: fit-content;
   margin-left: auto;
   margin-right: auto;
-  box-shadow: 0 6px 18px -10px rgba(37, 99, 235, 0.2);
+  box-shadow: 0 4px 20px -4px rgba(15, 23, 42, 0.05);
 }
 
 /* ==========================================================================
-   Messages — glass colorés
+   Messages
    ========================================================================== */
-.nc-succes {
-  background: rgba(209, 250, 229, 0.65);
-  color: #065f46;
-  border: 1px solid rgba(167, 243, 208, 0.9);
-  border-left: 4px solid #10b981;
-  padding: 0.85rem 1.15rem;
-  border-radius: 12px;
-  font-size: 0.92rem;
-  font-weight: 500;
-  margin: 0 0 1.25rem;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  box-shadow: 0 4px 14px -8px rgba(16, 185, 129, 0.3);
-}
-
+.nc-succes,
 .nc-erreur {
-  background: rgba(254, 226, 226, 0.65);
-  color: #991b1b;
-  border: 1px solid rgba(252, 165, 165, 0.9);
-  border-left: 4px solid #ef4444;
   padding: 0.85rem 1.15rem;
   border-radius: 12px;
   font-size: 0.92rem;
   font-weight: 500;
   margin: 0 0 1.25rem;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  box-shadow: 0 4px 14px -8px rgba(239, 68, 68, 0.3);
+}
+.nc-succes {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #dcfce7;
+  border-left: 4px solid #16a34a;
+}
+.nc-erreur {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+  border-left: 4px solid #dc2626;
 }
 
 /* ==========================================================================
-   Modales — glass
+   Modales
    ========================================================================== */
 .nc-overlay {
-  backdrop-filter: blur(6px) saturate(140%);
-  -webkit-backdrop-filter: blur(6px) saturate(140%);
-  background: rgba(15, 23, 42, 0.45);
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
 }
-
 .nc-modal {
-  background: rgba(255, 255, 255, 0.78);
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  border-radius: 18px;
-  box-shadow:
-    0 30px 60px -20px rgba(15, 23, 42, 0.4),
-    0 0 0 1px rgba(255, 255, 255, 0.4) inset;
-  animation: nc-fade-in 0.18s ease;
+  background: #ffffff;
+  border: 1px solid rgba(30, 111, 217, 0.15);
+  border-radius: 20px;
+  box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.2);
+  animation: nc-scale-up 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
-
-@keyframes nc-fade-in {
-  from { opacity: 0; transform: translateY(6px) scale(0.98); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+@keyframes nc-scale-up {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
 }
-
 .nc-modal header {
-  background: linear-gradient(180deg, rgba(239, 246, 255, 0.9), rgba(255, 255, 255, 0.6));
-  border-radius: 18px 18px 0 0;
-  border-bottom: 1px solid rgba(226, 232, 240, 0.7);
+  background: linear-gradient(180deg, #f8fafc, #ffffff);
+  border-radius: 20px 20px 0 0;
+  border-bottom: 1px solid #e2e8f0;
 }
-
 .nc-modal header h2 {
-  font-weight: 700;
-  color: #0b1220;
+  font-weight: 800;
+  color: #0f172a;
   position: relative;
   padding-left: 0.7rem;
 }
-
 .nc-modal header h2::before {
   content: "";
   position: absolute;
-  left: 0;
-  top: 50%;
+  left: 0; top: 50%;
   transform: translateY(-50%);
-  width: 3px;
-  height: 1em;
+  width: 3px; height: 1em;
   border-radius: 2px;
-  background: linear-gradient(180deg, #60a5fa, #2563eb);
+  background: linear-gradient(180deg, #1e6fd9, #0b47a1);
 }
-
 .nc-modal footer {
-  background: linear-gradient(0deg, rgba(239, 246, 255, 0.9), rgba(255, 255, 255, 0.6));
-  border-radius: 0 0 18px 18px;
-  border-top: 1px solid rgba(226, 232, 240, 0.7);
+  background: linear-gradient(0deg, #f8fafc, #ffffff);
+  border-radius: 0 0 20px 20px;
+  border-top: 1px solid #e2e8f0;
 }
 
 /* ==========================================================================
@@ -498,30 +415,25 @@
   gap: 0.6rem;
   margin-top: 0.5rem;
 }
-
 .nc-apercu {
   position: relative;
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  border: 1px solid #e2e8f0;
   border-radius: 10px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.5);
+  background: #ffffff;
   cursor: zoom-in;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
 }
-
 .nc-apercu:hover {
-  transform: scale(1.02);
-  box-shadow: 0 8px 20px -8px rgba(37, 99, 235, 0.35);
-  border-color: rgba(191, 219, 254, 0.95);
+  box-shadow: 0 8px 20px -6px rgba(30, 111, 217, 0.25);
+  border-color: #dbeafe;
 }
-
 .nc-apercu img {
   width: 100%;
   height: 100px;
   object-fit: cover;
   display: block;
 }
-
 .nc-apercu span {
   display: block;
   font-size: 0.7rem;
@@ -530,173 +442,122 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  background: rgba(255, 255, 255, 0.85);
-  border-top: 1px solid rgba(226, 232, 240, 0.7);
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
 }
 
-/* Lightbox plein écran */
 .nc-lightbox {
   position: fixed;
   inset: 0;
   z-index: 2000;
-  background: rgba(15, 23, 42, 0.75);
-  backdrop-filter: blur(10px) saturate(140%);
-  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  background: rgba(15, 23, 42, 0.88);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
-  animation: nc-fade-in 0.15s ease;
 }
-
 .nc-lightbox img {
   max-width: 92vw;
   max-height: 90vh;
   object-fit: contain;
   border-radius: 10px;
-  box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.6),
-    0 0 0 1px rgba(255, 255, 255, 0.15);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
   transition: transform 0.2s ease;
   cursor: zoom-in;
 }
-
 .nc-lightbox img.zoome {
   transform: scale(1.8);
   cursor: zoom-out;
 }
-
 .nc-lightbox-fermer {
   position: absolute;
-  top: 1rem;
-  right: 1rem;
+  top: 1rem; right: 1rem;
   border: 1px solid rgba(255, 255, 255, 0.3);
-  width: 42px;
-  height: 42px;
+  width: 42px; height: 42px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.15);
   color: #ffffff;
   font-size: 1.4rem;
   cursor: pointer;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   transition: background 0.15s ease;
 }
-
-.nc-lightbox-fermer:hover {
-  background: rgba(255, 255, 255, 0.28);
-}
+.nc-lightbox-fermer:hover { background: rgba(255, 255, 255, 0.28); }
 
 /* ==========================================================================
-   Badges — glass colorés (couleurs sémantiques conservées)
+   Badges — style "role-badge" de GestionUtilisateurs
+   (fond pâle + bordure + texte coloré + icône à gauche)
    ========================================================================== */
 .nc-badge {
-  display: inline-block;
-  padding: 0.2rem 0.62rem;
-  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0.28rem 0.7rem;
+  border-radius: 20px;
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
   white-space: nowrap;
-  background: rgba(226, 232, 240, 0.75);
-  color: #334155;
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
-}
-
-/* Statuts */
-.nc-badge-EN_ATTENTE {
-  background: rgba(254, 243, 199, 0.8);
-  color: #92400e;
-  border-color: rgba(252, 211, 77, 0.9);
-}
-
-.nc-badge-OUVERT {
-  background: rgba(219, 234, 254, 0.8);
-  color: #1e40af;
-  border-color: rgba(147, 197, 253, 0.9);
-}
-
-.nc-badge-EN_COURS_D_ANALYSE {
-  background: rgba(237, 233, 254, 0.8);
-  color: #5b21b6;
-  border-color: rgba(196, 181, 253, 0.9);
-}
-
-.nc-badge-EN_TRAITEMENT {
-  background: rgba(220, 252, 231, 0.8);
-  color: #166534;
-  border-color: rgba(134, 239, 172, 0.9);
-}
-
-.nc-badge-CLOTUREE {
-  background: rgba(241, 245, 249, 0.8);
+  border: 1px solid transparent;
+  background: #f1f5f9;
   color: #475569;
-  border-color: rgba(203, 213, 225, 0.9);
 }
+.nc-badge svg { flex-shrink: 0; }
 
-/* Gravités */
-.nc-badge-CRITIQUE {
-  background: rgba(254, 226, 226, 0.8);
-  color: #b91c1c;
-  border-color: rgba(252, 165, 165, 0.9);
-}
+/* --- Statuts --- */
+.nc-badge-EN_ATTENTE           { background: #fffbeb; color: #b45309; border-color: #fef3c7; }
+.nc-badge-OUVERT               { background: #eff6ff; color: #1e40af; border-color: #dbeafe; }
+.nc-badge-EN_COURS_D_ANALYSE   { background: #f5f3ff; color: #6d28d9; border-color: #ede9fe; }
+.nc-badge-EN_TRAITEMENT        { background: #f0fdf4; color: #166534; border-color: #dcfce7; }
+.nc-badge-CLOTUREE             { background: #f8fafc; color: #64748b; border-color: #e2e8f0; }
 
-.nc-badge-MAJEURE {
-  background: rgba(255, 237, 213, 0.8);
-  color: #9a3412;
-  border-color: rgba(253, 186, 116, 0.9);
-}
-
-.nc-badge-MINEURE {
-  background: rgba(224, 242, 254, 0.8);
-  color: #0369a1;
-  border-color: rgba(125, 211, 252, 0.9);
-}
+/* --- Gravités --- */
+.nc-badge-CRITIQUE  { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+.nc-badge-MAJEURE   { background: #fffbeb; color: #9a3412; border-color: #fef3c7; }
+.nc-badge-MINEURE   { background: #eff6ff; color: #0369a1; border-color: #dbeafe; }
 
 /* ==========================================================================
-   Champs de la barre de filtres — verre
+   Champs de la barre de filtres
    ========================================================================== */
 .nc-champ {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
 }
-
 .nc-champ label {
   font-size: 0.8rem;
   font-weight: 600;
   color: #334155;
 }
-
 .nc-champ input,
 .nc-champ select {
   padding: 0.55rem 0.8rem;
-  border: 1px solid rgba(255, 255, 255, 0.85);
+  border: 1px solid #cbd5e1;
   border-radius: 10px;
   font-size: 0.9rem;
   font-family: inherit;
-  color: #0b1220;
-  background: rgba(255, 255, 255, 0.75);
+  color: #0f172a;
+  background: #f8fafc;
   box-sizing: border-box;
   transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
 }
-
-.nc-champ input:hover,
-.nc-champ select:hover {
-  background: rgba(255, 255, 255, 0.9);
-  border-color: rgba(191, 219, 254, 0.95);
-}
-
 .nc-champ input:focus,
 .nc-champ select:focus {
   outline: none;
-  border-color: #60a5fa;
   background: #ffffff;
-  box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.22);
+  border-color: #1e6fd9;
+  box-shadow: 0 0 0 4px rgba(30, 111, 217, 0.1);
+}
+
+/* ==========================================================================
+   Accessibilité : réduire les animations si demandé
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .nc-carte,
+  .nc-btn,
+  .nc-modal,
+  .nc-apercu {
+    transition: none;
+    animation: none;
+  }
 }

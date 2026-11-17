@@ -1,59 +1,74 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { apiRequest } from "../../api/api";
-import { STATUTS_NC, GRAVITES, formaterDate } from "../constantes";
+import { STATUTS_NC, formaterDate } from "../constantes";
 import { useNotificationsAdmin } from "../../hooks/useNotificationsAdmin";
 import VisualisationNcModal from "./VisualisationNcModal";
 import TraitementNcModal from "./TraitementNcModal";
 import AvancementNcModal from "./AvancementNcModal";
-import { FaEye, FaArrowTrendUp, FaLocationDot, FaUser, FaRotate } from "react-icons/fa6";
+import Avatar from "../compte/Avatar";
+import {
+  FaEye,
+  FaArrowTrendUp,
+  FaLocationDot,
+  FaRotate,
+} from "react-icons/fa6";
+import {
+  FiClock,
+  FiAlertCircle,
+  FiLoader,
+  FiSearch,
+  FiArchive,
+} from "react-icons/fi";
 import "./ListeNonConformites.css";
 
 const TAILLE_PAGE = 10;
 
+/* ---- Icônes par statut ---- */
+const ICONES_STATUT = {
+  EN_ATTENTE: FiClock,
+  OUVERT: FiAlertCircle,
+  EN_COURS_D_ANALYSE: FiLoader,
+  EN_TRAITEMENT: FiSearch,
+  CLOTUREE: FiArchive,
+};
+
 /* ---- Utilitaire : date relative (robuste) ---- */
 function dateRelative(dateStr) {
   if (!dateStr) return "—";
-
-  // new Date() gère nativement l'ISO 8601 (Z, offset ±HH:MM, millis…)
   const dateCible = new Date(dateStr);
   if (Number.isNaN(dateCible.getTime())) return formaterDate(dateStr);
 
   const diffSecondes = Math.floor((Date.now() - dateCible.getTime()) / 1000);
-
-  // Sécurité : date "future" (dérive d'horloge serveur/client)
   if (diffSecondes < 0) {
     if (Math.abs(diffSecondes) < 60) return "à l'instant";
     return formaterDate(dateStr);
   }
-
-  if (diffSecondes < 60) {
-    return `il y a ${diffSecondes} seconde${diffSecondes > 1 ? "s" : ""}`;
-  }
-
+  if (diffSecondes < 60) return `il y a ${diffSecondes} seconde${diffSecondes > 1 ? "s" : ""}`;
   const diffMinutes = Math.floor(diffSecondes / 60);
-  if (diffMinutes < 60) {
-    return `il y a ${diffMinutes} minute${diffMinutes > 1 ? "s" : ""}`;
-  }
-
+  if (diffMinutes < 60) return `il y a ${diffMinutes} minute${diffMinutes > 1 ? "s" : ""}`;
   const diffHeures = Math.floor(diffMinutes / 60);
-  if (diffHeures < 24) {
-    return `il y a ${diffHeures} heure${diffHeures > 1 ? "s" : ""}`;
-  }
-
+  if (diffHeures < 24) return `il y a ${diffHeures} heure${diffHeures > 1 ? "s" : ""}`;
   const diffJours = Math.floor(diffHeures / 24);
-  if (diffJours <= 7) {
-    return `il y a ${diffJours} jour${diffJours > 1 ? "s" : ""}`;
-  }
-
+  if (diffJours <= 7) return `il y a ${diffJours} jour${diffJours > 1 ? "s" : ""}`;
   return formaterDate(dateStr);
+}
+
+/* ---- Rendu d'un badge de statut avec icône ---- */
+function BadgeStatut({ statut }) {
+  const Icone = ICONES_STATUT[statut] || FiAlertCircle;
+  return (
+    <span className={`nc-badge nc-badge-${statut}`}>
+      <Icone size={12} />
+      {STATUTS_NC[statut] ?? statut}
+    </span>
+  );
 }
 
 export default function ListeNonConformites({ utilisateur }) {
   const [saisie, setSaisie] = useState("");
   const [recherche, setRecherche] = useState("");
   const [statut, setStatut] = useState("");
-  // true : seulement les NC où je suis responsable d'au moins une action CAPA
   const [mesCapa, setMesCapa] = useState(false);
   const [page, setPage] = useState(0);
   const [parametresUrl, setParametresUrl] = useSearchParams();
@@ -68,7 +83,6 @@ export default function ListeNonConformites({ utilisateur }) {
   const [ncTraitement, setNcTraitement] = useState(null);
   const [ncAvancement, setNcAvancement] = useState(null);
 
-  // Lien d'une notification : /responsable/non-conformites?visualiser=ID ouvre directement la NC
   useEffect(() => {
     const id = Number(parametresUrl.get("visualiser"));
     if (id > 0) {
@@ -196,7 +210,6 @@ export default function ListeNonConformites({ utilisateur }) {
       {info && <p className="nc-succes">{info}</p>}
       {erreur && <p className="nc-erreur">{erreur}</p>}
 
-      {/* ---- Liste de cartes ---- */}
       <div className="nc-cartes">
         {chargement && !donnees && <p className="nc-vide">Chargement...</p>}
         {donnees && donnees.contenu.length === 0 && (
@@ -204,20 +217,18 @@ export default function ListeNonConformites({ utilisateur }) {
         )}
 
         {donnees?.contenu.map((nc) => {
-          const gravite = nc.gravite || nc.graviteDeclaree;
           return (
             <article key={nc.id} className="nc-carte">
               <div className="nc-carte-haut">
                 <h2 className="nc-carte-titre" title={nc.titre}>
                   {nc.titre}
                 </h2>
-                <span className={`nc-badge nc-badge-${nc.statut}`}>
-                  {STATUTS_NC[nc.statut] ?? nc.statut}
-                </span>
+                <BadgeStatut statut={nc.statut} />
               </div>
 
               <p className="nc-carte-date">
-                <FaClockCote /> {dateRelative(nc.dateDetection)}
+                <FiClock size={13} style={{ marginRight: 4, verticalAlign: "-2px" }} />
+                {dateRelative(nc.dateDetection)}
               </p>
 
               <div className="nc-carte-meta">
@@ -231,11 +242,13 @@ export default function ListeNonConformites({ utilisateur }) {
 
               <ul className="nc-carte-infos">
                 <li>
-                  <FaUser className="nc-icone" />
-                  <span>
-                    <strong>Auteur :</strong> {nc.auteurPrenom} {nc.auteurNom}
-                    {nc.matriculeAuteur && ` — N° ${nc.matriculeAuteur}`}
-                  </span>
+                  <Avatar
+                    id={nc.matriculeAuteur}
+                    nom={{ prenom: nc.auteurPrenom, nom: nc.auteurNom }}
+                    role={nc.roleAuteur}
+                    email={nc.emailAuteur}
+                    taille="md"
+                  />
                 </li>
                 <li>
                   <FaLocationDot className="nc-icone" />
@@ -246,10 +259,6 @@ export default function ListeNonConformites({ utilisateur }) {
               </ul>
 
               <div className="nc-carte-bas">
-                <span className={`nc-badge nc-badge-${gravite}`}>
-                  {GRAVITES[gravite] ?? gravite ?? "Gravité ?"}
-                </span>
-
                 <div className="nc-carte-actions">
                   <button
                     type="button"
@@ -274,7 +283,6 @@ export default function ListeNonConformites({ utilisateur }) {
         })}
       </div>
 
-      {/* ---- Pagination ---- */}
       {nbPages > 1 && (
         <nav className="nc-pagination" aria-label="Pagination">
           <button
@@ -299,7 +307,6 @@ export default function ListeNonConformites({ utilisateur }) {
         </nav>
       )}
 
-      {/* ---- Modales ---- */}
       {ncVisualisation && (
         <VisualisationNcModal
           ncId={ncVisualisation}
@@ -328,15 +335,5 @@ export default function ListeNonConformites({ utilisateur }) {
         />
       )}
     </main>
-  );
-}
-
-/* Petit composant inline pour l'icône horloge */
-function FaClockCote() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 4, verticalAlign: "-2px" }}>
-      <circle cx="12" cy="12" r="9" />
-      <polyline points="12 7 12 12 15 14" />
-    </svg>
   );
 }

@@ -1,0 +1,147 @@
+/* ==========================================================================
+   Avatar réutilisable — palette alignée sur GestionUtilisateurs
+   ========================================================================== */
+.nc-avatar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 10px;
+  transition: background 0.15s ease;
+}
+.nc-avatar:focus-visible {
+  outline: 2px solid #1e6fd9;
+  outline-offset: 3px;
+}
+
+/* ---- Pastille d'initiales ---- */
+.nc-avatar-badge {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.72rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+  box-shadow: 0 4px 12px rgba(30, 111, 217, 0.25);
+}
+
+/* ---- Tailles ---- */
+.nc-avatar--sm .nc-avatar-badge { width: 28px; height: 28px; font-size: 0.66rem; border-radius: 8px; }
+.nc-avatar--lg .nc-avatar-badge { width: 44px; height: 44px; font-size: 0.9rem; border-radius: 12px; }
+
+/* ---- Identité inline ---- */
+.nc-avatar-identite {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  min-width: 0;
+}
+.nc-avatar-identite strong {
+  color: #0f172a;
+  font-size: 0.86rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nc-avatar-identite small {
+  color: #64748b;
+  font-size: 0.74rem;
+}
+
+/* ==========================================================================
+   Panneau de détail au survol / clic
+   ========================================================================== */
+.nc-avatar-detail {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  z-index: 50;
+  min-width: 240px;
+  max-width: 300px;
+  background: #ffffff;
+  border: 1px solid rgba(30, 111, 217, 0.15);
+  border-radius: 14px;
+  box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.2);
+  overflow: hidden;
+  animation: nc-avatar-pop 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes nc-avatar-pop {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.nc-avatar-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.9rem 1rem;
+  color: #ffffff;
+}
+.nc-avatar-detail-initiales {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.85rem;
+  letter-spacing: 0.03em;
+  flex-shrink: 0;
+}
+.nc-avatar-detail-header strong {
+  display: block;
+  font-size: 0.92rem;
+  line-height: 1.2;
+}
+.nc-avatar-detail-header .nc-avatar-role {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+.nc-avatar-detail-infos {
+  list-style: none;
+  margin: 0;
+  padding: 0.7rem 1rem 0.9rem;
+  display: grid;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  color: #334155;
+}
+.nc-avatar-detail-infos li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.nc-avatar-detail-infos svg { color: #1e6fd9; flex-shrink: 0; }
+.nc-avatar-detail-infos code {
+  font-family: "SF Mono", Monaco, monospace;
+  background: #f1f5f9;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  color: #0f172a;
+}
+
+/* Rôle couleurs (cohérent avec GestionUtilisateurs) */
+.nc-avatar-role.role-declarant { background: rgba(255, 255, 255, 0.22); }
+.nc-avatar-role.role-auditeur   { background: rgba(255, 255, 255, 0.22); }
+.nc-avatar-role.role-qualite    { background: rgba(255, 255, 255, 0.22); }
