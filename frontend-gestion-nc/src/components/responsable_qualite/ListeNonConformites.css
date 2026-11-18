@@ -115,18 +115,22 @@
   box-shadow: 0 4px 20px -4px rgba(15, 23, 42, 0.05);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
   position: relative;
-  overflow: hidden;
-  contain: layout style paint;
+  overflow: visible;         /* laisse le panneau Avatar déborder au-dessus */
+  contain: layout style;     /* sans 'paint' pour autoriser le débordement */
+  z-index: 1;
 }
+.nc-carte:hover { z-index: 2; }   /* passe au-dessus des voisines quand l'avatar s'ouvre */
 
 .nc-carte::before {
   content: "";
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 2px;
+  border-radius: 16px 16px 0 0;
   background: linear-gradient(90deg, transparent, #1e6fd9, #0b47a1, transparent);
   opacity: 0;
   transition: opacity 0.15s ease;
+  pointer-events: none;
 }
 
 .nc-carte:hover {
@@ -136,7 +140,7 @@
 .nc-carte:hover::before { opacity: 1; }
 
 /* ==========================================================================
-   Haut de carte
+   Haut de carte (titre + badge statut)
    ========================================================================== */
 .nc-carte-haut {
   display: flex;
@@ -158,28 +162,17 @@
 }
 
 /* ==========================================================================
-   Date
+   Ligne Ref NC + date de déclaration (même ligne)
    ========================================================================== */
-.nc-carte-date {
-  margin: 0;
-  font-size: 0.8rem;
-  color: #475569;
-  display: inline-flex;
+.nc-carte-ligne-meta {
+  display: flex;
   align-items: center;
-  gap: 0.3rem;
-  background: #f8fafc;
-  padding: 0.28rem 0.65rem;
-  border-radius: 9999px;
-  border: 1px solid #e2e8f0;
-  font-weight: 500;
-  align-self: flex-start;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  font-size: 0.88rem;
 }
-.nc-carte-date svg { color: #1e6fd9; }
 
-/* ==========================================================================
-   Référence + infos
-   ========================================================================== */
-.nc-carte-meta { font-size: 0.88rem; }
 .nc-carte-ref {
   color: #475569;
   display: inline-flex;
@@ -190,15 +183,31 @@
   border-radius: 8px;
   border: 1px solid #e2e8f0;
   font-size: 0.82rem;
+  line-height: 1.2;
 }
 .nc-carte-ref strong { color: #0f172a; }
+.nc-ref-attente { color: #b45309; }
 
+.nc-carte-date-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.76rem;
+  font-weight: 500;
+  color: #64748b;
+  white-space: nowrap;
+}
+.nc-carte-date-inline svg { color: #1e6fd9; flex-shrink: 0; }
+
+/* ==========================================================================
+   Infos (auteur, processus, échéance)
+   ========================================================================== */
 .nc-carte-infos {
   list-style: none;
   padding: 0;
   margin: 0;
   display: grid;
-  gap: 0.4rem;
+  gap: 0.45rem;
   font-size: 0.86rem;
   color: #334155;
 }
@@ -209,34 +218,56 @@
 }
 .nc-icone { color: #1e6fd9; flex-shrink: 0; }
 
-/* ---- Avatar auteur (aligné sur .admin-user-avatar) ---- */
-.nc-auteur {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
+/* ==========================================================================
+   Échéance — couleurs conditionnelles selon l'état
+   ========================================================================== */
+.nc-echeance {
+  font-weight: 600;
 }
-.nc-auteur-avatar {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  color: #ffffff;
+
+/* Échéance lointaine : vert */
+.nc-echeance-verte {
+  color: #15803d;
+  background: #f0fdf4;
+  padding: 0.05rem 0.4rem;
+  border-radius: 6px;
+  border: 1px solid #bbf7d0;
+}
+
+/* Échéance proche (≤ 7 jours) : orange */
+.nc-echeance-orange {
+  color: #c2410c;
+  background: #fff7ed;
+  padding: 0.05rem 0.4rem;
+  border-radius: 6px;
+  border: 1px solid #fed7aa;
+}
+
+/* Échéance dépassée (et statut non clôturée) : rouge */
+.nc-echeance-rouge {
+  color: #b91c1c;
+  background: #fef2f2;
+  padding: 0.05rem 0.4rem;
+  border-radius: 6px;
+  border: 1px solid #fecaca;
   font-weight: 700;
-  font-size: 0.72rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  background: linear-gradient(135deg, #38bdf8, #1e6fd9);
-  box-shadow: 0 4px 12px rgba(30, 111, 217, 0.25);
-  letter-spacing: 0.02em;
 }
-.nc-auteur-texte {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.2;
+
+/* Échéance neutralisée (NC clôturée) : gris */
+.nc-echeance-neutre {
+  color: #475569;
+  background: #f8fafc;
+  padding: 0.05rem 0.4rem;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
 }
-.nc-auteur-texte strong { color: #0f172a; font-size: 0.86rem; }
-.nc-auteur-texte small { color: #64748b; font-size: 0.74rem; }
+
+/* Pas d'échéance saisie */
+.nc-echeance-vide {
+  color: #94a3b8;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
 
 /* ==========================================================================
    Bas de carte
@@ -314,6 +345,31 @@
   padding: 0.35rem 0.7rem;
   font-size: 0.78rem;
   border-radius: 8px;
+}
+
+/* ==========================================================================
+   Boutons d'action carte — dégradé légèrement plus clair que l'avatar
+   ========================================================================== */
+.nc-carte-actions .nc-btn {
+  background: linear-gradient(135deg, #2e90ff 0%, #0b59d8 100%);
+  border-color: transparent;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(59, 140, 232, 0.28);
+}
+.nc-carte-actions .nc-btn:hover {
+  background: linear-gradient(135deg, #4392ec 0%, #083d8d 100%);
+  border-color: transparent;
+  color: #ffffff;
+  box-shadow: 0 8px 20px rgba(59, 140, 232, 0.38);
+  filter: brightness(1.04);
+  transform: translateY(-1px);
+}
+.nc-carte-actions .nc-btn:active {
+  transform: translateY(1px);
+}
+.nc-carte-actions .nc-btn:focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: 2px;
 }
 
 /* ==========================================================================
@@ -484,40 +540,40 @@
 .nc-lightbox-fermer:hover { background: rgba(255, 255, 255, 0.28); }
 
 /* ==========================================================================
-   Badges — style "role-badge" de GestionUtilisateurs
-   (fond pâle + bordure + texte coloré + icône à gauche)
+   Badges — pastilles compactes (fond pâle + bordure + icône)
    ========================================================================== */
 .nc-badge {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 0.28rem 0.7rem;
-  border-radius: 20px;
-  font-size: 0.72rem;
+  gap: 4px;
+  padding: 0.22rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
   white-space: nowrap;
   border: 1px solid transparent;
   background: #f1f5f9;
   color: #475569;
+  line-height: 1;
 }
 .nc-badge svg { flex-shrink: 0; }
 
 /* --- Statuts --- */
-.nc-badge-EN_ATTENTE           { background: #fffbeb; color: #b45309; border-color: #fef3c7; }
-.nc-badge-OUVERT               { background: #eff6ff; color: #1e40af; border-color: #dbeafe; }
-.nc-badge-EN_COURS_D_ANALYSE   { background: #f5f3ff; color: #6d28d9; border-color: #ede9fe; }
-.nc-badge-EN_TRAITEMENT        { background: #f0fdf4; color: #166534; border-color: #dcfce7; }
-.nc-badge-CLOTUREE             { background: #f8fafc; color: #64748b; border-color: #e2e8f0; }
+.nc-badge-EN_ATTENTE           { background: #fffbeb; color: #b45309; border-color: #fde68a; }
+.nc-badge-OUVERT               { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+.nc-badge-EN_COURS_D_ANALYSE   { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
+.nc-badge-EN_TRAITEMENT        { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+.nc-badge-CLOTUREE             { background: #f8fafc; color: #475569; border-color: #e2e8f0; }
 
-/* --- Gravités --- */
-.nc-badge-CRITIQUE  { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
-.nc-badge-MAJEURE   { background: #fffbeb; color: #9a3412; border-color: #fef3c7; }
-.nc-badge-MINEURE   { background: #eff6ff; color: #0369a1; border-color: #dbeafe; }
+/* --- Gravités (conservées pour compatibilité) --- */
+.nc-badge-CRITIQUE { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+.nc-badge-MAJEURE  { background: #fffbeb; color: #9a3412; border-color: #fed7aa; }
+.nc-badge-MINEURE  { background: #eff6ff; color: #0369a1; border-color: #bfdbfe; }
 
 /* ==========================================================================
-   Champs de la barre de filtres
+   Champs de la barre de filtres (inputs classiques)
    ========================================================================== */
 .nc-champ {
   display: flex;
@@ -529,8 +585,7 @@
   font-weight: 600;
   color: #334155;
 }
-.nc-champ input,
-.nc-champ select {
+.nc-champ input {
   padding: 0.55rem 0.8rem;
   border: 1px solid #cbd5e1;
   border-radius: 10px;
@@ -541,12 +596,49 @@
   box-sizing: border-box;
   transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
-.nc-champ input:focus,
-.nc-champ select:focus {
+.nc-champ input:focus {
   outline: none;
   background: #ffffff;
   border-color: #1e6fd9;
   box-shadow: 0 0 0 4px rgba(30, 111, 217, 0.1);
+}
+
+/* ==========================================================================
+   Filtres "select" façon calendrier (.cal-champ select)
+   ========================================================================== */
+.nc-champ-cal {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.nc-champ-cal label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #334155;
+}
+.nc-select-cal {
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 8px 2rem 8px 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background-color: #ffffff;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 0.6rem center;
+  font: inherit;
+  font-size: 0.9rem;
+  color: #0f172a;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  box-sizing: border-box;
+  width: 100%;
+}
+.nc-select-cal:hover { border-color: #94a3b8; }
+.nc-select-cal:focus {
+  outline: none;
+  border-color: #1e40af;
+  box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.15);
 }
 
 /* ==========================================================================
@@ -560,4 +652,89 @@
     transition: none;
     animation: none;
   }
+}
+
+/* ==========================================================================
+   Barre de filtres par statut (façon MesAuditsPage)
+   ========================================================================== */
+.nc-filtres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.25rem;
+  padding: 0.5rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.nc-filtre {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 9999px;
+  background: #ffffff;
+  color: #475569;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease,
+              color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+}
+
+.nc-filtre:hover {
+  border-color: #93c5fd;
+  color: #1e40af;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.08);
+}
+
+.nc-filtre--actif {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+}
+
+.nc-filtre--actif:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+  color: #ffffff;
+}
+
+.nc-filtre:focus-visible {
+  outline: 2px solid #1e40af;
+  outline-offset: 2px;
+}
+
+/* Pastille de couleur à gauche du libellé */
+.nc-filtre-pastille {
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: #94a3b8;
+  flex-shrink: 0;
+}
+
+/* Couleurs par statut (alignées sur les badges NC) */
+.nc-filtre--TOUS                .nc-filtre-pastille { background: #94a3b8; }
+.nc-filtre--EN_ATTENTE          .nc-filtre-pastille { background: #f59e0b; }
+.nc-filtre--OUVERT              .nc-filtre-pastille { background: #3b82f6; }
+.nc-filtre--EN_COURS_D_ANALYSE  .nc-filtre-pastille { background: #8b5cf6; }
+.nc-filtre--EN_TRAITEMENT       .nc-filtre-pastille { background: #10b981; }
+.nc-filtre--CLOTUREE            .nc-filtre-pastille { background: #64748b; }
+
+/* Sur filtre actif, la pastille devient blanche pour contraster */
+.nc-filtre--actif .nc-filtre-pastille {
+  background: #ffffff !important;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
+}
+
+/* Petit helper pour la valeur de référence */
+.nc-ref-valeur {
+  color: #0f172a;
+  font-weight: 600;
 }

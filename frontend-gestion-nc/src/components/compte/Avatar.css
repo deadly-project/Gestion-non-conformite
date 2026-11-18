@@ -57,12 +57,10 @@
 }
 
 /* ==========================================================================
-   Panneau de détail au survol / clic
+   Panneau de détail
    ========================================================================== */
 .nc-avatar-detail {
   position: absolute;
-  top: calc(100% + 0.5rem);
-  left: 0;
   z-index: 50;
   min-width: 240px;
   max-width: 300px;
@@ -73,8 +71,27 @@
   overflow: hidden;
   animation: nc-avatar-pop 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
+/* Variante bas (par défaut) */
+.nc-avatar-detail--bottom,
+.nc-avatar-detail:not(.nc-avatar-detail--top) {
+  top: calc(100% + 0.5rem);
+  left: 0;
+}
+
+/* Variante haut (superposé au-dessus de la carte) */
+.nc-avatar-detail--top {
+  bottom: calc(100% + 0.5rem);
+  left: 0;
+  animation: nc-avatar-pop-top 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 @keyframes nc-avatar-pop {
   from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes nc-avatar-pop-top {
+  from { opacity: 0; transform: translateY(4px) scale(0.98); }
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
@@ -140,8 +157,3 @@
   font-size: 0.78rem;
   color: #0f172a;
 }
-
-/* Rôle couleurs (cohérent avec GestionUtilisateurs) */
-.nc-avatar-role.role-declarant { background: rgba(255, 255, 255, 0.22); }
-.nc-avatar-role.role-auditeur   { background: rgba(255, 255, 255, 0.22); }
-.nc-avatar-role.role-qualite    { background: rgba(255, 255, 255, 0.22); }

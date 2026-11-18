@@ -22,7 +22,8 @@ function infosRole(role) {
  *  - role      : code du rôle (DECLARANT, AUDITEUR, RESPONSABLE_QUALITE, ...)
  *  - email     : optionnel, affiché dans le détail
  *  - taille    : "sm" | "md" | "lg" (défaut "md")
- *  - afficherDetails : bool — affiche la carte de détail au survol/focus
+ *  - position  : "top" | "bottom" (défaut "bottom") — sens d'ouverture du panneau
+ *  - afficherDetails : bool — affiche la carte de détail au clic/focus
  *  - detailsOuverts  : bool — force l'ouverture du panneau de détail
  *  - onClick   : callback optionnel au clic
  */
@@ -32,6 +33,7 @@ export default function Avatar({
   role,
   email,
   taille = "md",
+  position = "bottom",
   afficherDetails = true,
   detailsOuverts = false,
   onClick,
@@ -48,16 +50,23 @@ export default function Avatar({
   const initiales = `${prenom?.[0] ?? ""}${nomFamille?.[0] ?? ""}`.toUpperCase() || "?";
   const info = infosRole(role);
 
-  // Fermer le panneau au clic extérieur
+  // Fermer le panneau au clic extérieur + touche Échap
   useEffect(() => {
-    if (!ouvert) return;
+    if (!ouvert) return undefined;
+
     function surClicExterieur(e) {
-      if (wrapRef.current && !wrapRef.current.contains(e.target)) {
-        setOuvert(false);
-      }
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOuvert(false);
     }
+    function surTouche(e) {
+      if (e.key === "Escape") setOuvert(false);
+    }
+
     document.addEventListener("mousedown", surClicExterieur);
-    return () => document.removeEventListener("mousedown", surClicExterieur);
+    document.addEventListener("keydown", surTouche);
+    return () => {
+      document.removeEventListener("mousedown", surClicExterieur);
+      document.removeEventListener("keydown", surTouche);
+    };
   }, [ouvert]);
 
   function gererClic(e) {
@@ -71,7 +80,7 @@ export default function Avatar({
   return (
     <div
       ref={wrapRef}
-      className={`nc-avatar nc-avatar--${taille} ${ouvert ? "is-open" : ""}`}
+      className={`nc-avatar nc-avatar--${taille} nc-avatar--pos-${position} ${ouvert ? "is-open" : ""}`}
       onClick={gererClic}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
@@ -92,7 +101,11 @@ export default function Avatar({
       </div>
 
       {afficherDetails && ouvert && (
-        <div className="nc-avatar-detail" role="dialog" aria-label={`Détails de ${nomComplet}`}>
+        <div
+          className={`nc-avatar-detail nc-avatar-detail--${position}`}
+          role="dialog"
+          aria-label={`Détails de ${nomComplet}`}
+        >
           <div className="nc-avatar-detail-header" style={{ background: info.degrade }}>
             <span className="nc-avatar-detail-initiales">{initiales}</span>
             <div>

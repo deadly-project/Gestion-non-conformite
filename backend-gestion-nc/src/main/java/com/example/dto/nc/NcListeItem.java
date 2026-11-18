@@ -13,7 +13,16 @@ public record NcListeItem(
         LocalDateTime dateCreation,
         String graviteDeclaree,
         String gravite,
+        // ---- Auteur ----
+        Long auteurId,
         String auteurNom,
         String auteurPrenom,
-        String service
+        String matriculeAuteur,
+        String roleAuteur,
+        String emailAuteur,
+        // ---- Processus ----
+        Long processusId,
+        String service,
+        // ---- Échéance ----
+        LocalDate dateEcheance
 ) {}

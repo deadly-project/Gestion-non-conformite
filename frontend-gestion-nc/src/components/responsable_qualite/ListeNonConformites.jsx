@@ -19,10 +19,12 @@ import {
   FiLoader,
   FiSearch,
   FiArchive,
+  FiCalendar,
 } from "react-icons/fi";
 import "./ListeNonConformites.css";
 
 const TAILLE_PAGE = 10;
+const JOURS_ECHEANCE_PROCHE = 7;
 
 /* ---- Icônes par statut ---- */
 const ICONES_STATUT = {
@@ -32,6 +34,12 @@ const ICONES_STATUT = {
   EN_TRAITEMENT: FiSearch,
   CLOTUREE: FiArchive,
 };
+
+/* ---- Barre de filtres statut ---- */
+const FILTRES_STATUT = [
+  { code: "", libelle: "Tous" },
+  ...Object.entries(STATUTS_NC).map(([code, libelle]) => ({ code, libelle })),
+];
 
 /* ---- Utilitaire : date relative (robuste) ---- */
 function dateRelative(dateStr) {
@@ -59,10 +67,32 @@ function BadgeStatut({ statut }) {
   const Icone = ICONES_STATUT[statut] || FiAlertCircle;
   return (
     <span className={`nc-badge nc-badge-${statut}`}>
-      <Icone size={12} />
-      {STATUTS_NC[statut] ?? statut}
+      {STATUTS_NC[statut] ?? statut}{" "}
+      <Icone size={11} />
     </span>
   );
+}
+
+/* ---- État d'échéance : retourne une classe CSS ---- */
+function etatEcheance(dateEcheance, statut) {
+  if (!dateEcheance) return "nc-echeance-vide";
+  const dateCible = new Date(dateEcheance);
+  if (Number.isNaN(dateCible.getTime())) return "nc-echeance-vide";
+
+  // On compare à minuit pour éviter les effets d'heure
+  const aujourdHui = new Date();
+  aujourdHui.setHours(0, 0, 0, 0);
+  const cible = new Date(dateCible);
+  cible.setHours(0, 0, 0, 0);
+
+  const diffJours = Math.round((cible - aujourdHui) / (1000 * 60 * 60 * 24));
+
+  // Clôturée : échéance neutralisée (peu importe le dépassement)
+  if (statut === "CLOTUREE") return "nc-echeance-neutre";
+
+  if (diffJours < 0) return "nc-echeance-rouge";       // dépassée
+  if (diffJours <= JOURS_ECHEANCE_PROCHE) return "nc-echeance-orange"; // proche
+  return "nc-echeance-verte";                          // lointaine
 }
 
 export default function ListeNonConformites({ utilisateur }) {
@@ -162,6 +192,29 @@ export default function ListeNonConformites({ utilisateur }) {
         </button>
       </header>
 
+      {/* --- Barre de filtres statut --- */}
+      <div className="nc-filtres" role="group" aria-label="Filtrer les non-conformités par statut">
+        {FILTRES_STATUT.map(({ code, libelle }) => {
+          const actif = statut === code;
+          return (
+            <button
+              key={code || "TOUS"}
+              type="button"
+              className={`nc-filtre${actif ? " nc-filtre--actif" : ""} nc-filtre--${code || "TOUS"}`}
+              aria-pressed={actif}
+              onClick={() => {
+                setStatut(code);
+                setPage(0);
+              }}
+            >
+              <span className="nc-filtre-pastille" aria-hidden="true" />
+              {libelle}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* --- Barre de filtres --- */}
       <div className="nc-barre">
         <div className="nc-champ nc-champ-flex">
           <label htmlFor="recherche">Rechercher</label>
@@ -173,28 +226,12 @@ export default function ListeNonConformites({ utilisateur }) {
             onChange={(e) => setSaisie(e.target.value)}
           />
         </div>
-        <div className="nc-champ">
-          <label htmlFor="filtreStatut">Statut</label>
-          <select
-            id="filtreStatut"
-            value={statut}
-            onChange={(e) => {
-              setStatut(e.target.value);
-              setPage(0);
-            }}
-          >
-            <option value="">Tous</option>
-            {Object.entries(STATUTS_NC).map(([code, libelle]) => (
-              <option key={code} value={code}>
-                {libelle}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="nc-champ">
+
+        <div className="nc-champ nc-champ-cal">
           <label htmlFor="filtreCapa">Responsabilité CAPA</label>
           <select
             id="filtreCapa"
+            className="nc-select-cal"
             value={mesCapa ? "mes" : ""}
             onChange={(e) => {
               setMesCapa(e.target.value === "mes");
@@ -217,6 +254,10 @@ export default function ListeNonConformites({ utilisateur }) {
         )}
 
         {donnees?.contenu.map((nc) => {
+          // Date de déclaration = date de création serveur (fallback : détection)
+          const dateDeclaration = nc.dateCreation ?? nc.dateDetection;
+          const classeEcheance = etatEcheance(nc.dateEcheance, nc.statut);
+
           return (
             <article key={nc.id} className="nc-carte">
               <div className="nc-carte-haut">
@@ -226,20 +267,30 @@ export default function ListeNonConformites({ utilisateur }) {
                 <BadgeStatut statut={nc.statut} />
               </div>
 
-              <p className="nc-carte-date">
-                <FiClock size={13} style={{ marginRight: 4, verticalAlign: "-2px" }} />
-                {dateRelative(nc.dateDetection)}
-              </p>
-
-              <div className="nc-carte-meta">
+              {/* --- Ligne Ref NC + date de déclaration --- */}
+              <div className="nc-carte-ligne-meta">
                 <span className="nc-carte-ref">
                   <strong>Ref NC :</strong>{" "}
-                  {nc.reference || (
-                    <em style={{ color: "#b45309" }}>Non attribuée</em>
+                  {nc.reference ? (
+                    <span className="nc-ref-valeur">{nc.reference}</span>
+                  ) : (
+                    <span className="nc-echeance-vide">-- --</span>
                   )}
+                </span>
+                <span
+                  className="nc-carte-date-inline"
+                  title={
+                    dateDeclaration
+                      ? `Déclarée le ${formaterDate(dateDeclaration)}`
+                      : "Date inconnue"
+                  }
+                >
+                  <FiClock size={12} />
+                  {dateRelative(dateDeclaration)}
                 </span>
               </div>
 
+              {/* --- Auteur + processus + échéance --- */}
               <ul className="nc-carte-infos">
                 <li>
                   <Avatar
@@ -248,6 +299,7 @@ export default function ListeNonConformites({ utilisateur }) {
                     role={nc.roleAuteur}
                     email={nc.emailAuteur}
                     taille="md"
+                    position="top"
                   />
                 </li>
                 <li>
@@ -256,13 +308,26 @@ export default function ListeNonConformites({ utilisateur }) {
                     <strong>Processus :</strong> {nc.service || "—"}
                   </span>
                 </li>
+                <li>
+                  <FiCalendar className="nc-icone" size={14} />
+                  <span>
+                    <strong>Échéance :</strong>{" "}
+                    {nc.dateEcheance ? (
+                      <span className={`nc-echeance ${classeEcheance}`}>
+                        {formaterDate(nc.dateEcheance)}
+                      </span>
+                    ) : (
+                      <span className="nc-echeance-vide">-- --</span>
+                    )}
+                  </span>
+                </li>
               </ul>
 
               <div className="nc-carte-bas">
                 <div className="nc-carte-actions">
                   <button
                     type="button"
-                    className="nc-btn nc-btn-secondaire nc-btn-petit"
+                    className="nc-btn nc-btn-petit"
                     title="Visualiser"
                     onClick={() => setNcVisualisation(nc.id)}
                   >
@@ -270,7 +335,7 @@ export default function ListeNonConformites({ utilisateur }) {
                   </button>
                   <button
                     type="button"
-                    className="nc-btn nc-btn-secondaire nc-btn-petit"
+                    className="nc-btn nc-btn-petit"
                     title="Avancement"
                     onClick={() => setNcAvancement(nc.id)}
                   >

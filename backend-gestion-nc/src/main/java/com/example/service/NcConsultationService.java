@@ -182,9 +182,15 @@ public class NcConsultationService {
                             nc.getDateCreation(),
                             nc.getGraviteDeclaree(),
                             nc.getGravite(),
+                            u != null ? u.getId() : null,
                             u != null ? u.getNom() : "",
                             u != null ? u.getPrenom() : "",
-                            p != null ? p.getLibelle() : ""
+                            u != null ? String.valueOf(u.getMatricule()) : "",
+                            u != null ? u.getRole() : "",
+                            u != null ? u.getEmail() : "",
+                            p != null ? p.getId() : null,
+                            p != null ? p.getLibelle() : "",
+                            nc.getDateEcheance()
                     );
                 })
                 .toList();
