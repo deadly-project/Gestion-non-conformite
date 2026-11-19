@@ -8,6 +8,7 @@ import {
     FiAlertCircle, FiCheckCircle, FiClock, FiActivity,
 } from "react-icons/fi";
 import "./DashboardPage.css";
+import "./DashbboardResponsablequalite.css"
 
 const nombre = (valeur) => Number(valeur ?? 0).toLocaleString("fr-FR");
 const pourcentage = (valeur) => (valeur == null ? "—" : `${String(valeur).replace(".", ",")} %`);

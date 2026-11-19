@@ -287,7 +287,7 @@ export default function AuditRealisationPage() {
                 {termine && (
                     <div className="area-etat-final">
                         <span className="area-etat-final-label">Description du Compte rendu :</span>
-                        <p className="area-etat-final-texte">{audit.compteRendu || "Non renseigné"}</p>
+                        <p className="area-etat-final-texte">{detail.compteRendu || "Non renseigné"}</p>
                     </div>
                 )}
             </header>

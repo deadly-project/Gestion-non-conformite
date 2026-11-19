@@ -1,0 +1,32 @@
+
+/* ---- Dashboard administrateur ---- */
+.admin-activite .dash-carte-entete h2 { display: flex; align-items: center; gap: 9px; }
+.admin-periode { display: inline-flex; padding: 4px; gap: 3px; border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc; }
+.admin-periode button { border: 0; border-radius: 7px; padding: 8px 12px; color: #475569; background: transparent; font: inherit; font-size: .84rem; font-weight: 700; cursor: pointer; }
+.admin-periode button.active { color: #fff; background: #1e6fd9; }
+.admin-activite-resume { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 18px 0 22px; }
+.admin-activite-resume > div { display: flex; flex-direction: column; gap: 5px; padding: 13px 15px; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; }
+.admin-activite-resume span { color: #64748b; font-size: .8rem; }
+.admin-activite-resume strong { color: #0f172a; font-size: 1.25rem; }
+.admin-activite-liste { display: grid; gap: 9px; }
+.admin-activite-liste.quotidien { max-height: 430px; overflow-y: auto; padding-right: 5px; }
+.admin-activite-ligne { display: grid; grid-template-columns: 100px minmax(80px, 1fr) 65px 55px; align-items: center; gap: 12px; font-size: .84rem; }
+.admin-activite-label { color: #475569; }
+.admin-activite-piste { height: 11px; overflow: hidden; border-radius: 999px; background: #e2e8f0; }
+.admin-activite-remplie { height: 100%; min-width: 0; border-radius: inherit; background: linear-gradient(90deg, #1e6fd9, #38bdf8); }
+.admin-activite-ligne strong { text-align: right; color: #0f172a; }
+.admin-activite-ligne small { text-align: right; color: #64748b; }
+.admin-activite-note { margin: 15px 0 0; color: #64748b; font-size: .8rem; }
+.admin-total-demandes { color: #0f172a; font-size: .9rem; white-space: nowrap; }
+.admin-statuts-demandes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.admin-statut-demande { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 17px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; }
+.admin-statut-demande span { color: #475569; font-size: .9rem; font-weight: 600; }
+.admin-statut-demande strong { font-size: 1.5rem; color: #0f172a; }
+.admin-statut-demande.attente { border-left: 4px solid #d97706; }
+.admin-statut-demande.validee { border-left: 4px solid #16a34a; }
+.admin-statut-demande.rejetee { border-left: 4px solid #dc2626; }
+@media (max-width: 640px) {
+  .admin-activite-resume, .admin-statuts-demandes { grid-template-columns: 1fr; }
+  .admin-activite-ligne { grid-template-columns: 62px minmax(55px, 1fr) 55px 42px; gap: 7px; font-size: .75rem; }
+  .admin-periode button { padding: 7px 9px; }
+}

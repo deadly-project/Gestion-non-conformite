@@ -9,6 +9,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,6 +42,12 @@ public class DashboardService {
         int anneeCourante = LocalDate.now().getYear();
         int anneeChoisie = annee == null ? anneeCourante : Math.min(Math.max(annee, 2000), 2100);
 
+        if (administrateur) {
+            // Le dashboard administrateur ne reçoit aucune statistique relative aux NC ou aux audits.
+            return new DashboardResponse(null, anneeChoisie, List.of(), List.of(), List.of(), null,
+                    blocAdmin(anneeChoisie));
+        }
+
         return new DashboardResponse(
                 indicateurs(),
                 anneeChoisie,
@@ -46,7 +55,7 @@ public class DashboardService {
                 parMois(anneeChoisie),
                 recurrenceParProcessus(),
                 audits(),
-                administrateur ? blocAdmin() : null);
+                null);
     }
 
     // ------------------------------------------------------------------ non-conformités
@@ -146,11 +155,73 @@ public class DashboardService {
     }
 
     // ------------------------------------------------------------------ administrateur
-    private BlocAdmin blocAdmin() {
-        Object[] u = (Object[]) em.createNativeQuery(
-                "select count(*), count(*) filter (where actif = true) from users").getSingleResult();
-        return new BlocAdmin(nombre(u[0]), nombre(u[1]),
-                demandeRepository.count(), demandeRepository.countByStatut(StatutDemande.EN_ATTENTE));
+    private BlocAdmin blocAdmin(int annee) {
+        long utilisateurs = nombre(em.createNativeQuery(
+                "select count(*) from users").getSingleResult());
+
+        long total = demandeRepository.count();
+        long attente = demandeRepository.countByStatut(StatutDemande.EN_ATTENTE);
+        long validees = demandeRepository.countByStatut(StatutDemande.VALIDEE);
+        long rejetees = demandeRepository.countByStatut(StatutDemande.REFUSEE);
+
+        return new BlocAdmin(utilisateurs, total, attente, validees, rejetees,
+                activiteParMois(annee), activiteParJour());
+    }
+
+    /** Nombre d'actions enregistrées dans l'historique, regroupées par mois. */
+    private List<Activite> activiteParMois(int annee) {
+        Map<Integer, Long> compteurs = new HashMap<>();
+        List<Object[]> lignes = em.createNativeQuery("""
+                select extract(month from date_action)::integer, count(*)
+                from historique_actions
+                where date_action >= make_date(:annee, 1, 1)
+                  and date_action < make_date(:anneeSuivante, 1, 1)
+                group by 1
+                """).setParameter("annee", annee)
+                .setParameter("anneeSuivante", annee + 1).getResultList();
+        for (Object[] ligne : lignes) {
+            compteurs.put(((Number) ligne[0]).intValue(), nombre(ligne[1]));
+        }
+
+        String[] mois = {"Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
+                "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"};
+        List<Activite> resultat = new ArrayList<>();
+        for (int m = 1; m <= 12; m++) {
+            resultat.add(new Activite(mois[m - 1], compteurs.getOrDefault(m, 0L)));
+        }
+        return resultat;
+    }
+
+    /** Activité quotidienne sur les 30 derniers jours, journée courante comprise. */
+    private List<Activite> activiteParJour() {
+        LocalDate aujourdHui = LocalDate.now();
+        LocalDate debut = aujourdHui.minusDays(29);
+        Map<LocalDate, Long> compteurs = new HashMap<>();
+
+        List<Object[]> lignes = em.createNativeQuery("""
+                select cast(date_action as date), count(*)
+                from historique_actions
+                where date_action >= :debut
+                  and date_action < :fin
+                group by cast(date_action as date)
+                """).setParameter("debut", debut.atStartOfDay())
+                .setParameter("fin", aujourdHui.plusDays(1).atStartOfDay())
+                .getResultList();
+
+        for (Object[] ligne : lignes) {
+            Object valeurDate = ligne[0];
+            LocalDate date = valeurDate instanceof java.sql.Date sqlDate
+                    ? sqlDate.toLocalDate()
+                    : (LocalDate) valeurDate;
+            compteurs.put(date, nombre(ligne[1]));
+        }
+
+        DateTimeFormatter format = DateTimeFormatter.ofPattern("dd/MM");
+        List<Activite> resultat = new ArrayList<>();
+        for (LocalDate date = debut; !date.isAfter(aujourdHui); date = date.plusDays(1)) {
+            resultat.add(new Activite(date.format(format), compteurs.getOrDefault(date, 0L)));
+        }
+        return resultat;
     }
 
     private static long nombre(Object valeur) {
