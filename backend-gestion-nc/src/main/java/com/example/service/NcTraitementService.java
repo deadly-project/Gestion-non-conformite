@@ -23,10 +23,6 @@ import java.util.stream.Stream;
 @Service
 public class NcTraitementService {
 
-    /** Statuts proposés par le formulaire. La clôture exige des CAPA vérifiées : autre étape. */
-    private static final Set<StatutNc> STATUTS_AUTORISES =
-            EnumSet.of(StatutNc.OUVERT, StatutNc.EN_COURS_D_ANALYSE, StatutNc.EN_TRAITEMENT, StatutNc.EN_ATTENTE);
-
     private final NonConformiteRepository ncRepository;
     private final CategorieNcRepository categorieRepository;
     private final UtilisateurRepository utilisateurRepository;
@@ -77,13 +73,11 @@ public class NcTraitementService {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Cette non-conformité est clôturée : elle ne peut plus être modifiée ici");
         }
-        if (!STATUTS_AUTORISES.contains(req.statut())) {
+        // Le statut n'est plus choisi manuellement dans le formulaire.
+        // La clôture reste réservée au workflow de validation des CAPA.
+        if (req.statut() == StatutNc.CLOTUREE) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Statut non autorisé : la clôture se fait après vérification des actions");
-        }
-        if (req.statut().getOrdre() < statutActuel.getOrdre()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Retour en arrière interdit : la NC est déjà « " + statutActuel + " »");
+                    "La clôture se fait après vérification des actions CAPA");
         }
 
         // Gestion de la catégorie (si non fournie, on garde celle de la NC)
@@ -141,29 +135,31 @@ public class NcTraitementService {
         if (nc.getDelaisJours() != null) {
             nc.setDateEcheance(nc.getDateOuverture().toLocalDate().plusDays(nc.getDelaisJours()));
         }
-        if (req.statut() == StatutNc.EN_TRAITEMENT && nc.getDateCommencementTraitement() == null) {
-            nc.setDateCommencementTraitement(maintenant);
-        }
-
         // --- Analyse des causes et plan d'actions ---
         synchroniserIshikawa(nc.getId(), req.analyses(), acteur.getId(), maintenant);
         synchroniserEtapes(nc.getId(), req.etapesCapa(), maintenant);
 
-        if (req.statut() == StatutNc.EN_TRAITEMENT && capaRepository.countByNcId(nc.getId()) == 0) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Au moins une étape du plan d'actions est requise pour passer en traitement");
-        }
+        // Une analyse Ishikawa renseignée déclenche EN_COURS_D_ANALYSE.
+        // Sinon, la première prise en charge ouvre la NC ; les statuts plus avancés
+        // sont conservés (le démarrage d'un audit déclenche EN_TRAITEMENT).
+        boolean analyseRenseignee = req.analyses().stream().anyMatch(a -> !toutVide(a));
+        StatutNc statutCible = analyseRenseignee
+                ? StatutNc.EN_COURS_D_ANALYSE
+                : (statutActuel == StatutNc.EN_ATTENTE ? StatutNc.OUVERT : statutActuel);
 
         // --- Statut + historique ---
-        if (req.statut() != statutActuel) {
+        if (statutCible != statutActuel) {
             NcStatutHistorique h = new NcStatutHistorique();
             h.setNcId(nc.getId());
             h.setAncienStatut(statutActuel.name());
-            h.setNouveauStatut(req.statut().name());
+            h.setNouveauStatut(statutCible.name());
+            h.setCommentaire(analyseRenseignee
+                    ? "Statut mis à jour après l'enregistrement de l'analyse Ishikawa"
+                    : "Prise en charge par le responsable qualité");
             h.setAuteurId(acteur.getId());
             h.setDateChangement(maintenant);
             statutHistoriqueRepository.save(h);
-            nc.setStatut(req.statut().name());
+            nc.setStatut(statutCible.name());
         }
         nc.setDateModification(maintenant);
         ncRepository.save(nc);
@@ -176,11 +172,11 @@ public class NcTraitementService {
 
         // --- Notifications ---
         // Déclarant : informé de chaque changement de statut (simple visualisation de sa déclaration)
-        if (req.statut() != statutActuel && !nc.getDeclarantId().equals(acteur.getId())) {
+        if (statutCible != statutActuel && !nc.getDeclarantId().equals(acteur.getId())) {
             notifications.notifier(nc.getDeclarantId(), TypeNotification.NC_STATUT_CHANGE,
                     "Votre déclaration « " + nc.getTitre() + " » est passée de « "
                             + NotificationService.libelleStatut(statutActuel.name()) + " » à « "
-                            + NotificationService.libelleStatut(req.statut().name()) + " ».",
+                            + NotificationService.libelleStatut(statutCible.name()) + " ».",
                     NotificationService.ENTITE_NC, nc.getId());
         }
         // Auditeur nouvellement désigné sur cette non-conformité

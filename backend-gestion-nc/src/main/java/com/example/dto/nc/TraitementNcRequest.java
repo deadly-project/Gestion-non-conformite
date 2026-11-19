@@ -14,6 +14,7 @@ import java.util.List;
 public record TraitementNcRequest(
         @NotNull Gravite gravite,
         Long categorieId,          // nature : produit / processus / système...
+        // Champ conservé pour compatibilité avec le formulaire/API ; le service détermine le statut réel.
         @NotNull StatutNc statut,
         Long auditeurId,
         @NotNull @Min(1) @Max(365) Integer delaisJours,

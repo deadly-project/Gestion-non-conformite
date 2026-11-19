@@ -35,6 +35,7 @@ public class AuditeurAuditService {
     private final ConstatAuditRepository constatRepository;
     private final ActionCapaRepository capaRepository;
     private final NonConformiteRepository ncRepository;
+    private final NcStatutHistoriqueRepository statutHistoriqueRepository;
     private final AuditAssembleur assembleur;
     private final CapaEvenementService evenements;
     private final JournalActionsService journal;
@@ -44,6 +45,7 @@ public class AuditeurAuditService {
                                 ConstatAuditRepository constatRepository,
                                 ActionCapaRepository capaRepository,
                                 NonConformiteRepository ncRepository,
+                                NcStatutHistoriqueRepository statutHistoriqueRepository,
                                 AuditAssembleur assembleur,
                                 CapaEvenementService evenements,
                                 JournalActionsService journal,
@@ -52,6 +54,7 @@ public class AuditeurAuditService {
         this.constatRepository = constatRepository;
         this.capaRepository = capaRepository;
         this.ncRepository = ncRepository;
+        this.statutHistoriqueRepository = statutHistoriqueRepository;
         this.assembleur = assembleur;
         this.evenements = evenements;
         this.journal = journal;
@@ -99,6 +102,7 @@ public class AuditeurAuditService {
         auditRepository.save(audit);
 
         ActionCapa etape = etapeDe(audit);
+        passerNcEnTraitement(etape, auditeur, "Statut mis à EN_TRAITEMENT au démarrage de l'audit");
         if (etape != null && StatutAction.A_FAIRE.name().equals(etape.getStatutAction())) {
             etape.setStatutAction(StatutAction.EN_COURS.name());
             etape.setDateModification(maintenant);
@@ -140,6 +144,10 @@ public class AuditeurAuditService {
         constat.setDescriptionConstat(req.description().trim());
         constat.setAuteurId(auditeur.getId());
         constatRepository.save(constat);
+
+        // Chaque constat confirme que l'auditeur a pris en charge la NC.
+        passerNcEnTraitement(etapeDe(audit), auditeur,
+                "Statut maintenu en EN_TRAITEMENT après l'enregistrement d'un constat d'audit");
 
         journal.enregistrerModification(auditeur.getId(), "ADD_CONSTAT", "CONSTAT_AUDIT", constat.getId(),
                 null, Instantane.de(constat), null);
@@ -281,6 +289,40 @@ public class AuditeurAuditService {
         publier(etape, audit, "AUDIT_REOUVERT",
                 nom(auditeur) + " a réouvert l'audit « " + audit.getTitre() + " » pour reprendre le traitement");
         return construireDetail(audit);
+    }
+
+    /** Met à jour le statut de la NC rattachée à l'étape CAPA de l'audit. */
+    private void passerNcEnTraitement(ActionCapa etape, Users auditeur, String commentaire) {
+        if (etape == null || etape.getNcId() == null) return;
+
+        NonConformite nc = ncRepository.findByIdForUpdate(etape.getNcId()).orElse(null);
+        if (nc == null || StatutNc.CLOTUREE.name().equals(nc.getStatut())
+                || StatutNc.EN_TRAITEMENT.name().equals(nc.getStatut())) return;
+
+        LocalDateTime maintenant = LocalDateTime.now();
+        String ancienStatut = nc.getStatut();
+        nc.setStatut(StatutNc.EN_TRAITEMENT.name());
+        if (nc.getDateOuverture() == null) nc.setDateOuverture(maintenant);
+        if (nc.getDateCommencementTraitement() == null) nc.setDateCommencementTraitement(maintenant);
+        nc.setDateModification(maintenant);
+        ncRepository.save(nc);
+
+        NcStatutHistorique historique = new NcStatutHistorique();
+        historique.setNcId(nc.getId());
+        historique.setAncienStatut(ancienStatut);
+        historique.setNouveauStatut(StatutNc.EN_TRAITEMENT.name());
+        historique.setCommentaire(commentaire);
+        historique.setAuteurId(auditeur.getId());
+        historique.setDateChangement(maintenant);
+        statutHistoriqueRepository.save(historique);
+
+        if (nc.getDeclarantId() != null && !nc.getDeclarantId().equals(auditeur.getId())) {
+            notifications.notifier(nc.getDeclarantId(), TypeNotification.NC_STATUT_CHANGE,
+                    "Votre déclaration « " + nc.getTitre() + " » est passée de « "
+                            + NotificationService.libelleStatut(ancienStatut) + " » à « "
+                            + NotificationService.libelleStatut(StatutNc.EN_TRAITEMENT.name()) + " ».",
+                    NotificationService.ENTITE_NC, nc.getId());
+        }
     }
 
     // ------------------------------------------------------------------ outils

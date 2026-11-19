@@ -3,7 +3,7 @@ import { apiRequest } from "../../api/api";
 import Modal from "../Modal";
 import RechercheUtilisateur from "./RechercheUtilisateur";
 import {
-    GRAVITES, ORDRE_STATUT, STATUTS_NC, STATUTS_TRAITEMENT,
+    GRAVITES,
     TYPES_ACTION, dateAujourdhui,
 } from "../constantes";
 import {
@@ -36,7 +36,7 @@ export default function TraitementNcModal({ ncId, utilisateur, onFermer, onEnreg
                     genererReference: false,
                     gravite: d.gravite || d.graviteDeclaree || "",
                     categorieId: d.categorieId ? String(d.categorieId) : "",
-                    statut: ORDRE_STATUT[d.statut] >= 1 ? d.statut : "OUVERT",
+                    statut: "OUVERT",
                     delaisJours: d.delaisJours ? String(d.delaisJours) : "",
                     auditeur: d.auditeur || null,
                     etapesCapa: (d.etapesCapa || []).map((e) => ({
@@ -79,7 +79,6 @@ export default function TraitementNcModal({ ncId, utilisateur, onFermer, onEnreg
         }
         if (!form.gravite) problemes.push("Choisissez la gravité.");
         if (!form.categorieId) problemes.push("Choisissez la nature.");
-        if (!form.statut) problemes.push("Choisissez le statut.");
         const delai = Number(form.delaisJours);
         if (!Number.isInteger(delai) || delai < 1 || delai > 365) {
             problemes.push("Le délai doit être compris entre 1 et 365 jours.");
@@ -101,7 +100,8 @@ export default function TraitementNcModal({ ncId, utilisateur, onFermer, onEnreg
                 genererReference: form.genererReference,
                 gravite: form.gravite,
                 categorieId: Number(form.categorieId),
-                statut: form.statut,
+                // Champ conservé pour compatibilité avec le DTO backend ; le serveur calcule le statut réel.
+                statut: "OUVERT",
                 auditeurId: form.auditeur ? form.auditeur.id : null,
                 delaisJours: Number(form.delaisJours),
                 analyses: [],
@@ -124,10 +124,6 @@ export default function TraitementNcModal({ ncId, utilisateur, onFermer, onEnreg
             setEnregistrement(false);
         }
     }
-
-    const statutsProposes = detail
-        ? STATUTS_TRAITEMENT.filter((s) => ORDRE_STATUT[s] >= ORDRE_STATUT[detail.statut])
-        : [];
 
     const pied = form && (
         <div className="TRT-pied">
@@ -266,17 +262,10 @@ export default function TraitementNcModal({ ncId, utilisateur, onFermer, onEnreg
                             </div>
 
                             <div className="TRT-champ">
-                                <label htmlFor="statut"><FaListCheck /> Statut d'ouverture *</label>
-                                <select
-                                    id="statut"
-                                    className="TRT-input"
-                                    value={form.statut}
-                                    onChange={(e) => maj({ statut: e.target.value })}
-                                >
-                                    {statutsProposes.map((s) => (
-                                        <option key={s} value={s}>{STATUTS_NC[s]}</option>
-                                    ))}
-                                </select>
+                                <label><FaListCheck /> Statut</label>
+                                <div className="TRT-input" aria-live="polite" style={{ display: "flex", alignItems: "center", minHeight: 40, background: "#f8fafc" }}>
+                                    Déterminé automatiquement selon l'avancement du traitement
+                                </div>
                             </div>
 
                             <div className="TRT-champ">
