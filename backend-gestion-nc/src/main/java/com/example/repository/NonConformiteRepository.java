@@ -50,37 +50,68 @@ public interface NonConformiteRepository extends JpaRepository<NonConformite, Lo
      * paramètres null avec PostgreSQL.
      */
     @Query(value = """
-        select new com.example.dto.nc.NcListeItem(
-            n.id, n.reference, n.titre, n.statut, n.dateDetection, n.dateCreation,
-            n.graviteDeclaree, n.gravite,
-            u.id, u.nom, u.prenom, cast(u.matricule as string), u.role, u.email,
-            p.id, p.libelle,
-            n.dateEcheance)
-        from NonConformite n, Users u, Processus p
-        where u.id = n.declarantId and p.id = n.processusId
-          and (:statut = '' or n.statut = :statut)
-          and (:responsableCapaId = -1L or exists (
-                 select a.id from ActionCapa a
-                 where a.ncId = n.id and a.responsableActionId = :responsableCapaId))
-          and (lower(n.titre) like :motif or lower(n.reference) like :motif
-               or lower(u.nom) like :motif or lower(u.prenom) like :motif
-               or lower(p.libelle) like :motif)
-        order by n.dateCreation desc, n.id desc
-        """,
+select new com.example.dto.nc.NcListeItem(
+    n.id, n.reference, n.titre, n.statut, n.dateDetection, n.dateCreation,
+    n.graviteDeclaree, n.gravite,
+    u.id, u.nom, u.prenom, cast(u.matricule as string), u.role, u.email,
+    p.id, p.libelle,
+    n.dateEcheance)
+from NonConformite n
+  left join Users u on u.id = n.declarantId
+  left join Processus p on p.id = n.processusId
+where (:statut = '' or n.statut = :statut)
+  and (:gravite = '' or n.gravite = :gravite)
+  and (lower(coalesce(n.titre,''))     like :motif
+    or lower(coalesce(n.reference,'')) like :motif
+    or lower(coalesce(u.nom,''))       like :motif
+    or lower(coalesce(u.prenom,''))    like :motif
+    or lower(coalesce(p.libelle,''))   like :motif)
+  and (:reference = '%' or lower(coalesce(n.reference,'')) like :reference)
+  and (:declarant = '%'
+    or lower(coalesce(u.nom,''))    like :declarant
+    or lower(coalesce(u.prenom,'')) like :declarant
+    or lower(cast(u.matricule as string)) like :declarant)
+  and (:filtrerDateDetection = false or n.dateDetection = :dateDetection)
+  and (n.dateDetection >= :dateDebut)
+  and (n.dateDetection <= :dateFin)
+  and (:responsableCapaId = -1L or exists (
+         select a.id from ActionCapa a
+         where a.ncId = n.id and a.responsableActionId = :responsableCapaId))
+order by n.dateCreation desc, n.id desc
+""",
             countQuery = """
-        select count(n)
-        from NonConformite n, Users u, Processus p
-        where u.id = n.declarantId and p.id = n.processusId
-          and (:statut = '' or n.statut = :statut)
-          and (:responsableCapaId = -1L or exists (
-                 select a.id from ActionCapa a
-                 where a.ncId = n.id and a.responsableActionId = :responsableCapaId))
-          and (lower(n.titre) like :motif or lower(n.reference) like :motif
-               or lower(u.nom) like :motif or lower(u.prenom) like :motif
-               or lower(p.libelle) like :motif)
-        """)
+select count(n)
+from NonConformite n
+  left join Users u on u.id = n.declarantId
+  left join Processus p on p.id = n.processusId
+where (:statut = '' or n.statut = :statut)
+  and (:gravite = '' or n.gravite = :gravite)
+  and (lower(coalesce(n.titre,''))     like :motif
+    or lower(coalesce(n.reference,'')) like :motif
+    or lower(coalesce(u.nom,''))       like :motif
+    or lower(coalesce(u.prenom,''))    like :motif
+    or lower(coalesce(p.libelle,''))   like :motif)
+  and (:reference = '%' or lower(coalesce(n.reference,'')) like :reference)
+  and (:declarant = '%'
+    or lower(coalesce(u.nom,''))    like :declarant
+    or lower(coalesce(u.prenom,'')) like :declarant
+    or lower(cast(u.matricule as string)) like :declarant)
+  and (:filtrerDateDetection = false or n.dateDetection = :dateDetection)
+  and (n.dateDetection >= :dateDebut)
+  and (n.dateDetection <= :dateFin)
+  and (:responsableCapaId = -1L or exists (
+         select a.id from ActionCapa a
+         where a.ncId = n.id and a.responsableActionId = :responsableCapaId))
+""")
     Page<NcListeItem> rechercher(@Param("statut") String statut,
+                                 @Param("gravite") String gravite,
                                  @Param("motif") String motif,
+                                 @Param("reference") String reference,
+                                 @Param("declarant") String declarant,
+                                 @Param("dateDetection") LocalDate dateDetection,
+                                 @Param("filtrerDateDetection") boolean filtrerDateDetection,
+                                 @Param("dateDebut") LocalDate dateDebut,
+                                 @Param("dateFin") LocalDate dateFin,
                                  @Param("responsableCapaId") Long responsableCapaId,
                                  Pageable pageable);
 }

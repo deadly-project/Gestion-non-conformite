@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -52,25 +53,58 @@ public class NcConsultationService {
     // Liste paginée (responsable qualité)
     // ------------------------------------------------------------------
     @Transactional(readOnly = true)
-    public PageResponse<NcListeItem> lister(String statut, String recherche, Long responsableCapaId,
+    public PageResponse<NcListeItem> lister(String statut, String gravite,
+                                            String recherche, String reference,
+                                            String declarant, String dateDetection,
+                                            String dateDebut, String dateFin,
+                                            Long responsableCapaId,
                                             int page, int taille) {
         int tailleSure = Math.min(Math.max(taille, 1), 50);
         int pageSure = Math.max(page, 0);
+
         String statutSur = statut == null ? "" : statut.trim().toUpperCase(Locale.ROOT);
         if (!statutSur.isEmpty()) {
-            try {
-                com.example.domain.StatutNc.valueOf(statutSur);
-            } catch (IllegalArgumentException e) {
+            try { com.example.domain.StatutNc.valueOf(statutSur); }
+            catch (IllegalArgumentException e) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Statut inconnu");
             }
         }
 
-        // null = pas de filtre ; sinon uniquement les NC dont cet utilisateur est responsable d'une action CAPA
+        String graviteSur = gravite == null ? "" : gravite.trim().toUpperCase(Locale.ROOT);
+        if (!graviteSur.isEmpty() && !graviteSur.matches("CRITIQUE|MAJEURE|MINEURE")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Gravité inconnue");
+        }
+
+        LocalDate dateDet = parseDate(dateDetection, "dateDetection");
+        LocalDate dateDe  = parseDate(dateDebut, "dateDebut");
+        LocalDate dateFi  = parseDate(dateFin, "dateFin");
+
+        LocalDate DATE_MIN = LocalDate.of(1900, 1, 1);
+        LocalDate DATE_MAX = LocalDate.of(9999, 12, 31);
+
         Page<NcListeItem> resultat = ncRepository.rechercher(
-                statutSur, motif(recherche), responsableCapaId == null ? -1L : responsableCapaId,
+                statutSur,
+                graviteSur,
+                motif(recherche),
+                motif(reference),
+                motif(declarant),
+                dateDet == null ? DATE_MIN : dateDet,
+                dateDet != null,                                 // filtrerDateDetection
+                dateDe  == null ? DATE_MIN : dateDe,
+                dateFi  == null ? DATE_MAX : dateFi,
+                responsableCapaId == null ? -1L : responsableCapaId,
                 PageRequest.of(pageSure, tailleSure));
         return new PageResponse<>(resultat.getContent(), resultat.getNumber(), resultat.getSize(),
                 resultat.getTotalElements(), resultat.getTotalPages());
+    }
+
+    private LocalDate parseDate(String valeur, String champ) {
+        if (valeur == null || valeur.isBlank()) return null;
+        try { return LocalDate.parse(valeur.trim()); }
+        catch (java.time.format.DateTimeParseException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Format de date invalide pour " + champ + " (attendu : YYYY-MM-DD)");
+        }
     }
 
     // ------------------------------------------------------------------

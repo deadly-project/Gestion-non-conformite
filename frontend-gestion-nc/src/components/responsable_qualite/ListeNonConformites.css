@@ -341,26 +341,26 @@
   border-color: #94a3b8;
   box-shadow: 0 4px 12px -4px rgba(30, 111, 217, 0.2);
 }
-.nc-btn-petit {
+/* .nc-btn-petit {
   padding: 0.35rem 0.7rem;
   font-size: 0.78rem;
   border-radius: 8px;
-}
+} */
 
 /* ==========================================================================
    Boutons d'action carte — dégradé légèrement plus clair que l'avatar
    ========================================================================== */
 .nc-carte-actions .nc-btn {
-  background: linear-gradient(135deg, #2e90ff 0%, #0b59d8 100%);
-  border-color: transparent;
-  color: #ffffff;
-  box-shadow: 0 4px 12px rgba(59, 140, 232, 0.28);
+  background: #ffffff;
+  color: #334155;
+  border: 1px solid #cbdaee;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
 }
 .nc-carte-actions .nc-btn:hover {
-  background: linear-gradient(135deg, #4392ec 0%, #083d8d 100%);
-  border-color: transparent;
-  color: #ffffff;
-  box-shadow: 0 8px 20px rgba(59, 140, 232, 0.38);
+  background: #f8fafc;
+  color: #0f172a;
+  border-color: #94a3b8;
+  box-shadow: 0 4px 12px -4px rgba(30, 111, 217, 0.2);
   filter: brightness(1.04);
   transform: translateY(-1px);
 }
@@ -737,4 +737,84 @@
 .nc-ref-valeur {
   color: #0f172a;
   font-weight: 600;
+}
+
+/* Couleurs par gravité (alignées sur les badges gravité) */
+.nc-filtre--gravite-TOUTES    .nc-filtre-pastille { background: #94a3b8; }
+.nc-filtre--gravite-CRITIQUE  .nc-filtre-pastille { background: #dc2626; }
+.nc-filtre--gravite-MAJEURE   .nc-filtre-pastille { background: #ea580c; }
+.nc-filtre--gravite-MINEURE   .nc-filtre-pastille { background: #65a30d; }
+
+/* Bouton toggle Filtres */
+.nc-btn-filtre {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.nc-btn-filtre--actif {
+  background: #1e6fd9;
+  color: #ffffff;
+  border-color: #1e6fd9;
+}
+
+/* Panneau de filtres avancés */
+.nc-barre-avancee {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.9rem;
+  margin-bottom: 1rem;
+  padding: 1rem 1.1rem;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px -4px rgba(15, 23, 42, 0.05);
+  animation: nc-fade-in 0.18s ease;
+}
+@keyframes nc-fade-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.nc-barre-avancee .nc-champ {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.nc-barre-avancee label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #334155;
+}
+.nc-barre-avancee input[type="search"],
+.nc-barre-avancee input[type="date"] {
+  padding: 0.55rem 0.8rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  color: #0f172a;
+  background: #f8fafc;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+.nc-barre-avancee input[type="search"]:focus,
+.nc-barre-avancee input[type="date"]:focus {
+  outline: none;
+  background: #ffffff;
+  border-color: #1e6fd9;
+  box-shadow: 0 0 0 4px rgba(30, 111, 217, 0.1);
+}
+
+.nc-barre-avancee-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  padding-top: 0.25rem;
+}
+
+@media (max-width: 640px) {
+  .nc-barre-avancee { grid-template-columns: 1fr; }
+  .nc-barre-avancee-actions { justify-content: stretch; }
+  .nc-barre-avancee-actions .nc-btn { flex: 1; }
 }

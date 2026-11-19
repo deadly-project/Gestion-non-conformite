@@ -1,32 +1,24 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { apiRequest } from "../../api/api";
-import { STATUTS_NC, formaterDate } from "../constantes";
+import { STATUTS_NC, GRAVITES, formaterDate } from "../constantes";
 import { useNotificationsAdmin } from "../../hooks/useNotificationsAdmin";
 import VisualisationNcModal from "./VisualisationNcModal";
 import TraitementNcModal from "./TraitementNcModal";
 import AvancementNcModal from "./AvancementNcModal";
 import Avatar from "../compte/Avatar";
 import {
-  FaEye,
-  FaArrowTrendUp,
-  FaLocationDot,
-  FaRotate,
+  FaEye, FaArrowTrendUp, FaLocationDot, FaRotate, FaFilter, FaChevronDown, FaChevronUp,
 } from "react-icons/fa6";
 import {
-  FiClock,
-  FiAlertCircle,
-  FiLoader,
-  FiSearch,
-  FiArchive,
-  FiCalendar,
+  FiClock, FiAlertCircle, FiLoader, FiSearch, FiArchive, FiCalendar, FiX,
 } from "react-icons/fi";
+import { GiSettingsKnobs } from "react-icons/gi";
 import "./ListeNonConformites.css";
 
 const TAILLE_PAGE = 10;
 const JOURS_ECHEANCE_PROCHE = 7;
 
-/* ---- Icônes par statut ---- */
 const ICONES_STATUT = {
   EN_ATTENTE: FiClock,
   OUVERT: FiAlertCircle,
@@ -35,13 +27,11 @@ const ICONES_STATUT = {
   CLOTUREE: FiArchive,
 };
 
-/* ---- Barre de filtres statut ---- */
 const FILTRES_STATUT = [
   { code: "", libelle: "Tous" },
   ...Object.entries(STATUTS_NC).map(([code, libelle]) => ({ code, libelle })),
 ];
 
-/* ---- Utilitaire : date relative (robuste) ---- */
 function dateRelative(dateStr) {
   if (!dateStr) return "—";
   const dateCible = new Date(dateStr);
@@ -62,44 +52,48 @@ function dateRelative(dateStr) {
   return formaterDate(dateStr);
 }
 
-/* ---- Rendu d'un badge de statut avec icône ---- */
 function BadgeStatut({ statut }) {
   const Icone = ICONES_STATUT[statut] || FiAlertCircle;
   return (
     <span className={`nc-badge nc-badge-${statut}`}>
-      {STATUTS_NC[statut] ?? statut}{" "}
-      <Icone size={11} />
+      {STATUTS_NC[statut] ?? statut} <Icone size={11} />
     </span>
   );
 }
 
-/* ---- État d'échéance : retourne une classe CSS ---- */
 function etatEcheance(dateEcheance, statut) {
   if (!dateEcheance) return "nc-echeance-vide";
   const dateCible = new Date(dateEcheance);
   if (Number.isNaN(dateCible.getTime())) return "nc-echeance-vide";
-
-  // On compare à minuit pour éviter les effets d'heure
   const aujourdHui = new Date();
   aujourdHui.setHours(0, 0, 0, 0);
   const cible = new Date(dateCible);
   cible.setHours(0, 0, 0, 0);
-
   const diffJours = Math.round((cible - aujourdHui) / (1000 * 60 * 60 * 24));
-
-  // Clôturée : échéance neutralisée (peu importe le dépassement)
   if (statut === "CLOTUREE") return "nc-echeance-neutre";
-
-  if (diffJours < 0) return "nc-echeance-rouge";       // dépassée
-  if (diffJours <= JOURS_ECHEANCE_PROCHE) return "nc-echeance-orange"; // proche
-  return "nc-echeance-verte";                          // lointaine
+  if (diffJours < 0) return "nc-echeance-rouge";
+  if (diffJours <= JOURS_ECHEANCE_PROCHE) return "nc-echeance-orange";
+  return "nc-echeance-verte";
 }
 
 export default function ListeNonConformites({ utilisateur }) {
-  const [saisie, setSaisie] = useState("");
-  const [recherche, setRecherche] = useState("");
+  /* --- Filtres --- */
   const [statut, setStatut] = useState("");
+  const [gravite, setGravite] = useState("");
   const [mesCapa, setMesCapa] = useState(false);
+
+  // panneau avancé
+  const [afficherAvance, setAfficherAvance] = useState(false);
+  const [saisie, setSaisie] = useState("");               // recherche libre (titre, etc.)
+  const [reference, setReference] = useState("");
+  const [declarant, setDeclarant] = useState("");
+  const [dateDetection, setDateDetection] = useState("");
+  const [dateDebut, setDateDebut] = useState("");
+  const [dateFin, setDateFin] = useState("");
+  const [filtresAppliques, setFiltresAppliques] = useState({
+    q: "", reference: "", declarant: "", dateDetection: "", dateDebut: "", dateFin: "",
+  });
+
   const [page, setPage] = useState(0);
   const [parametresUrl, setParametresUrl] = useSearchParams();
 
@@ -129,41 +123,61 @@ export default function ListeNonConformites({ utilisateur }) {
     },
   });
 
+  // Debounce simple pour la recherche libre
   useEffect(() => {
-    const minuteur = setTimeout(() => {
-      setRecherche(saisie.trim());
+    const t = setTimeout(() => {
+      setFiltresAppliques((f) => ({ ...f, q: saisie.trim() }));
       setPage(0);
     }, 350);
-    return () => clearTimeout(minuteur);
+    return () => clearTimeout(t);
   }, [saisie]);
 
+  // Requête backend
   useEffect(() => {
     let actif = true;
     setChargement(true);
-    const parametres = new URLSearchParams({
+    const p = new URLSearchParams({
       statut,
-      q: recherche,
+      gravite,
       mesCapa: String(mesCapa),
+      q: filtresAppliques.q,
+      reference: filtresAppliques.reference,
+      declarant: filtresAppliques.declarant,
+      dateDetection: filtresAppliques.dateDetection,
+      dateDebut: filtresAppliques.dateDebut,
+      dateFin: filtresAppliques.dateFin,
       page: String(page),
       taille: String(TAILLE_PAGE),
     });
-    apiRequest(`/api/non-conformites?${parametres}`)
-      .then((resultat) => {
-        if (actif) {
-          setDonnees(resultat);
-          setErreur("");
-        }
-      })
-      .catch((e) => {
-        if (actif) setErreur(e.message || "Impossible de charger les non-conformités.");
-      })
-      .finally(() => {
-        if (actif) setChargement(false);
-      });
-    return () => {
-      actif = false;
-    };
-  }, [statut, mesCapa, recherche, page, version]);
+    apiRequest(`/api/non-conformites?${p}`)
+      .then((r) => { if (actif) { setDonnees(r); setErreur(""); } })
+      .catch((e) => { if (actif) setErreur(e.message || "Impossible de charger les non-conformités."); })
+      .finally(() => { if (actif) setChargement(false); });
+    return () => { actif = false; };
+  }, [statut, gravite, mesCapa, filtresAppliques, page, version]);
+
+  function appliquerFiltresAvances() {
+    setFiltresAppliques({
+      q: saisie.trim(),
+      reference: reference.trim(),
+      declarant: declarant.trim(),
+      dateDetection,
+      dateDebut,
+      dateFin,
+    });
+    setPage(0);
+  }
+
+  function reinitialiserFiltresAvances() {
+    setSaisie("");
+    setReference("");
+    setDeclarant("");
+    setDateDetection("");
+    setDateDebut("");
+    setDateFin("");
+    setFiltresAppliques({ q: "", reference: "", declarant: "", dateDetection: "", dateDebut: "", dateFin: "" });
+    setPage(0);
+  }
 
   function apresTraitement(detail) {
     setNcTraitement(null);
@@ -173,6 +187,7 @@ export default function ListeNonConformites({ utilisateur }) {
 
   const total = donnees?.total ?? donnees?.totalElements ?? 0;
   const nbPages = Math.max(1, Math.ceil(total / TAILLE_PAGE));
+  const liste = donnees?.contenu ?? [];
 
   return (
     <main className="nc-page">
@@ -183,17 +198,13 @@ export default function ListeNonConformites({ utilisateur }) {
             {total} non-conformité{total > 1 ? "s" : ""} enregistrée{total > 1 ? "s" : ""}
           </p>
         </div>
-        <button
-          type="button"
-          className="nc-btn nc-btn-secondaire"
-          onClick={() => setVersion((v) => v + 1)}
-        >
+        <button type="button" className="nc-btn nc-btn-secondaire" onClick={() => setVersion((v) => v + 1)}>
           <FaRotate /> Actualiser
         </button>
       </header>
 
-      {/* --- Barre de filtres statut --- */}
-      <div className="nc-filtres" role="group" aria-label="Filtrer les non-conformités par statut">
+      {/* --- Filtres statut (chips) --- */}
+      <div className="nc-filtres" role="group" aria-label="Filtrer par statut">
         {FILTRES_STATUT.map(({ code, libelle }) => {
           const actif = statut === code;
           return (
@@ -202,10 +213,7 @@ export default function ListeNonConformites({ utilisateur }) {
               type="button"
               className={`nc-filtre${actif ? " nc-filtre--actif" : ""} nc-filtre--${code || "TOUS"}`}
               aria-pressed={actif}
-              onClick={() => {
-                setStatut(code);
-                setPage(0);
-              }}
+              onClick={() => { setStatut(code); setPage(0); }}
             >
               <span className="nc-filtre-pastille" aria-hidden="true" />
               {libelle}
@@ -214,17 +222,30 @@ export default function ListeNonConformites({ utilisateur }) {
         })}
       </div>
 
-      {/* --- Barre de filtres --- */}
+      {/* --- Barre principale --- */}
       <div className="nc-barre">
-        <div className="nc-champ nc-champ-flex">
-          <label htmlFor="recherche">Rechercher</label>
-          <input
-            id="recherche"
-            type="search"
-            value={saisie}
-            placeholder="Titre, référence..."
-            onChange={(e) => setSaisie(e.target.value)}
-          />
+        <button
+          type="button"
+          className={`nc-btn nc-btn-secondaire nc-btn-filtre${afficherAvance ? " nc-btn-filtre--actif" : ""}`}
+          onClick={() => setAfficherAvance((v) => !v)}
+          aria-expanded={afficherAvance}
+        >
+          <GiSettingsKnobs /> Filtres {afficherAvance ? <FaChevronUp /> : <FaChevronDown />}
+        </button>
+
+        <div className="nc-champ nc-champ-cal">
+          <label htmlFor="filtreGravite">Gravité</label>
+          <select
+            id="filtreGravite"
+            className="nc-select-cal"
+            value={gravite}
+            onChange={(e) => { setGravite(e.target.value); setPage(0); }}
+          >
+            <option value="">Toutes les gravités</option>
+            {Object.entries(GRAVITES).map(([code, libelle]) => (
+              <option key={code} value={code}>{libelle}</option>
+            ))}
+          </select>
         </div>
 
         <div className="nc-champ nc-champ-cal">
@@ -233,10 +254,7 @@ export default function ListeNonConformites({ utilisateur }) {
             id="filtreCapa"
             className="nc-select-cal"
             value={mesCapa ? "mes" : ""}
-            onChange={(e) => {
-              setMesCapa(e.target.value === "mes");
-              setPage(0);
-            }}
+            onChange={(e) => { setMesCapa(e.target.value === "mes"); setPage(0); }}
           >
             <option value="">Toutes les non-conformités</option>
             <option value="mes">Où je suis responsable d'actions CAPA</option>
@@ -244,53 +262,89 @@ export default function ListeNonConformites({ utilisateur }) {
         </div>
       </div>
 
+      {/* --- Panneau avancé --- */}
+      {afficherAvance && (
+        <div className="nc-barre nc-barre-avancee">
+          <div className="nc-champ nc-champ-flex">
+            <label htmlFor="fRecherche">Recherche libre</label>
+            <input id="fRecherche" type="search" value={saisie}
+                   placeholder="Titre, processus…"
+                   onChange={(e) => setSaisie(e.target.value)} />
+          </div>
+
+          <div className="nc-champ">
+            <label htmlFor="fRef">Référence</label>
+            <input id="fRef" type="search" value={reference}
+                   placeholder="NC-…"
+                   onChange={(e) => setReference(e.target.value)} />
+          </div>
+
+          <div className="nc-champ">
+            <label htmlFor="fDeclarant">Déclarant (nom, prénom, matricule)</label>
+            <input id="fDeclarant" type="search" value={declarant}
+                   placeholder="Nom ou matricule"
+                   onChange={(e) => setDeclarant(e.target.value)} />
+          </div>
+
+          <div className="nc-champ">
+            <label htmlFor="fDateDet">Date de détection</label>
+            <input id="fDateDet" type="date" value={dateDetection}
+                   onChange={(e) => setDateDetection(e.target.value)} />
+          </div>
+
+          <div className="nc-champ">
+            <label htmlFor="fDateDebut">Détectée entre le</label>
+            <input id="fDateDebut" type="date" value={dateDebut}
+                   onChange={(e) => setDateDebut(e.target.value)} />
+          </div>
+
+          <div className="nc-champ">
+            <label htmlFor="fDateFin">… et le</label>
+            <input id="fDateFin" type="date" value={dateFin}
+                   onChange={(e) => setDateFin(e.target.value)} />
+          </div>
+
+          <div className="nc-barre-avancee-actions">
+            <button type="button" className="nc-btn nc-btn-petit" onClick={appliquerFiltresAvances}>
+              Appliquer
+            </button>
+            <button type="button" className="nc-btn nc-btn-secondaire nc-btn-petit" onClick={reinitialiserFiltresAvances}>
+              <FiX /> Réinitialiser
+            </button>
+          </div>
+        </div>
+      )}
+
       {info && <p className="nc-succes">{info}</p>}
       {erreur && <p className="nc-erreur">{erreur}</p>}
 
       <div className="nc-cartes">
         {chargement && !donnees && <p className="nc-vide">Chargement...</p>}
-        {donnees && donnees.contenu.length === 0 && (
-          <p className="nc-vide">Aucune non-conformité trouvée.</p>
-        )}
+        {donnees && liste.length === 0 && <p className="nc-vide">Aucune non-conformité trouvée.</p>}
 
-        {donnees?.contenu.map((nc) => {
-          // Date de déclaration = date de création serveur (fallback : détection)
+        {liste.map((nc) => {
           const dateDeclaration = nc.dateCreation ?? nc.dateDetection;
           const classeEcheance = etatEcheance(nc.dateEcheance, nc.statut);
 
           return (
             <article key={nc.id} className="nc-carte">
               <div className="nc-carte-haut">
-                <h2 className="nc-carte-titre" title={nc.titre}>
-                  {nc.titre}
-                </h2>
+                <h2 className="nc-carte-titre" title={nc.titre}>{nc.titre}</h2>
                 <BadgeStatut statut={nc.statut} />
               </div>
 
-              {/* --- Ligne Ref NC + date de déclaration --- */}
               <div className="nc-carte-ligne-meta">
                 <span className="nc-carte-ref">
                   <strong>Ref NC :</strong>{" "}
-                  {nc.reference ? (
-                    <span className="nc-ref-valeur">{nc.reference}</span>
-                  ) : (
-                    <span className="nc-echeance-vide">-- --</span>
-                  )}
+                  {nc.reference ? <span className="nc-ref-valeur">{nc.reference}</span>
+                                : <span className="nc-echeance-vide">-- --</span>}
                 </span>
-                <span
-                  className="nc-carte-date-inline"
-                  title={
-                    dateDeclaration
-                      ? `Déclarée le ${formaterDate(dateDeclaration)}`
-                      : "Date inconnue"
-                  }
-                >
-                  <FiClock size={12} />
-                  {dateRelative(dateDeclaration)}
+                <span className="nc-carte-date-inline"
+                      title={dateDeclaration ? `Déclarée le ${formaterDate(dateDeclaration)}` : "Date inconnue"}>
+                  <FiClock size={12} /> {dateRelative(dateDeclaration)}
                 </span>
               </div>
 
-              {/* --- Auteur + processus + échéance --- */}
               <ul className="nc-carte-infos">
                 <li>
                   <Avatar
@@ -304,41 +358,27 @@ export default function ListeNonConformites({ utilisateur }) {
                 </li>
                 <li>
                   <FaLocationDot className="nc-icone" />
-                  <span>
-                    <strong>Processus :</strong> {nc.service || "—"}
-                  </span>
+                  <span><strong>Processus :</strong> {nc.service || "—"}</span>
                 </li>
                 <li>
                   <FiCalendar className="nc-icone" size={14} />
                   <span>
                     <strong>Échéance :</strong>{" "}
-                    {nc.dateEcheance ? (
-                      <span className={`nc-echeance ${classeEcheance}`}>
-                        {formaterDate(nc.dateEcheance)}
-                      </span>
-                    ) : (
-                      <span className="nc-echeance-vide">-- --</span>
-                    )}
+                    {nc.dateEcheance
+                      ? <span className={`nc-echeance ${classeEcheance}`}>{formaterDate(nc.dateEcheance)}</span>
+                      : <span className="nc-echeance-vide">-- --</span>}
                   </span>
                 </li>
               </ul>
 
               <div className="nc-carte-bas">
                 <div className="nc-carte-actions">
-                  <button
-                    type="button"
-                    className="nc-btn nc-btn-petit"
-                    title="Visualiser"
-                    onClick={() => setNcVisualisation(nc.id)}
-                  >
+                  <button type="button" className="nc-btn nc-btn-petit"
+                          title="Visualiser" onClick={() => setNcVisualisation(nc.id)}>
                     <FaEye /> Visualiser
                   </button>
-                  <button
-                    type="button"
-                    className="nc-btn nc-btn-petit"
-                    title="Avancement"
-                    onClick={() => setNcAvancement(nc.id)}
-                  >
+                  <button type="button" className="nc-btn nc-btn-petit"
+                          title="Avancement" onClick={() => setNcAvancement(nc.id)}>
                     <FaArrowTrendUp /> Avancement
                   </button>
                 </div>
@@ -350,23 +390,13 @@ export default function ListeNonConformites({ utilisateur }) {
 
       {nbPages > 1 && (
         <nav className="nc-pagination" aria-label="Pagination">
-          <button
-            type="button"
-            className="nc-btn nc-btn-secondaire nc-btn-petit"
-            disabled={page === 0}
-            onClick={() => setPage((p) => Math.max(0, p - 1))}
-          >
+          <button type="button" className="nc-btn nc-btn-secondaire nc-btn-petit"
+                  disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))}>
             ← Précédent
           </button>
-          <span>
-            Page {page + 1} / {nbPages}
-          </span>
-          <button
-            type="button"
-            className="nc-btn nc-btn-secondaire nc-btn-petit"
-            disabled={page + 1 >= nbPages}
-            onClick={() => setPage((p) => p + 1)}
-          >
+          <span>Page {page + 1} / {nbPages}</span>
+          <button type="button" className="nc-btn nc-btn-secondaire nc-btn-petit"
+                  disabled={page + 1 >= nbPages} onClick={() => setPage((p) => p + 1)}>
             Suivant →
           </button>
         </nav>
@@ -377,20 +407,12 @@ export default function ListeNonConformites({ utilisateur }) {
           ncId={ncVisualisation}
           actionsResponsable
           onFermer={() => setNcVisualisation(null)}
-          onOuvrirTraitement={(id) => {
-            setNcVisualisation(null);
-            setNcTraitement(id);
-          }}
+          onOuvrirTraitement={(id) => { setNcVisualisation(null); setNcTraitement(id); }}
         />
       )}
-
       {ncAvancement && (
-        <AvancementNcModal
-          ncId={ncAvancement}
-          onFermer={() => setNcAvancement(null)}
-        />
+        <AvancementNcModal ncId={ncAvancement} onFermer={() => setNcAvancement(null)} />
       )}
-
       {ncTraitement && (
         <TraitementNcModal
           ncId={ncTraitement}

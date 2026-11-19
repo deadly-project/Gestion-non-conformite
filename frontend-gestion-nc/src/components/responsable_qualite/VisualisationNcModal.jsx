@@ -18,12 +18,9 @@ export default function VisualisationNcModal({
     const [chargement, setChargement] = useState(true);
     const [erreur, setErreur] = useState("");
 
-    // Lightbox pour les images
-    const [lightbox, setLightbox] = useState(null); // { url, nom }
+    const [lightbox, setLightbox] = useState(null);
     const [zoome, setZoome] = useState(false);
-
-    // URL des miniatures images (blob chargé à la demande)
-    const [miniatures, setMiniatures] = useState({}); // { [pieceId]: urlBlob }
+    const [miniatures, setMiniatures] = useState({});
 
     useEffect(() => {
         apiRequest(`/api/non-conformites/${ncId}`)
@@ -32,7 +29,6 @@ export default function VisualisationNcModal({
             .finally(() => setChargement(false));
     }, [ncId]);
 
-    // Charge les miniatures des images dès qu'on a le détail
     useEffect(() => {
         if (!detail?.piecesJointes) return;
         const images = detail.piecesJointes.filter((p) => p.type !== "PDF");
@@ -66,7 +62,6 @@ export default function VisualisationNcModal({
     }, [detail]);
 
     function ouvrirPdf(piece) {
-        // PDF : ouverture dans un nouvel onglet (comportement classique)
         apiBlob(`/api/non-conformites/pieces-jointes/${piece.id}`)
             .then((blob) => {
                 const url = URL.createObjectURL(blob);
@@ -142,8 +137,8 @@ export default function VisualisationNcModal({
 
                 {detail && (
                     <div className="VM-contenu">
-                        {/* ---- En-tête avec statut en badge ---- */}
-                        <header className="VM-entete">
+                        {/* ---- En-tête avec barre de gravité + badge statut ---- */}
+                        <div className={`VM-entete-tb VM-entete-tb--${detail.gravite}`}>
                             <div className="VM-entete-titre">
                                 <h2>{detail.titre}</h2>
                                 <p className="VM-entete-ref">
@@ -153,7 +148,7 @@ export default function VisualisationNcModal({
                             <span className={`VM-badge VM-badge--${detail.statut}`}>
                                 {STATUTS_NC[detail.statut] ?? detail.statut}
                             </span>
-                        </header>
+                        </div>
 
                         {/* ---- Grille d'informations ---- */}
                         <section className="VM-info">
@@ -185,13 +180,13 @@ export default function VisualisationNcModal({
                                 </div>
                             </div>
 
-                            <div className="VM-info-item">
-                                <FaTriangleExclamation className="VM-icone VM-icone--gravite" />
+                            <div className={`VM-info-item VM-gravite-${detail.gravite}`}>
+                                <FaTriangleExclamation className={`VM-icone VM-icone--gravite-${detail.gravite}`} />
                                 <div>
-                                    <dt>Gravité déclarée</dt>
+                                    <dt>Gravité</dt>
                                     <dd>
-                                        <span className={`VM-badge VM-badge--gravite-${detail.graviteDeclaree}`}>
-                                            {GRAVITES[detail.graviteDeclaree] ?? detail.graviteDeclaree ?? "—"}
+                                        <span className={`VM-badge VM-badge--gravite-${detail.gravite}`}>
+                                            {GRAVITES[detail.gravite] ?? detail.gravite ?? "—"}
                                         </span>
                                     </dd>
                                 </div>
@@ -199,21 +194,21 @@ export default function VisualisationNcModal({
                         </section>
 
                         {/* ---- Description ---- */}
-                        <section className="VM-section">
-                            <header className="VM-section-entete">
+                        <section className="VM-section VM-section--description">
+                            <div className="VM-section-entete">
                                 <FaCircleInfo className="VM-icone" />
                                 <h3>Description</h3>
-                            </header>
+                            </div>
                             <p className="VM-description">{detail.descriptionDetaillee || "—"}</p>
                         </section>
 
                         {/* ---- Pièces jointes ---- */}
                         {detail.piecesJointes.length > 0 && (
                             <section className="VM-section">
-                                <header className="VM-section-entete">
+                                <div className="VM-section-entete">
                                     <FaPaperclip className="VM-icone" />
                                     <h3>Pièces jointes ({detail.piecesJointes.length})</h3>
-                                </header>
+                                </div>
 
                                 <div className="VM-pj-grille">
                                     {detail.piecesJointes.map((p) => {
@@ -272,7 +267,7 @@ export default function VisualisationNcModal({
                 )}
             </Modal>
 
-            {/* ---- Lightbox (dans la même fenêtre) ---- */}
+            {/* ---- Lightbox ---- */}
             {lightbox && (
                 <div
                     className="VM-lightbox"
