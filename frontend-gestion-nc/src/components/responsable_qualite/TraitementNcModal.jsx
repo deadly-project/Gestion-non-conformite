@@ -262,13 +262,6 @@ export default function TraitementNcModal({ ncId, utilisateur, onFermer, onEnreg
                             </div>
 
                             <div className="TRT-champ">
-                                <label><FaListCheck /> Statut</label>
-                                <div className="TRT-input" aria-live="polite" style={{ display: "flex", alignItems: "center", minHeight: 40, background: "#f8fafc" }}>
-                                    Déterminé automatiquement selon l'avancement du traitement
-                                </div>
-                            </div>
-
-                            <div className="TRT-champ">
                                 <label htmlFor="delai"><FaCalendarDays /> Délai de traitement (jours) *</label>
                                 <input
                                     id="delai"
