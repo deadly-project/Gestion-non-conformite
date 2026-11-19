@@ -186,3 +186,26 @@
     .dash-carte-entete { flex-direction: column; }
     .dash-deux-colonnes { grid-template-columns: 1fr; }
 }
+
+/* ---- KPI délais et répartition des statuts (responsable qualité) ---- */
+.dash-kpis-delais { grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); align-items: stretch; }
+.dash-kpi--delais-ok { border-color: #bbf7d0; background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%); }
+.dash-kpi--delais-retard { border-color: #fecaca; background: linear-gradient(135deg, #fff7f7 0%, #ffffff 100%); }
+.dash-retard-detail { display: grid; gap: 5px; margin-top: 4px; color: #64748b; font-size: .82rem; }
+.dash-retard-detail span { display: flex; justify-content: space-between; gap: 12px; }
+.dash-retard-detail strong { color: #991b1b; }
+.dash-statuts { margin: 0 0 16px; padding: 20px 22px; border: 1px solid #e2e8f0; border-radius: 16px; background: #fff; box-shadow: 0 4px 20px -8px rgba(15, 23, 42, .08); }
+.dash-statuts-entete { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.dash-statuts-entete h2 { margin: 0 0 4px; font-size: 1.1rem; font-weight: 800; }
+.dash-statuts-entete p { margin: 0; color: #64748b; font-size: .86rem; }
+.dash-statuts-grille { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+.dash-statut-card { display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 16px; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; }
+.dash-statut-card span { color: #475569; font-size: .82rem; font-weight: 700; }
+.dash-statut-card strong { color: #0f172a; font-size: 1.8rem; line-height: 1.1; }
+.dash-statut-card.statut-attente { background: #fffbeb; border-color: #fde68a; }
+.dash-statut-card.statut-ouvert { background: #eff6ff; border-color: #bfdbfe; }
+.dash-statut-card.statut-analyse { background: #f5f3ff; border-color: #ddd6fe; }
+.dash-statut-card.statut-traitement { background: #fff7ed; border-color: #fed7aa; }
+.dash-statut-card.statut-cloture { background: #f0fdf4; border-color: #bbf7d0; }
+@media (max-width: 900px) { .dash-statuts-grille { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .dash-statuts-grille { grid-template-columns: repeat(2, minmax(0, 1fr)); } .dash-statuts { padding: 16px; } }

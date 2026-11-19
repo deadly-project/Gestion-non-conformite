@@ -12,6 +12,7 @@ public record DashboardResponse(
         AvancementAudits audits,
         BlocAdmin admin
 ) {
+    /** enCours conserve le total agrégé pour compatibilité avec les anciens écrans. */
     public record Indicateurs(
             long total,
             long enAttente,
@@ -21,7 +22,21 @@ public record DashboardResponse(
             long horsDelais,
             Double tauxDansLesDelais,
             Double delaiMoyenJours,
-            long reouvertures
+            long reouvertures,
+            long ouvert,
+            long enCoursAnalyse,
+            long enTraitement,
+            RepartitionDelais repartitionDelais
+    ) {}
+
+    /** Détail du KPI : clôtures à temps et NC dont l'échéance est dépassée. */
+    public record RepartitionDelais(
+            long dansLesDelaisCloturees,
+            long horsDelaisEnAttente,
+            long horsDelaisOuvertes,
+            long horsDelaisEnCoursAnalyse,
+            long horsDelaisEnTraitement,
+            long horsDelaisCloturees
     ) {}
 
     public record MoisNc(int mois, long declarees, long prisesEnCharge) {}

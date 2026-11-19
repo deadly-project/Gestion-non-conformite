@@ -64,7 +64,9 @@ public class DashboardService {
                 select
                     count(*),
                     count(*) filter (where statut = 'EN_ATTENTE'),
-                    count(*) filter (where statut in ('OUVERT','EN_COURS_D_ANALYSE','EN_TRAITEMENT')),
+                    count(*) filter (where statut = 'OUVERT'),
+                    count(*) filter (where statut = 'EN_COURS_D_ANALYSE'),
+                    count(*) filter (where statut = 'EN_TRAITEMENT'),
                     count(*) filter (where statut = 'CLOTUREE'),
                     count(*) filter (where statut = 'CLOTUREE' and date_echeance is not null
                                        and date_cloturation is not null
@@ -75,17 +77,39 @@ public class DashboardService {
                                     or (statut <> 'CLOTUREE' and date_echeance < current_date))),
                     avg(extract(epoch from (date_cloturation - date_creation)) / 86400.0)
                         filter (where statut = 'CLOTUREE' and date_cloturation is not null),
-                    coalesce(sum(nb_reouvertures), 0)
+                    coalesce(sum(nb_reouvertures), 0),
+                    count(*) filter (where statut = 'EN_ATTENTE' and date_echeance is not null
+                                       and date_echeance < current_date),
+                    count(*) filter (where statut = 'OUVERT' and date_echeance is not null
+                                       and date_echeance < current_date),
+                    count(*) filter (where statut = 'EN_COURS_D_ANALYSE' and date_echeance is not null
+                                       and date_echeance < current_date),
+                    count(*) filter (where statut = 'EN_TRAITEMENT' and date_echeance is not null
+                                       and date_echeance < current_date),
+                    count(*) filter (where statut = 'CLOTUREE' and date_echeance is not null
+                                       and date_cloturation is not null
+                                       and cast(date_cloturation as date) > date_echeance)
                 from non_conformites
                 """).getSingleResult();
 
-        long dans = nombre(l[4]);
-        long hors = nombre(l[5]);
+        long enAttente = nombre(l[1]);
+        long ouvert = nombre(l[2]);
+        long enCoursAnalyse = nombre(l[3]);
+        long enTraitement = nombre(l[4]);
+        long cloturees = nombre(l[5]);
+        long dans = nombre(l[6]);
+        long hors = nombre(l[7]);
         Double taux = (dans + hors) == 0 ? null : arrondi(100.0 * dans / (dans + hors));
-        Double delai = l[6] == null ? null : arrondi(((Number) l[6]).doubleValue());
+        Double delai = l[8] == null ? null : arrondi(((Number) l[8]).doubleValue());
 
-        return new Indicateurs(nombre(l[0]), nombre(l[1]), nombre(l[2]), nombre(l[3]),
-                dans, hors, taux, delai, nombre(l[7]));
+        RepartitionDelais repartition = new RepartitionDelais(
+                dans, nombre(l[10]), nombre(l[11]), nombre(l[12]), nombre(l[13]), nombre(l[14]));
+
+        return new Indicateurs(
+                nombre(l[0]), enAttente, ouvert + enCoursAnalyse + enTraitement,
+                cloturees, dans, hors, taux, delai, nombre(l[9]),
+                ouvert, enCoursAnalyse, enTraitement, repartition
+        );
     }
 
     private List<Integer> anneesDisponibles(int anneeCourante) {

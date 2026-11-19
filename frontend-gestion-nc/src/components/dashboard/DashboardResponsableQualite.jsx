@@ -1,14 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { apiRequest } from "../../api/api";
 import HistogrammeMensuel from "./HistogrammeMensuel";
 import { MOIS_LONGS } from "./mois";
 import {
-    FiRefreshCw, FiAlertTriangle, FiUsers, FiRotateCcw, FiArrowRight,
-    FiAlertCircle, FiCheckCircle, FiClock, FiActivity,
+    FiRefreshCw, FiAlertTriangle, FiAlertCircle, FiCheckCircle, FiClock,
 } from "react-icons/fi";
-import "./DashboardPage.css";
-import "./DashbboardResponsablequalite.css"
+import "./DashbboardResponsablequalite.css";
 
 const nombre = (valeur) => Number(valeur ?? 0).toLocaleString("fr-FR");
 const pourcentage = (valeur) => (valeur == null ? "—" : `${String(valeur).replace(".", ",")} %`);
@@ -26,8 +23,7 @@ function phrasePic(donnees, cle) {
  * L'administrateur voit en plus les cartes « Utilisateurs » et « Demandes de réinitialisation »,
  * qui renvoient chacune vers leur espace.
  */
-export default function Dashbboard_Responsable_qualite({ utilisateur }) {
-    const navigate = useNavigate();
+export default function Dashbboard_Responsable_qualite() {
     const [annee, setAnnee] = useState(null);       // null : année courante (choisie par le serveur)
     const [donnees, setDonnees] = useState(null);
     const [chargement, setChargement] = useState(true);
@@ -55,7 +51,6 @@ export default function Dashbboard_Responsable_qualite({ utilisateur }) {
     const picDeclarees = useMemo(() => (donnees ? phrasePic(donnees.parMois, "declarees") : null), [donnees]);
     const picPrises = useMemo(() => (donnees ? phrasePic(donnees.parMois, "prisesEnCharge") : null), [donnees]);
 
-    const estAdmin = utilisateur?.role === "ADMINISTRATEUR";
     const ind = donnees?.indicateurs;
     const audits = donnees?.audits;
     const maxProcessus = Math.max(1, ...(donnees?.recurrenceParProcessus ?? []).map((p) => p.nbNc));
@@ -65,10 +60,10 @@ export default function Dashbboard_Responsable_qualite({ utilisateur }) {
             <header className="dash-header">
                 <div>
                     <span className="dash-eyebrow">
-                        {estAdmin ? "ADMINISTRATION DU SMQ" : "PILOTAGE QUALITÉ"}
+                        PILOTAGE QUALITÉ
                     </span>
                     <h1>Tableau de bord</h1>
-                    <p>Indicateurs qualité : traitement des non-conformités et avancement des audits.</p>
+                    <p>Suivi des non-conformités, des délais de traitement et de l’avancement des audits.</p>
                 </div>
                 <button type="button" className="dash-btn" onClick={() => charger(annee)} disabled={chargement}>
                     <FiRefreshCw className={chargement ? "dash-spin" : ""} /> <span>Actualiser</span>
@@ -85,77 +80,44 @@ export default function Dashbboard_Responsable_qualite({ utilisateur }) {
 
             {donnees && (
                 <>
-                    {/* ---- Espace administrateur : cartes cliquables ---- */}
-                    {estAdmin && donnees.admin && (
-                        <section className="dash-admin" aria-label="Administration">
-                            <button
-                                type="button"
-                                className="dash-carte-lien utilisateurs"
-                                onClick={() => navigate("/admin/utilisateurs")}
-                            >
-                                <span className="dash-carte-icone"><FiUsers /></span>
-                                <span className="dash-carte-texte">
-                                    <span className="dash-carte-libelle">Utilisateurs</span>
-                                    <strong className="dash-carte-valeur">{nombre(donnees.admin.nbUtilisateurs)}</strong>
-                                    <span className="dash-carte-detail">
-                                        dont {nombre(donnees.admin.nbUtilisateursActifs)} compte(s) actif(s)
-                                    </span>
-                                </span>
-                                <span className="dash-carte-aller">Liste des utilisateurs <FiArrowRight /></span>
-                            </button>
-
-                            <button
-                                type="button"
-                                className="dash-carte-lien reinit"
-                                onClick={() => navigate("/admin/reinitialisations?filtre=TOUTES")}
-                            >
-                                <span className="dash-carte-icone"><FiRotateCcw /></span>
-                                <span className="dash-carte-texte">
-                                    <span className="dash-carte-libelle">Demandes de réinitialisation</span>
-                                    <strong className="dash-carte-valeur">
-                                        {nombre(donnees.admin.nbDemandesReinitialisation)}
-                                    </strong>
-                                    <span className="dash-carte-detail">
-                                        déjà effectuée(s), dont {nombre(donnees.admin.nbDemandesEnAttente)} en attente
-                                    </span>
-                                </span>
-                                <span className="dash-carte-aller">Traiter les demandes <FiArrowRight /></span>
-                            </button>
-                        </section>
-                    )}
-
-                    {/* ---- Indicateurs clés ---- */}
-                    <section className="dash-kpis" aria-label="Indicateurs clés">
+                    {/* ---- KPI de traitement dans les délais ---- */}
+                    <section className="dash-kpis dash-kpis-delais" aria-label="Indicateurs de traitement dans les délais">
                         <article className="dash-kpi dash-kpi--principal">
                             <span className="dash-kpi-libelle">
-                                <FiCheckCircle /> NC traitées
+                                <FiCheckCircle /> Taux de clôture dans les délais
                             </span>
                             <strong className="dash-kpi-valeur">{pourcentage(ind.tauxDansLesDelais)}</strong>
                             <div className="dash-jauge" aria-hidden="true">
-                                <div className="dash-jauge-remplie" style={{ width: `${ind.tauxDansLesDelais ?? 0}%` }} />
+                                <div
+                                    className="dash-jauge-remplie"
+                                    style={{ width: `${Math.min(100, Math.max(0, ind.tauxDansLesDelais ?? 0))}%` }}
+                                />
                             </div>
                             <span className="dash-kpi-detail">
-                                {ind.dansLesDelais + ind.horsDelais === 0
-                                    ? "Aucune NC avec échéance pour le moment"
-                                    : `${nombre(ind.dansLesDelais)} dans les délais · ${nombre(ind.horsDelais)} hors délais`}
+                                Calculé sur les NC clôturées à temps et les NC hors délai
+                                (clôturées en retard ou encore ouvertes après échéance).
                             </span>
                         </article>
 
-                        <article className="dash-kpi">
-                            <span className="dash-kpi-libelle"><FiActivity /> Non-conformités</span>
-                            <strong className="dash-kpi-valeur">{nombre(ind.total)}</strong>
+                        <article className="dash-kpi dash-kpi--delais-ok">
+                            <span className="dash-kpi-libelle"><FiCheckCircle /> Dans les délais</span>
+                            <strong className="dash-kpi-valeur">{nombre(ind.dansLesDelais)}</strong>
                             <span className="dash-kpi-detail">
-                                {nombre(ind.enAttente)} en attente · {nombre(ind.enCours)} en cours 
-                                . {nombre(ind.cloturees)} cloturées
+                                {nombre(ind.repartitionDelais?.dansLesDelaisCloturees ?? ind.dansLesDelais)}
+                                {' '}NC clôturée(s) au plus tard à la date d'échéance.
                             </span>
                         </article>
 
-                        <article className="dash-kpi">
-                            <span className="dash-kpi-libelle"><FiCheckCircle /> Clôturées</span>
-                            <strong className="dash-kpi-valeur">{nombre(ind.cloturees)}</strong>
-                            <span className="dash-kpi-detail">
-                                {nombre(ind.reouvertures)} réouverture(s) au total
-                            </span>
+                        <article className="dash-kpi dash-kpi--delais-retard">
+                            <span className="dash-kpi-libelle"><FiAlertCircle /> Hors délais</span>
+                            <strong className="dash-kpi-valeur">{nombre(ind.horsDelais)}</strong>
+                            <div className="dash-retard-detail">
+                                <span>En attente <strong>{nombre(ind.repartitionDelais?.horsDelaisEnAttente)}</strong></span>
+                                <span>Ouvertes <strong>{nombre(ind.repartitionDelais?.horsDelaisOuvertes)}</strong></span>
+                                <span>En analyse <strong>{nombre(ind.repartitionDelais?.horsDelaisEnCoursAnalyse)}</strong></span>
+                                <span>En traitement <strong>{nombre(ind.repartitionDelais?.horsDelaisEnTraitement)}</strong></span>
+                                <span>Clôturées <strong>{nombre(ind.repartitionDelais?.horsDelaisCloturees)}</strong></span>
+                            </div>
                         </article>
 
                         <article className="dash-kpi">
@@ -163,8 +125,40 @@ export default function Dashbboard_Responsable_qualite({ utilisateur }) {
                             <strong className="dash-kpi-valeur">
                                 {ind.delaiMoyenJours == null ? "—" : `${String(ind.delaiMoyenJours).replace(".", ",")} j`}
                             </strong>
-                            <span className="dash-kpi-detail">de la déclaration à la clôture</span>
+                            <span className="dash-kpi-detail">De la déclaration à la clôture · {nombre(ind.reouvertures)} réouverture(s)</span>
                         </article>
+                    </section>
+
+                    {/* ---- Répartition exacte des cinq statuts ---- */}
+                    <section className="dash-statuts" aria-label="Résumé des non-conformités par statut">
+                        <header className="dash-statuts-entete">
+                            <div>
+                                <h2>Résumé des non-conformités</h2>
+                                <p>{nombre(ind.total)} non-conformité(s) au total, réparties selon leur statut actuel.</p>
+                            </div>
+                        </header>
+                        <div className="dash-statuts-grille">
+                            <article className="dash-statut-card statut-attente">
+                                <span>En attente</span>
+                                <strong>{nombre(ind.enAttente)}</strong>
+                            </article>
+                            <article className="dash-statut-card statut-ouvert">
+                                <span>En cours / ouvertes</span>
+                                <strong>{nombre(ind.ouvert ?? Math.max(0, ind.enCours - (ind.enCoursAnalyse ?? 0) - (ind.enTraitement ?? 0)))}</strong>
+                            </article>
+                            <article className="dash-statut-card statut-analyse">
+                                <span>En cours d'analyse</span>
+                                <strong>{nombre(ind.enCoursAnalyse)}</strong>
+                            </article>
+                            <article className="dash-statut-card statut-traitement">
+                                <span>En traitement</span>
+                                <strong>{nombre(ind.enTraitement)}</strong>
+                            </article>
+                            <article className="dash-statut-card statut-cloture">
+                                <span>Clôturées</span>
+                                <strong>{nombre(ind.cloturees)}</strong>
+                            </article>
+                        </div>
                     </section>
 
                     {/* ---- Histogramme mensuel ---- */}
