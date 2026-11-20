@@ -73,6 +73,12 @@ public class SuiviCapaController {
         return service.cloturer(ncId, requete.commentaire(), utilisateurCourant(authentication));
     }
 
+    @PostMapping("/nc/{ncId}/reouverture")
+    @PreAuthorize("hasRole('RESPONSABLE_QUALITE')")
+    public SuiviNc reouvrir(@PathVariable Long ncId, Authentication authentication) {
+        return service.reouvrir(ncId, utilisateurCourant(authentication));
+    }
+
     private Users utilisateurCourant(Authentication authentication) {
         return utilisateurRepository.findByEmailIgnoreCase(authentication.getName())
                 .filter(u -> Boolean.TRUE.equals(u.getActif()))

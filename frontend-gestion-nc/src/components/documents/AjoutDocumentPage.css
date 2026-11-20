@@ -1,0 +1,281 @@
+.ajout-doc-page {
+  --doc-bg: #f8fafc;
+  --doc-surface: #ffffff;
+  --doc-surface-subtle: #f1f5f9;
+  --doc-border: #cbd5e1;
+  --doc-border-focus: #2563eb;
+  --doc-text: #0f172a;
+  --doc-text-muted: #64748b;
+  --doc-primary: #2563eb;
+  --doc-primary-hover: #1d4ed8;
+  --doc-danger-bg: #fef2f2;
+  --doc-danger-border: #fca5a5;
+  --doc-danger-text: #b91c1c;
+  --doc-success-bg: #f0fdf4;
+  --doc-success-border: #86efac;
+  --doc-success-text: #15803d;
+  --doc-radius: 10px;
+  --doc-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 6px 18px rgba(15, 23, 42, 0.04);
+
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 3.5rem;
+  color: var(--doc-text);
+  font-family: inherit;
+}
+
+.ajout-doc-retour {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+}
+
+.ajout-doc-retour a {
+  color: var(--doc-text-muted);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.15s ease;
+}
+
+.ajout-doc-retour a:hover {
+  color: var(--doc-primary);
+  text-decoration: underline;
+}
+
+.ajout-doc-page h1 {
+  margin: 0 0 1.5rem;
+  font-size: 1.65rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--doc-text);
+}
+
+.ajout-doc-form {
+  background: var(--doc-surface);
+  border: 1px solid #e2e8f0;
+  border-radius: var(--doc-radius);
+  padding: 1.75rem;
+  box-shadow: var(--doc-shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 1.35rem;
+}
+
+.ajout-doc-grille {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.15rem 1.25rem;
+}
+
+.ajout-doc-champ {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.ajout-doc-champ label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--doc-text);
+}
+
+.ajout-doc-champ input[type="text"],
+.ajout-doc-champ input:not([type="file"]),
+.ajout-doc-champ select,
+.ajout-doc-champ textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.62rem 0.78rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: var(--doc-text);
+  background-color: var(--doc-surface);
+  border: 1px solid var(--doc-border);
+  border-radius: 8px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ajout-doc-champ input::placeholder,
+.ajout-doc-champ textarea::placeholder {
+  color: #94a3b8;
+}
+
+.ajout-doc-champ input:focus,
+.ajout-doc-champ select:focus,
+.ajout-doc-champ textarea:focus {
+  outline: none;
+  border-color: var(--doc-border-focus);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.ajout-doc-champ textarea {
+  resize: vertical;
+  min-height: 96px;
+}
+
+.ajout-doc-aide {
+  font-size: 0.8rem;
+  color: var(--doc-text-muted);
+  line-height: 1.4;
+}
+
+.ajout-doc-depot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.35rem;
+  padding: 1.75rem 1.25rem;
+  border: 2px dashed var(--doc-border);
+  border-radius: var(--doc-radius);
+  background-color: var(--doc-bg);
+  cursor: pointer;
+  transition: border-color 0.18s ease, background-color 0.18s ease, transform 0.15s ease;
+}
+
+.ajout-doc-depot:hover,
+.ajout-doc-depot--actif {
+  border-color: var(--doc-primary);
+  background-color: #eff6ff;
+}
+
+.ajout-doc-depot--actif {
+  transform: scale(0.995);
+}
+
+.ajout-doc-depot input[type="file"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.ajout-doc-depot strong {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--doc-primary);
+}
+
+.ajout-doc-fichier-choisi {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  padding: 0.65rem 0.9rem;
+  background-color: var(--doc-surface-subtle);
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.88rem;
+}
+
+.ajout-doc-fichier-choisi span {
+  font-weight: 500;
+  color: var(--doc-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ajout-doc-erreur {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background-color: var(--doc-danger-bg);
+  border: 1px solid var(--doc-danger-border);
+  color: var(--doc-danger-text);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.ajout-doc-succes {
+  margin: 0 0 1.25rem;
+  padding: 0.9rem 1.1rem;
+  border-radius: 8px;
+  background-color: var(--doc-success-bg);
+  border: 1px solid var(--doc-success-border);
+  color: var(--doc-success-text);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.ajout-doc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  padding-top: 0.35rem;
+}
+
+.ajout-doc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.65rem 1.2rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: #ffffff;
+  background-color: var(--doc-primary);
+  border: 1px solid var(--doc-primary);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+
+.ajout-doc-btn:hover:not(:disabled) {
+  background-color: var(--doc-primary-hover);
+  border-color: var(--doc-primary-hover);
+}
+
+.ajout-doc-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ajout-doc-btn--secondaire {
+  color: var(--doc-text);
+  background-color: var(--doc-surface);
+  border-color: var(--doc-border);
+}
+
+.ajout-doc-btn--secondaire:hover:not(:disabled) {
+  background-color: var(--doc-surface-subtle);
+  border-color: #94a3b8;
+}
+
+.ajout-doc-btn--petit {
+  padding: 0.38rem 0.75rem;
+  font-size: 0.82rem;
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .ajout-doc-page {
+    padding: 1.25rem 0.9rem 2.5rem;
+  }
+
+  .ajout-doc-form {
+    padding: 1.2rem;
+  }
+
+  .ajout-doc-grille {
+    grid-template-columns: 1fr;
+  }
+
+  .ajout-doc-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ajout-doc-btn {
+    width: 100%;
+  }
+
+  .ajout-doc-btn--petit {
+    width: auto;
+  }
+}

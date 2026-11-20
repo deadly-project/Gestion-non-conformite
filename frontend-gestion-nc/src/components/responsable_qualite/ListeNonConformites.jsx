@@ -6,12 +6,13 @@ import { useNotificationsAdmin } from "../../hooks/useNotificationsAdmin";
 import VisualisationNcModal from "./VisualisationNcModal";
 import TraitementNcModal from "./TraitementNcModal";
 import AvancementNcModal from "./AvancementNcModal";
+import Modal from "../Modal";
 import Avatar from "../compte/Avatar";
 import {
   FaEye, FaArrowTrendUp, FaLocationDot, FaRotate, FaFilter, FaChevronDown, FaChevronUp,
 } from "react-icons/fa6";
 import {
-  FiClock, FiAlertCircle, FiLoader, FiSearch, FiArchive, FiCalendar, FiX,
+  FiClock, FiAlertCircle, FiLoader, FiSearch, FiArchive, FiCalendar, FiX, FiRefreshCw,
 } from "react-icons/fi";
 import { GiSettingsKnobs } from "react-icons/gi";
 import "./ListeNonConformites.css";
@@ -106,6 +107,8 @@ export default function ListeNonConformites({ utilisateur }) {
   const [ncVisualisation, setNcVisualisation] = useState(null);
   const [ncTraitement, setNcTraitement] = useState(null);
   const [ncAvancement, setNcAvancement] = useState(null);
+  const [ncReouverture, setNcReouverture] = useState(null);
+  const [reouvertureEnCours, setReouvertureEnCours] = useState(null);
 
   useEffect(() => {
     const id = Number(parametresUrl.get("visualiser"));
@@ -177,6 +180,30 @@ export default function ListeNonConformites({ utilisateur }) {
     setDateFin("");
     setFiltresAppliques({ q: "", reference: "", declarant: "", dateDetection: "", dateDebut: "", dateFin: "" });
     setPage(0);
+  }
+
+  function demanderReouverture(nc) {
+    setNcReouverture(nc);
+  }
+
+  async function confirmerReouverture() {
+    if (!ncReouverture) return;
+    const nc = ncReouverture;
+
+    setReouvertureEnCours(nc.id);
+    setErreur("");
+    setInfo("");
+    try {
+      await apiRequest(`/api/capa/nc/${nc.id}/reouverture`, { method: "POST" });
+      setInfo(`La non-conformité ${nc.reference || `#${nc.id}`} a été réouverte.`);
+      setNcReouverture(null);
+      setVersion((v) => v + 1);
+    } catch (e) {
+      setErreur(e.message || "Impossible de réouvrir cette non-conformité.");
+      setNcReouverture(null);
+    } finally {
+      setReouvertureEnCours(null);
+    }
   }
 
   function apresTraitement(detail) {
@@ -381,6 +408,17 @@ export default function ListeNonConformites({ utilisateur }) {
                           title="Avancement" onClick={() => setNcAvancement(nc.id)}>
                     <FaArrowTrendUp /> Avancement
                   </button>
+                  {nc.statut === "CLOTUREE" && (
+                    <button
+                      type="button"
+                      className="nc-btn nc-btn-petit nc-btn-reouvrir"
+                      title="Réouvrir cette non-conformité"
+                      disabled={reouvertureEnCours === nc.id}
+                      onClick={() => demanderReouverture(nc)}
+                    >
+                      <FiRefreshCw /> {reouvertureEnCours === nc.id ? "Réouverture…" : "Réouvrir"}
+                    </button>
+                  )}
                 </div>
               </div>
             </article>
@@ -400,6 +438,48 @@ export default function ListeNonConformites({ utilisateur }) {
             Suivant →
           </button>
         </nav>
+      )}
+
+      {ncReouverture && (
+        <Modal
+          titre="Confirmer la réouverture"
+          largeur="small"
+          onFermer={() => {
+            if (reouvertureEnCours !== ncReouverture.id) {
+              setNcReouverture(null);
+            }
+          }}
+          pied={
+            <>
+              <button
+                type="button"
+                className="nc-btn nc-btn-secondaire nc-btn-petit"
+                disabled={reouvertureEnCours === ncReouverture.id}
+                onClick={() => setNcReouverture(null)}
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                className="nc-btn nc-btn-petit nc-btn-reouvrir"
+                disabled={reouvertureEnCours === ncReouverture.id}
+                onClick={confirmerReouverture}
+              >
+                <FiRefreshCw />{" "}
+                {reouvertureEnCours === ncReouverture.id ? "Réouverture…" : "Confirmer la réouverture"}
+              </button>
+            </>
+          }
+        >
+          <p className="nc-modal-confirmation-texte">
+            Voulez-vous réouvrir la non-conformité{" "}
+            <strong>{ncReouverture.reference || `#${ncReouverture.id}`}</strong>
+            {ncReouverture.titre ? ` — ${ncReouverture.titre}` : ""} ?
+          </p>
+          <p className="nc-modal-confirmation-note">
+            Son statut repassera à <strong>OUVERT</strong>. Les audits et actions CAPA existants seront conservés.
+          </p>
+        </Modal>
       )}
 
       {ncVisualisation && (

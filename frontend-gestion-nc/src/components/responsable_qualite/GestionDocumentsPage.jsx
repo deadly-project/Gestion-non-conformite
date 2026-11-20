@@ -173,7 +173,7 @@ export default function GestionDocumentsPage() {
                     <h1>Gestion documentaire</h1>
                     <p className="nc-aide">
                         Espace du responsable qualité : ajoutez, modifiez, changez le statut et archivez les documents.
-                        Consultation générale : <Link to="/documents">bibliothèque documentaire</Link>.
+                        La bibliothèque commune est réservée aux administrateurs, déclarants et auditeurs.
                     </p>
                 </div>
                 <Link to="/responsable/documents/nouveau" className="nc-btn" style={{ textDecoration: "none" }}>
@@ -185,31 +185,6 @@ export default function GestionDocumentsPage() {
                 <DocumentsExplorateur mode="gestion" droits={mesDroits.moi} cleRechargement={cle} actionsLigne={actionsLigne} />
             )}
 
-            {mesDroits && (
-                <section className="doc-section-droits nc-section">
-                    <h3>Gestion des accès</h3>
-                    <p className="nc-aide">Droits de chaque rôle sur les documents qualité (appliqués par le serveur).</p>
-                    <div className="nc-tableau-conteneur">
-                        <table className="doc-matrice">
-                            <thead>
-                                <tr><th>Rôle</th>{DROITS.map(([, l]) => <th key={l}>{l}</th>)}</tr>
-                            </thead>
-                            <tbody>
-                                {mesDroits.matrice.map((r) => (
-                                    <tr key={r.role}>
-                                        <td>{r.libelle}</td>
-                                        {DROITS.map(([cleDroit, l]) => (
-                                            <td key={l} className={r.droits[cleDroit] ? "doc-oui" : "doc-non"}>
-                                                {r.droits[cleDroit] ? "Oui" : "Non"}
-                                            </td>
-                                        ))}
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
-            )}
 
             {edition && <ModalModification document={edition} processus={processus} onFermer={() => setEdition(null)} onEnregistre={apres} />}
             {statutModal && (

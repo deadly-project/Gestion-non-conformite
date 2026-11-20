@@ -253,6 +253,7 @@ function CarteEtape({ etape, ncId, ouverte, onBasculer, cloturee, occupe, onComm
 
             {ouverte && (
                 <div id={idCorps} className="suivi-etape-corps">
+                    <div><strong>Description</strong></div>
                     <p className="suivi-etape-description">{etape.description}</p>
                     <p className="suivi-etape-meta">
                         Responsable : {nomPersonne(etape.responsable)} · Échéance : {formaterDate(etape.dateEcheance)}

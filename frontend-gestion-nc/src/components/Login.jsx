@@ -134,10 +134,7 @@ export default function Login({ onLogin }) {
                             </div>
 
                             <div className="form-row">
-                                <label className="checkbox">
-                                    <input type="checkbox" />
-                                    <span>Se souvenir de moi</span>
-                                </label>
+                                
                                 <Link to="/mot-de-passe-oublie" className="forgot-link">
                                     Mot de passe oublié ?
                                 </Link>

@@ -286,6 +286,61 @@ public class SuiviCapaService {
         }
     }
 
+    // ------------------------------------------------------------------ réouverture
+    /**
+     * Réouvre une NC clôturée. Les actions CAPA et les audits existants sont conservés
+     * pour assurer la traçabilité ; seule la clôture courante est annulée.
+     */
+    @Transactional
+    public SuiviNc reouvrir(Long ncId, Users rq) {
+        exigerResponsable(rq);
+
+        NonConformite nc = ncRepository.findByIdForUpdate(ncId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Non-conformité introuvable"));
+        if (!StatutNc.CLOTUREE.name().equals(nc.getStatut())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Seule une non-conformité clôturée peut être réouverte");
+        }
+
+        Map<String, Object> ncAvant = Instantane.de(nc);
+        LocalDateTime maintenant = LocalDateTime.now();
+        String ancienStatut = nc.getStatut();
+        nc.setStatut(StatutNc.OUVERT.name());
+        nc.setDateCloturation(null);
+        nc.setDateOuverture(maintenant);
+        nc.setNbReouvertures(nc.getNbReouvertures() == null ? 1 : nc.getNbReouvertures() + 1);
+        nc.setDateModification(maintenant);
+        ncRepository.save(nc);
+
+        NcStatutHistorique historique = new NcStatutHistorique();
+        historique.setNcId(nc.getId());
+        historique.setAncienStatut(ancienStatut);
+        historique.setNouveauStatut(StatutNc.OUVERT.name());
+        historique.setCommentaire("Réouverture de la non-conformité");
+        historique.setAuteurId(rq.getId());
+        historique.setDateChangement(maintenant);
+        statutHistoriqueRepository.save(historique);
+
+        Map<String, Object> contexte = new LinkedHashMap<>();
+        contexte.put("nbReouvertures", nc.getNbReouvertures());
+        contexte.put("motif", "Réouverture par le responsable qualité");
+        journal.enregistrerModification(rq.getId(), "REOPEN_NC", "NON_CONFORMITE", nc.getId(),
+                ncAvant, Instantane.de(nc), contexte);
+
+        String designation = NotificationService.designation(nc);
+        String message = "La non-conformité " + designation + " (« " + nc.getTitre()
+                + " ») a été réouverte par " + nom(rq) + ".";
+        notifications.notifierRole("RESPONSABLE_QUALITE", rq.getId(), TypeNotification.NC_STATUT_CHANGE,
+                message, NotificationService.ENTITE_NC, nc.getId());
+        notifications.notifier(nc.getDeclarantId(), TypeNotification.NC_STATUT_CHANGE,
+                "Votre déclaration « " + nc.getTitre() + " » a été réouverte et est maintenant « Ouverte ».",
+                NotificationService.ENTITE_NC, nc.getId());
+
+        evenements.publier(nc.getId(), null, null, "NC_REOUVERTE",
+                nom(rq) + " a réouvert la non-conformité " + nc.getReference());
+        return construire(nc);
+    }
+
     // ------------------------------------------------------------------ règles
     /** Une étape est validable quand un audit a confirmé la réalisation (TERMINEE) et qu'aucun audit n'est en cours. */
     private String motifNonValidable(ActionCapa etape, List<Audit> audits) {

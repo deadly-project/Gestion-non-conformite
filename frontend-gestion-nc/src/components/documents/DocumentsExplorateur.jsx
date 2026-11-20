@@ -19,16 +19,16 @@ function Carte({ classe, libelle, valeur, actif, onClick }) {
     );
 }
 
-export function DocumentDetail({ id, onFermer }) {
+export function DocumentDetail({ id, onFermer, basePath = "/api/documents-qualite" }) {
     const [doc, setDoc] = useState(null);
     const [erreur, setErreur] = useState("");
 
     useEffect(() => {
-        apiRequest(`/api/documents-qualite/${id}`).then(setDoc).catch((e) => setErreur(e.message));
-    }, [id]);
+        apiRequest(`${basePath}/${id}`).then(setDoc).catch((e) => setErreur(e.message));
+    }, [id, basePath]);
 
     const ouvrir = (telecharger) =>
-        ouvrirFichierDocument(doc, telecharger).catch((e) => setErreur(e.message));
+        ouvrirFichierDocument(doc, telecharger, basePath).catch((e) => setErreur(e.message));
 
     return (
         <Modal titre={doc ? `${doc.reference} — ${doc.titre}` : "Document"} onFermer={onFermer} largeur="moyen"
@@ -89,7 +89,9 @@ export default function DocumentsExplorateur({ mode = "bibliotheque", droits, cl
     const [vue, setVue] = useState("ACTIFS");
     const [page, setPage] = useState(0);
 
-    const archivesPossibles = Boolean(droits?.consulterArchives);
+    const modeBibliothequeCommune = mode === "bibliotheque-commune";
+    const archivesPossibles = !modeBibliothequeCommune && Boolean(droits?.consulterArchives);
+    const afficherTableauDeBord = !modeBibliothequeCommune;
 
     useEffect(() => {
         apiRequest("/api/referentiels/processus").then((d) => setProcessus(d || [])).catch(() => {});
@@ -101,27 +103,34 @@ export default function DocumentsExplorateur({ mode = "bibliotheque", droits, cl
         return () => clearTimeout(t);
     }, [recherche]);
 
+    // Tableau de bord : en bibliothèque ET en gestion (responsable qualité)
     useEffect(() => {
-        if (mode !== "bibliotheque") return;
+        if (!afficherTableauDeBord) return;
         apiRequest("/api/documents-qualite/statistiques").then(setStats).catch(() => setStats(null));
-    }, [mode, cleRechargement]);
+    }, [afficherTableauDeBord, cleRechargement]);
 
     const charger = useCallback(async () => {
-        const params = new URLSearchParams({ vue, page, taille: TAILLE_PAGE });
+        const params = new URLSearchParams({ page, taille: TAILLE_PAGE });
         if (q) params.set("q", q);
         if (processusId) params.set("processusId", processusId);
         if (type) params.set("type", type);
-        if (statut) params.set("statut", statut);
+        if (modeBibliothequeCommune) {
+            // Le serveur impose EN_VIGUEUR : aucun statut transmis depuis le navigateur.
+        } else {
+            params.set("vue", vue);
+            if (statut) params.set("statut", statut);
+        }
         try {
             setChargement(true);
-            setDonnees(await apiRequest(`/api/documents-qualite?${params}`));
+            const endpoint = modeBibliothequeCommune ? "/api/documents-qualite/bibliotheque" : "/api/documents-qualite";
+            setDonnees(await apiRequest(`${endpoint}?${params}`));
             setErreur("");
         } catch (e) {
             setErreur(e.message || "Impossible de charger les documents.");
         } finally {
             setChargement(false);
         }
-    }, [q, processusId, type, statut, vue, page]);
+    }, [q, processusId, type, statut, vue, page, modeBibliothequeCommune]);
 
     useEffect(() => { charger(); }, [charger, cleRechargement]);
 
@@ -144,9 +153,18 @@ export default function DocumentsExplorateur({ mode = "bibliotheque", droits, cl
     const statutsProposes = vue === "ARCHIVES" ? [] : ["EN_VIGUEUR", "EN_REVISION"];
     const documents = donnees?.contenu ?? [];
 
+    // Chips de vue (façon liste NC)
+    const vuesDisponibles = archivesPossibles
+        ? [
+            ["ACTIFS", "Documents actifs", "actifs"],
+            ["ARCHIVES", "Archives", "archives"],
+            ["TOUS", "Tous", "tous"],
+        ]
+        : [["ACTIFS", "Documents actifs", "actifs"]];
+
     return (
         <>
-            {mode === "bibliotheque" && (
+            {afficherTableauDeBord && (
                 <section className="doc-stats" aria-label="Tableau de bord documentaire">
                     <Carte classe="total" libelle="Documents" valeur={stats?.total}
                            actif={vue === (archivesPossibles ? "TOUS" : "ACTIFS") && !statut}
@@ -162,16 +180,32 @@ export default function DocumentsExplorateur({ mode = "bibliotheque", droits, cl
                 </section>
             )}
 
+            {modeBibliothequeCommune && (
+                <p className="nc-info doc-info-bibliotheque">
+                    Cette bibliothèque présente uniquement les procédures, instructions et enregistrements qualité en vigueur.
+                </p>
+            )}
+
             <section className="doc-filtres" aria-label="Filtres">
                 <h2>Filtrer les documents</h2>
                 {archivesPossibles && (
-                    <div className="doc-onglets" role="tablist">
-                        {[["ACTIFS", "Documents actifs"], ["ARCHIVES", "Archives"], ["TOUS", "Tous"]].map(([code, libelle]) => (
-                            <button key={code} type="button" role="tab" className="doc-onglet"
-                                    aria-selected={vue === code} onClick={() => choisirVue(code)}>
-                                {libelle}
-                            </button>
-                        ))}
+                    <div className="nc-filtres doc-onglets-chips" role="tablist" aria-label="Vue des documents">
+                        {vuesDisponibles.map(([code, libelle, modif]) => {
+                            const actif = vue === code;
+                            return (
+                                <button
+                                    key={code}
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={actif}
+                                    className={`nc-filtre nc-filtre--${modif}${actif ? " nc-filtre--actif" : ""}`}
+                                    onClick={() => choisirVue(code)}
+                                >
+                                    <span className="nc-filtre-pastille" aria-hidden="true" />
+                                    {libelle}
+                                </button>
+                            );
+                        })}
                     </div>
                 )}
                 <div className="doc-filtres-grille">
@@ -182,7 +216,7 @@ export default function DocumentsExplorateur({ mode = "bibliotheque", droits, cl
                     </div>
                     <div className="nc-champ">
                         <label htmlFor="doc-processus">Par processus</label>
-                        <select id="doc-processus" value={processusId}
+                        <select id="doc-processus" className="nc-select-cal" value={processusId}
                                 onChange={(e) => { setProcessusId(e.target.value); setPage(0); }}>
                             <option value="">Tous les processus</option>
                             {processus.map((p) => <option key={p.id} value={p.id}>{p.code} — {p.libelle}</option>)}
@@ -190,22 +224,25 @@ export default function DocumentsExplorateur({ mode = "bibliotheque", droits, cl
                     </div>
                     <div className="nc-champ">
                         <label htmlFor="doc-type">Par catégorie</label>
-                        <select id="doc-type" value={type} onChange={(e) => { setType(e.target.value); setPage(0); }}>
+                        <select id="doc-type" className="nc-select-cal" value={type}
+                                onChange={(e) => { setType(e.target.value); setPage(0); }}>
                             <option value="">Toutes les catégories</option>
                             {Object.entries(TYPES_DOCUMENT).map(([code, l]) => <option key={code} value={code}>{l}</option>)}
                         </select>
                     </div>
-                    <div className="nc-champ">
-                        <label htmlFor="doc-statut">Par statut</label>
-                        <select id="doc-statut" value={statut} disabled={vue === "ARCHIVES"}
-                                onChange={(e) => { setStatut(e.target.value); setPage(0); }}>
-                            <option value="">{vue === "ARCHIVES" ? "Obsolète" : "Tous les statuts"}</option>
-                            {(vue === "TOUS" ? Object.keys(STATUTS_DOCUMENT) : statutsProposes).map((code) => (
-                                <option key={code} value={code}>{STATUTS_DOCUMENT[code]}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div className="nc-actions">
+                    {!modeBibliothequeCommune && (
+                        <div className="nc-champ">
+                            <label htmlFor="doc-statut">Par statut</label>
+                            <select id="doc-statut" className="nc-select-cal" value={statut} disabled={vue === "ARCHIVES"}
+                                    onChange={(e) => { setStatut(e.target.value); setPage(0); }}>
+                                <option value="">{vue === "ARCHIVES" ? "Obsolète" : "Tous les statuts"}</option>
+                                {(vue === "TOUS" ? Object.keys(STATUTS_DOCUMENT) : statutsProposes).map((code) => (
+                                    <option key={code} value={code}>{STATUTS_DOCUMENT[code]}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+                    <div className="nc-actions doc-filtres-actions">
                         <button type="button" className="nc-btn nc-btn-secondaire" onClick={reinitialiser}>Réinitialiser</button>
                     </div>
                 </div>
@@ -218,8 +255,8 @@ export default function DocumentsExplorateur({ mode = "bibliotheque", droits, cl
             ) : documents.length === 0 ? (
                 <p className="nc-aide">Aucun document ne correspond à ces critères.</p>
             ) : (
-                <div className="nc-tableau-conteneur">
-                    <table className="nc-tableau">
+                <div className="nc-tableau-conteneur doc-tableau-conteneur">
+                    <table className="nc-tableau doc-tableau">
                         <thead>
                             <tr>
                                 <th>Référence</th><th>Titre</th><th>Catégorie</th><th>Processus</th>
@@ -233,7 +270,6 @@ export default function DocumentsExplorateur({ mode = "bibliotheque", droits, cl
                                     <td className="doc-reference">{d.reference}</td>
                                     <td className="doc-titre-cellule">
                                         <strong>{d.titre}</strong>
-                                        {d.description && <div className="nc-aide">{d.description}</div>}
                                     </td>
                                     <td><span className={`nc-badge doc-badge-type-${d.typeDocument}`}>{TYPES_DOCUMENT[d.typeDocument] ?? d.typeDocument}</span></td>
                                     <td>{d.processus ? d.processus.libelle : "—"}</td>
@@ -243,12 +279,6 @@ export default function DocumentsExplorateur({ mode = "bibliotheque", droits, cl
                                         <div className="doc-actions">
                                             <button type="button" className="nc-btn nc-btn-petit nc-btn-secondaire"
                                                     onClick={() => setSearchParams({ voir: d.id }, { replace: true })}>Détails</button>
-                                            {estAffichable(d) && (
-                                                <button type="button" className="nc-btn nc-btn-petit nc-btn-secondaire"
-                                                        onClick={() => ouvrirFichierDocument(d).catch((e) => setErreur(e.message))}>Afficher</button>
-                                            )}
-                                            <button type="button" className="nc-btn nc-btn-petit"
-                                                    onClick={() => ouvrirFichierDocument(d, true).catch((e) => setErreur(e.message))}>Télécharger</button>
                                         </div>
                                     </td>
                                     {mode === "gestion" && <td>{actionsLigne?.(d)}</td>}
@@ -269,7 +299,13 @@ export default function DocumentsExplorateur({ mode = "bibliotheque", droits, cl
                 </div>
             )}
 
-            {voir && <DocumentDetail id={voir} onFermer={fermerDetail} />}
+            {voir && (
+                <DocumentDetail
+                    id={voir}
+                    onFermer={fermerDetail}
+                    basePath={modeBibliothequeCommune ? "/api/documents-qualite/bibliotheque" : "/api/documents-qualite"}
+                />
+            )}
         </>
     );
 }

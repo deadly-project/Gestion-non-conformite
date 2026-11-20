@@ -124,6 +124,18 @@ public class DocumentQualiteService {
                 resultat.getTotalElements(), resultat.getTotalPages());
     }
 
+    /** Bibliothèque commune : seuls les documents en vigueur sont diffusés aux autres rôles. */
+    @Transactional(readOnly = true)
+    public PageResponse<DocumentItem> listerBibliotheque(Users u, String q, Long processusId,
+                                                         String type, int page, int taille) {
+        if (u == null || !Boolean.TRUE.equals(u.getActif())
+                || !Set.of("ADMINISTRATEUR", "AUDITEUR", "DECLARANT").contains(u.getRole())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "La bibliothèque documentaire est réservée aux administrateurs, auditeurs et déclarants.");
+        }
+        return lister(u, q, processusId, type, StatutDocument.EN_VIGUEUR.name(), "ACTIFS", page, taille);
+    }
+
     @Transactional(readOnly = true)
     public Statistiques statistiques(Users u) {
         Droits droits = exiger(u, Droits::consulter, "Consultation des documents non autorisée");
@@ -145,6 +157,18 @@ public class DocumentQualiteService {
     @Transactional(readOnly = true)
     public FichierLu lireFichier(Long id, Users u) {
         DocumentQualite d = consultable(id, u);
+        String mime = d.getMimeType() == null ? "application/octet-stream" : d.getMimeType();
+        return new FichierLu(stockage.lireParCle(d.getCheminFichier()), d.getNomFichier(), mime, INLINE.contains(mime));
+    }
+
+    @Transactional(readOnly = true)
+    public DocumentItem detailBibliotheque(Long id, Users u) {
+        return versItems(List.of(documentEnVigueur(id, u))).get(0);
+    }
+
+    @Transactional(readOnly = true)
+    public FichierLu lireFichierBibliotheque(Long id, Users u) {
+        DocumentQualite d = documentEnVigueur(id, u);
         String mime = d.getMimeType() == null ? "application/octet-stream" : d.getMimeType();
         return new FichierLu(stockage.lireParCle(d.getCheminFichier()), d.getNomFichier(), mime, INLINE.contains(mime));
     }
@@ -312,6 +336,18 @@ public class DocumentQualiteService {
         DocumentQualite d = trouver(id);
         if (StatutDocument.OBSOLETE.name().equals(d.getStatut()) && !droits.consulterArchives()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Ce document est archivé");
+        }
+        return d;
+    }
+
+    private DocumentQualite documentEnVigueur(Long id, Users u) {
+        if (u == null || !Boolean.TRUE.equals(u.getActif())
+                || !Set.of("ADMINISTRATEUR", "AUDITEUR", "DECLARANT").contains(u.getRole())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Accès à la bibliothèque documentaire refusé.");
+        }
+        DocumentQualite d = trouver(id);
+        if (!StatutDocument.EN_VIGUEUR.name().equals(d.getStatut())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Document en vigueur introuvable.");
         }
         return d;
     }

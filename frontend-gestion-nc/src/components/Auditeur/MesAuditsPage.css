@@ -74,28 +74,46 @@
 .maud-legende li { display: flex; align-items: center; gap: 0.35rem; }
 .maud-point { display: inline-block; width: 0.8rem; height: 0.8rem; border-radius: 3px; }
 
-/* ----- Liste « À traiter » ----- */
+/* ----- Liste « À traiter » : responsive ----- */
 .maud-liste {
     position: sticky;
     top: 1rem;
+    /* On garde la limite de hauteur mais avec un scroll interne confortable */
     max-height: calc(100vh - 2rem);
     overflow-y: auto;
+    /* Empêche le débordement horizontal dans la grille parente */
+    min-width: 0;
+    /* Padding interne pour que la barre de scroll ne colle pas aux cartes */
+    padding-right: 0.25rem;
+    /* Scrollbar discrète */
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
 }
+.maud-liste::-webkit-scrollbar { width: 6px; }
+.maud-liste::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+.maud-liste::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
 .maud-cartes { 
     display: flex; 
     flex-direction: column; 
     gap: 0.85rem; 
     margin: 0; 
-    padding: 0; 
-    list-style: none; 
+    padding: 0;
+    margin-right: 12px; 
+    list-style: none;
+    /* Le flex column doit pouvoir se contraindre à la largeur du parent */
+    min-width: 0;
 }
+
+.maud-cartes > li { min-width: 0; }
 
 .maud-carte {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
     width: 100%;
+    /* Sans min-width: 0, les enfants flex (texte long) débordent */
+    min-width: 0;
     padding: 0.9rem 1.1rem;
     border: 1px solid #cbd5e1;
     border-radius: 10px;
@@ -112,12 +130,14 @@
     transform: translateY(-1px);
 }
 
-/* Ligne Titre + Badge Statut en parallèle */
+/* Ligne Titre + Badge Statut en parallèle (avec wrap autorisé) */
 .maud-carte-ligne-titre {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     gap: 0.75rem;
+    flex-wrap: wrap;
+    min-width: 0;
 }
 
 .maud-carte-titre, 
@@ -127,8 +147,15 @@
     color: #0f172a;
     margin: 0;
     line-height: 1.35;
-    flex: 1;
+    flex: 1 1 auto;
+    min-width: 0;
     overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+/* Le badge statut ne doit jamais être compressé */
+.maud-carte-ligne-titre > .aud-badge {
+    flex-shrink: 0;
 }
 
 /* Badges secondaires : Type d'audit & Type d'action */
@@ -138,6 +165,7 @@
     flex-wrap: wrap;
     gap: 0.4rem;
     margin-top: -0.1rem;
+    min-width: 0;
 }
 
 .maud-badge-type-audit {
@@ -173,9 +201,11 @@
     padding: 0.5rem 0.75rem;
     border-radius: 0 6px 6px 0;
     overflow-wrap: anywhere;
+    word-break: break-word;
+    min-width: 0;
 }
 
-/* Pied parallèle : Processus & Date */
+/* Pied parallèle : Processus & Date (wrap autorisé) */
 .maud-carte-pied {
     display: flex;
     justify-content: space-between;
@@ -186,6 +216,8 @@
     border-top: 1px solid #f1f5f9;
     font-size: 0.8rem;
     color: #64748b;
+    flex-wrap: wrap;
+    min-width: 0;
 }
 
 .maud-carte-processus {
@@ -197,6 +229,8 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    flex: 1 1 0;
+    min-width: 0;
 }
 
 .maud-icon-pin {
@@ -208,6 +242,7 @@
 .maud-carte-date {
     color: #475569;
     white-space: nowrap;
+    flex-shrink: 0;
 }
 
 /* ----- DRAWER / SIDE-BAR LATÉRALE ----- */
@@ -362,18 +397,6 @@
     transform: translateX(4px);
 }
 
-/* Responsivité */
-@media (max-width: 960px) {
-    .maud-espace { grid-template-columns: minmax(0, 1fr); }
-    .maud-liste { position: static; max-height: none; overflow-y: visible; }
-}
-
-@media (max-width: 480px) {
-    .maud-drawer {
-        max-width: 100%;
-    }
-}
-
 /* ----- Barre de filtres par statut ----- */
 .maud-filtres {
     display: flex;
@@ -445,4 +468,34 @@
 .maud-filtre--actif .maud-filtre-pastille {
     background: #ffffff !important;
     box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
+}
+
+/* ----- Responsivité ----- */
+@media (max-width: 960px) {
+    .maud-espace { grid-template-columns: minmax(0, 1fr); }
+    .maud-liste { 
+        position: static; 
+        max-height: none; 
+        overflow-y: visible; 
+        padding-right: 0;
+    }
+}
+
+/* Tablette : la liste reste sticky mais moins haute */
+@media (min-width: 641px) and (max-width: 960px) {
+    .maud-liste { max-height: calc(100vh - 6rem); }
+}
+
+/* Mobile : cartes empilées, pied en colonne */
+@media (max-width: 640px) {
+    .maud-carte { padding: 0.8rem 0.9rem; }
+    .maud-carte-ligne-titre { gap: 0.5rem; }
+    .maud-carte-pied {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.35rem;
+    }
+    .maud-carte-processus { white-space: normal; }
+    .maud-carte-date { white-space: normal; }
+    .maud-drawer { max-width: 100%; }
 }

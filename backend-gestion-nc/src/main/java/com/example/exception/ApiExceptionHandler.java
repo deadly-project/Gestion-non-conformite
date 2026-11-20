@@ -14,7 +14,7 @@ public class ApiExceptionHandler {
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<Map<String, String>> badCredentials(BadCredentialsException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of("message", "Email ou mot de passe incorrect, ou compte inactif."));
+                .body(Map.of("message", "Matricule ou mot de passe incorrect, ou compte inactif."));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

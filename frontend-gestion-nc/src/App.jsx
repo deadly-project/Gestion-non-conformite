@@ -39,6 +39,7 @@ import AjoutDocumentPage from "./components/documents/AjoutDocumentPage";
 import DocumentsExplorateur from "./components/documents/DocumentsExplorateur";
 
 import Dashbboard_Responsable_qualite from "./components/dashboard/DashboardResponsableQualite";
+import GestionDocumentsPage from "./components/responsable_qualite/GestionDocumentsPage";
 import './App.css'
 
 function Page({ titre }) {
@@ -217,6 +218,7 @@ function Application() {
                         }
                     />
 
+                        {/* SECTION ADMINISTRATEUR */}
                     <Route
                         element={
                             <ProtectedRoute
@@ -243,8 +245,14 @@ function Application() {
                             path="/admin/reinitialisations"
                             element={<ReinitialisationsAdmin />}
                         />
+
+                        <Route
+                            path="/admin/documents"
+                            element={<DocumentsExplorateur />}
+                        />
                     </Route>
 
+                        {/* section DECLARANT */}
                     <Route
                         element={
                             <ProtectedRoute
@@ -261,8 +269,13 @@ function Application() {
                             path="/declarant/non-conformites/nouvelle"
                             element={<DeclarationNc utilisateur={utilisateur} />}
                         />
+                        <Route
+                            path="/declarant/documents"
+                            element={<DocumentsExplorateur />}
+                        />
                     </Route>
 
+                        {/* SECTION AUDITEUR */}
                     <Route
                         element={
                             <ProtectedRoute
@@ -284,8 +297,14 @@ function Application() {
                         <Route 
                             path="/auditeur/audits/:id" 
                             element={<AuditRealisationPage />} />
+                        
+                        <Route
+                            path="/auditeur/documents"
+                            element={<DocumentsExplorateur />}
+                        />
                     </Route>
 
+                        {/* SECTION RESPONSABLE QUALITÉ */}
                     <Route
                         element={
                             <ProtectedRoute
@@ -331,7 +350,7 @@ function Application() {
 
                         <Route
                             path="/responsable/documents"
-                            element={<DocumentsExplorateur />}
+                            element={<GestionDocumentsPage />}
                         />
 
                         <Route

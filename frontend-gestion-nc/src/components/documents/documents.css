@@ -4,7 +4,12 @@
 .doc-entete h1 { margin: 0 0 .25rem; }
 
 /* ----- Tableau de bord ----- */
-.doc-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: .9rem; margin: 1rem 0 1.4rem; }
+.doc-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: .9rem;
+    margin: 1rem 0 1.4rem;
+}
 .doc-stat {
     text-align: left; font: inherit; cursor: pointer; display: flex; flex-direction: column; gap: .15rem;
     padding: .9rem 1rem; border: 1px solid #dde1e7; border-radius: 10px; background: #fff;
@@ -20,14 +25,62 @@
 .doc-stat--revision { border-left-color: #d97706; }
 .doc-stat--obsolete { border-left-color: #64748b; }
 
+/* Tableau de bord : responsive tablette / mobile */
+@media (min-width: 641px) and (max-width: 950px) {
+    .doc-stats { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+    .doc-stats { grid-template-columns: repeat(2, 1fr); gap: .6rem; }
+    .doc-stat { padding: .7rem .8rem; }
+    .doc-stat-valeur { font-size: 1.5rem; }
+    .doc-stat-libelle { font-size: .7rem; letter-spacing: .03em; }
+}
+
 /* ----- Filtres ----- */
 .doc-filtres { border: 1px solid #dde1e7; border-radius: 10px; padding: .9rem; background: #fafbfc; margin-bottom: 1rem; }
 .doc-filtres h2 { margin: 0 0 .6rem; font-size: 1.02rem; }
-.doc-filtres-grille { display: grid; gap: .8rem; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); align-items: end; }
+.doc-filtres-grille {
+    display: grid;
+    gap: .8rem;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    align-items: end;
+}
+@media (max-width: 640px) {
+    .doc-filtres-grille { grid-template-columns: 1fr; }
+    .doc-filtres-actions { justify-content: stretch; }
+    .doc-filtres-actions .nc-btn { flex: 1; }
+}
 
-.doc-onglets { display: flex; gap: .3rem; margin-bottom: .8rem; flex-wrap: wrap; }
-.doc-onglet { padding: .4rem .9rem; border: 1px solid #b8bfc9; border-radius: 999px; background: #fff; cursor: pointer; font: inherit; }
-.doc-onglet[aria-selected="true"] { background: #1f4e9c; color: #fff; border-color: #1f4e9c; }
+/* Champs de recherche / selects dans les filtres */
+.doc-filtres .nc-champ input[type="search"] {
+    padding: .55rem .8rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    font: inherit;
+    font-size: .9rem;
+    color: #0f172a;
+    background: #f8fafc;
+    box-sizing: border-box;
+    transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.doc-filtres .nc-champ input[type="search"]:focus {
+    outline: none;
+    background: #fff;
+    border-color: #1e6fd9;
+    box-shadow: 0 0 0 4px rgba(30, 111, 217, .1);
+}
+.doc-filtres .nc-select-cal { width: 100%; }
+
+/* Onglets convertis en chips : on neutralise l'ancien style */
+.doc-onglets-chips {
+    margin: 0 0 .9rem;
+    padding: .35rem .4rem;
+}
+
+/* Couleurs des pastilles selon la vue */
+.nc-filtre--actifs   .nc-filtre-pastille { background: #16a34a; }
+.nc-filtre--archives .nc-filtre-pastille { background: #64748b; }
+.nc-filtre--tous     .nc-filtre-pastille { background: #1f4e9c; }
 
 /* ----- Liste ----- */
 .doc-reference { font-family: ui-monospace, Menlo, Consolas, monospace; font-weight: 700; white-space: nowrap; }
@@ -42,6 +95,23 @@
 .doc-badge-type-PROCEDURE { background: #dbe8fb; color: #12407f; }
 .doc-badge-type-INSTRUCTION { background: #e8e0fb; color: #43257f; }
 .doc-badge-type-ENREGISTREMENT { background: #ccfbf1; color: #115e59; }
+
+/* ----- Tableau : responsive (scroll horizontal + première colonne sticky) ----- */
+@media (max-width: 950px) {
+    .doc-tableau-conteneur { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .doc-tableau { min-width: 780px; }
+    .doc-tableau th:first-child,
+    .doc-tableau td:first-child {
+        position: sticky; left: 0; background: #fff; z-index: 1;
+        box-shadow: 1px 0 0 #e2e8f0;
+    }
+    .doc-ligne-obsolete td:first-child { background: #f8fafc; }
+}
+@media (max-width: 640px) {
+    .doc-titre-cellule { max-width: 220px; }
+    .doc-actions { gap: .25rem; }
+    .doc-actions .nc-btn { padding: .35rem .55rem; font-size: .72rem; }
+}
 
 /* ----- Formulaire d'ajout ----- */
 .doc-formulaire { max-width: 820px; }

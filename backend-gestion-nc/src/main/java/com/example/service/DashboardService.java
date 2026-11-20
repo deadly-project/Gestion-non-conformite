@@ -157,7 +157,6 @@ public class DashboardService {
                 join non_conformites n on n.processus_id = p.id
                 group by p.id, p.libelle
                 order by count(n.id) desc, p.libelle
-                limit 8
                 """).getResultList();
         return lignes.stream()
                 .map(r -> new ProcessusNc((String) r[0], nombre(r[1]), nombre(r[2])))

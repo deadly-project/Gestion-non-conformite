@@ -2,11 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { apiRequest } from "../../api/api";
 import {
-    EXTENSIONS_DOCUMENT, STATUTS_DOCUMENT, TAILLE_MAX_DOCUMENT, TYPES_DOCUMENT, formaterTaille,
-
-} from "../constantes"
-import "../Declarant/nc.css";
-import "./documents.css";
+    EXTENSIONS_DOCUMENT,
+    STATUTS_DOCUMENT,
+    TAILLE_MAX_DOCUMENT,
+    TYPES_DOCUMENT,
+    formaterTaille,
+} from "../constantes";
+import "./AjoutDocumentPage.css";
 
 const PATRON_REFERENCE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,49}$/;
 
@@ -29,7 +31,9 @@ export default function AjoutDocumentPage() {
     const [cree, setCree] = useState(null);
 
     useEffect(() => {
-        apiRequest("/api/referentiels/processus").then((d) => setProcessus(d || [])).catch(() => setErreur("Impossible de charger les processus."));
+        apiRequest("/api/referentiels/processus")
+            .then((d) => setProcessus(d || []))
+            .catch(() => setErreur("Impossible de charger les processus."));
     }, []);
 
     function choisirFichier(candidat) {
@@ -48,8 +52,15 @@ export default function AjoutDocumentPage() {
     }
 
     function reinitialiser() {
-        setReference(""); setTitre(""); setTypeDocument(""); setProcessusId(""); setStatut("EN_VIGUEUR");
-        setDescription(""); setFichier(null); setErreur(""); setCree(null);
+        setReference("");
+        setTitre("");
+        setTypeDocument("");
+        setProcessusId("");
+        setStatut("EN_VIGUEUR");
+        setDescription("");
+        setFichier(null);
+        setErreur("");
+        setCree(null);
     }
 
     async function envoyer(event) {
@@ -67,14 +78,22 @@ export default function AjoutDocumentPage() {
         setEnvoi(true);
         try {
             const formData = new FormData();
-            formData.append("donnees", new Blob([JSON.stringify({
-                reference: referenceNette,
-                titre: titre.trim(),
-                description: description.trim(),
-                typeDocument,
-                processusId: Number(processusId),
-                statut,
-            })], { type: "application/json" }));
+            formData.append(
+                "donnees",
+                new Blob(
+                    [
+                        JSON.stringify({
+                            reference: referenceNette,
+                            titre: titre.trim(),
+                            description: description.trim(),
+                            typeDocument,
+                            processusId: Number(processusId),
+                            statut,
+                        }),
+                    ],
+                    { type: "application/json" }
+                )
+            );
             formData.append("fichier", fichier);
             setCree(await apiRequest("/api/documents-qualite", { method: "POST", body: formData }));
         } catch (e) {
@@ -86,93 +105,181 @@ export default function AjoutDocumentPage() {
 
     if (cree) {
         return (
-            <main className="nc-page">
+            <main className="ajout-doc-page">
                 <h1>Document ajouté</h1>
-                <p className="nc-succes" role="status">
+                <p className="ajout-doc-succes" role="status">
                     Le document <strong>{cree.reference}</strong> « {cree.titre} » a été enregistré
                     ({STATUTS_DOCUMENT[cree.statut]}).
                 </p>
-                <div className="nc-actions">
-                    <button type="button" className="nc-btn" onClick={reinitialiser}>Ajouter un autre document</button>
-                    <button type="button" className="nc-btn nc-btn-secondaire"
-                            onClick={() => navigate(`/responsable/documents?voir=${cree.id}`)}>Voir dans la gestion</button>
+                <div className="ajout-doc-actions">
+                    <button type="button" className="ajout-doc-btn" onClick={reinitialiser}>
+                        Ajouter un autre document
+                    </button>
+                    <button
+                        type="button"
+                        className="ajout-doc-btn ajout-doc-btn--secondaire"
+                        onClick={() => navigate(`/responsable/documents?voir=${cree.id}`)}
+                    >
+                        Voir dans la gestion
+                    </button>
                 </div>
             </main>
         );
     }
 
     return (
-        <main className="nc-page">
-            <p><Link to="/responsable/documents">← Retour à la gestion documentaire</Link></p>
+        <main className="ajout-doc-page">
+            <p className="ajout-doc-retour">
+                <Link to="/responsable/documents">← Retour à la gestion documentaire</Link>
+            </p>
             <h1>Ajouter un document qualité</h1>
 
-            <form className="nc-form doc-formulaire" onSubmit={envoyer} noValidate>
-                <div className="nc-grille">
-                    <div className="nc-champ">
+            <form className="ajout-doc-form" onSubmit={envoyer} noValidate>
+                <div className="ajout-doc-grille">
+                    <div className="ajout-doc-champ">
                         <label htmlFor="doc-reference">Référence *</label>
-                        <input id="doc-reference" value={reference} maxLength={50} placeholder="PR-PROD-001"
-                               onChange={(e) => setReference(e.target.value)} />
-                        <span className="nc-aide">Unique, par exemple PR-PROD-001.</span>
+                        <input
+                            id="doc-reference"
+                            value={reference}
+                            maxLength={50}
+                            placeholder="PR-PROD-001"
+                            onChange={(e) => setReference(e.target.value)}
+                        />
+                        <span className="ajout-doc-aide">Unique, par exemple PR-PROD-001.</span>
                     </div>
-                    <div className="nc-champ">
+
+                    <div className="ajout-doc-champ">
                         <label htmlFor="doc-titre">Titre *</label>
-                        <input id="doc-titre" value={titre} maxLength={255} onChange={(e) => setTitre(e.target.value)} />
+                        <input
+                            id="doc-titre"
+                            value={titre}
+                            maxLength={255}
+                            onChange={(e) => setTitre(e.target.value)}
+                        />
                     </div>
-                    <div className="nc-champ">
+
+                    <div className="ajout-doc-champ">
                         <label htmlFor="doc-type">Catégorie *</label>
-                        <select id="doc-type" value={typeDocument} onChange={(e) => setTypeDocument(e.target.value)}>
+                        <select
+                            id="doc-type"
+                            value={typeDocument}
+                            onChange={(e) => setTypeDocument(e.target.value)}
+                        >
                             <option value="">Choisir...</option>
-                            {Object.entries(TYPES_DOCUMENT).map(([code, l]) => <option key={code} value={code}>{l}</option>)}
+                            {Object.entries(TYPES_DOCUMENT).map(([code, l]) => (
+                                <option key={code} value={code}>
+                                    {l}
+                                </option>
+                            ))}
                         </select>
                     </div>
-                    <div className="nc-champ">
+
+                    <div className="ajout-doc-champ">
                         <label htmlFor="doc-processus">Processus *</label>
-                        <select id="doc-processus" value={processusId} onChange={(e) => setProcessusId(e.target.value)}>
+                        <select
+                            id="doc-processus"
+                            value={processusId}
+                            onChange={(e) => setProcessusId(e.target.value)}
+                        >
                             <option value="">Choisir...</option>
-                            {processus.map((p) => <option key={p.id} value={p.id}>{p.code} — {p.libelle}</option>)}
+                            {processus.map((p) => (
+                                <option key={p.id} value={p.id}>
+                                    {p.code} — {p.libelle}
+                                </option>
+                            ))}
                         </select>
                     </div>
-                    <div className="nc-champ">
+
+                    <div className="ajout-doc-champ">
                         <label htmlFor="doc-statut">Statut initial</label>
-                        <select id="doc-statut" value={statut} onChange={(e) => setStatut(e.target.value)}>
+                        <select
+                            id="doc-statut"
+                            value={statut}
+                            onChange={(e) => setStatut(e.target.value)}
+                        >
                             <option value="EN_VIGUEUR">{STATUTS_DOCUMENT.EN_VIGUEUR}</option>
                             <option value="EN_REVISION">{STATUTS_DOCUMENT.EN_REVISION}</option>
                         </select>
                     </div>
                 </div>
 
-                <div className="nc-champ">
+                <div className="ajout-doc-champ">
                     <label htmlFor="doc-description">Description</label>
-                    <textarea id="doc-description" rows={4} maxLength={4000} value={description}
-                              onChange={(e) => setDescription(e.target.value)} />
+                    <textarea
+                        id="doc-description"
+                        rows={4}
+                        maxLength={4000}
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                    />
                 </div>
 
-                <div className="nc-champ">
+                <div className="ajout-doc-champ">
                     <label htmlFor="doc-fichier">Fichier *</label>
-                    <label htmlFor="doc-fichier" className={`doc-depot ${survol ? "doc-depot--actif" : ""}`}
-                           onDragOver={(e) => { e.preventDefault(); setSurvol(true); }}
-                           onDragLeave={() => setSurvol(false)}
-                           onDrop={(e) => { e.preventDefault(); setSurvol(false); choisirFichier(e.dataTransfer.files?.[0]); }}>
-                        <input id="doc-fichier" ref={champFichier} type="file"
-                               accept={EXTENSIONS_DOCUMENT.map((x) => `.${x}`).join(",")}
-                               onChange={(e) => { choisirFichier(e.target.files?.[0]); e.target.value = ""; }} />
+                    <label
+                        htmlFor="doc-fichier"
+                        className={`ajout-doc-depot ${survol ? "ajout-doc-depot--actif" : ""}`}
+                        onDragOver={(e) => {
+                            e.preventDefault();
+                            setSurvol(true);
+                        }}
+                        onDragLeave={() => setSurvol(false)}
+                        onDrop={(e) => {
+                            e.preventDefault();
+                            setSurvol(false);
+                            choisirFichier(e.dataTransfer.files?.[0]);
+                        }}
+                    >
+                        <input
+                            id="doc-fichier"
+                            ref={champFichier}
+                            type="file"
+                            accept={EXTENSIONS_DOCUMENT.map((x) => `.${x}`).join(",")}
+                            onChange={(e) => {
+                                choisirFichier(e.target.files?.[0]);
+                                e.target.value = "";
+                            }}
+                        />
                         <strong>Cliquez ou déposez le fichier ici</strong>
-                        <div className="nc-aide">PDF, Word, Excel, PowerPoint, OpenDocument, TXT, CSV, PNG, JPEG — 20 Mo maximum</div>
+                        <div className="ajout-doc-aide">
+                            PDF, Word, Excel, PowerPoint, OpenDocument, TXT, CSV, PNG, JPEG — 20 Mo maximum
+                        </div>
                     </label>
+
                     {fichier && (
-                        <div className="doc-fichier-choisi">
-                            <span>{fichier.name} ({formaterTaille(fichier.size)})</span>
-                            <button type="button" className="nc-btn nc-btn-secondaire nc-btn-petit" onClick={() => setFichier(null)}>Retirer</button>
+                        <div className="ajout-doc-fichier-choisi">
+                            <span>
+                                {fichier.name} ({formaterTaille(fichier.size)})
+                            </span>
+                            <button
+                                type="button"
+                                className="ajout-doc-btn ajout-doc-btn--secondaire ajout-doc-btn--petit"
+                                onClick={() => setFichier(null)}
+                            >
+                                Retirer
+                            </button>
                         </div>
                     )}
                 </div>
 
-                {erreur && <p className="nc-erreur" role="alert">{erreur}</p>}
+                {erreur && (
+                    <p className="ajout-doc-erreur" role="alert">
+                        {erreur}
+                    </p>
+                )}
 
-                <div className="nc-actions">
-                    <button type="submit" className="nc-btn" disabled={envoi}>{envoi ? "Envoi en cours..." : "Enregistrer le document"}</button>
-                    <button type="button" className="nc-btn nc-btn-secondaire" disabled={envoi}
-                            onClick={() => navigate("/responsable/documents")}>Annuler</button>
+                <div className="ajout-doc-actions">
+                    <button type="submit" className="ajout-doc-btn" disabled={envoi}>
+                        {envoi ? "Envoi en cours..." : "Enregistrer le document"}
+                    </button>
+                    <button
+                        type="button"
+                        className="ajout-doc-btn ajout-doc-btn--secondaire"
+                        disabled={envoi}
+                        onClick={() => navigate("/responsable/documents")}
+                    >
+                        Annuler
+                    </button>
                 </div>
             </form>
         </main>

@@ -818,3 +818,14 @@
   .nc-barre-avancee-actions { justify-content: stretch; }
   .nc-barre-avancee-actions .nc-btn { flex: 1; }
 }
+/* Réouverture d'une NC clôturée */
+.nc-carte-actions .nc-btn-reouvrir {
+  color: #9a3412;
+  border-color: #fed7aa;
+  background: #fff7ed;
+}
+.nc-carte-actions .nc-btn-reouvrir:hover {
+  color: #7c2d12;
+  border-color: #fb923c;
+  background: #ffedd5;
+}

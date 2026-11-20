@@ -29,27 +29,29 @@ const liensParRole = {
         { to: "/admin/utilisateurs/nouveau", label: "Créer un Utilisateur", icon: <FiUserPlus /> },
         { to: "/admin/utilisateurs", label: "Liste des Utilisateurs", icon: <FiUsers />, end: true },
         { to: "/admin/reinitialisations", label: "Demande de réinitialisation", icon: <FiRotateCcw /> },
+        { to: "/admin/documents", label: "Document", icon: <IoMdListBox /> },
         { to: "/historique", label: "Historique", icon: <FiClock /> },
     ],
 
     DECLARANT: [
-        { to: "/declarant/non-conformites", label: "Mes déclarations", icon: <FiFileText /> },
+        { to: "/declarant/non-conformites", label: "Mes déclarations", icon: <FiFileText />, end: true  },
         { to: "/declarant/non-conformites/nouvelle", label: "Déclarer une non-conformité", icon: <FiPlusCircle /> },
+        { to: "/declarant/documents", label: "Document", icon: <IoMdListBox /> },
         { to: "/historique", label: "Mon historique", icon: <FiClock /> },
         { to: "/parametres", label: "Paramètres", icon: <FiSettings /> },
     ],
 
     AUDITEUR: [
         { to: "/auditeur/audits", label: "Mes audits", icon: <FiClipboard /> },
-        { to: "/auditeur/constats", label: "Constats d'audit", icon: <FiCheckSquare /> },
+        { to: "/auditeur/documents", label: "Document", icon: <IoMdListBox /> },
         { to: "/historique", label: "Mon historique", icon: <FiClock /> },
         { to: "/parametres", label: "Paramètres", icon: <FiSettings /> },
     ],
 
     RESPONSABLE_QUALITE: [
         { to: "/responsable/dashboard", label: "Dashboard", icon: <FiGrid /> },
-        { to: "/responsable/documents/nouveau", label: "Nouveau Document", icon: <TbFileUploadFilled /> },
-        { to: "/responsable/documents", label: "Listes des documents", icon: <IoMdListBox /> },
+        { to: "/responsable/documents/nouveau", label: "Nouveau Document", icon: <TbFileUploadFilled />  },
+        { to: "/responsable/documents", label: "Listes des documents", icon: <IoMdListBox /> , end: true },
         { to: "/responsable/non-conformites", label: "Non-conformités", icon: <FiAlertTriangle /> },
         { to: "/responsable/capa", label: "Actions correctives (CAPA)", icon: <FiCheckSquare /> },
         { to: "/historique", label: "Mon historique", icon: <FiClock /> },

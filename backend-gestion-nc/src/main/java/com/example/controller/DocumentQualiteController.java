@@ -45,6 +45,41 @@ public class DocumentQualiteController {
         return service.lister(utilisateurCourant(authentication), q, processusId, type, statut, vue, page, taille);
     }
 
+    /** Bibliothèque en lecture seule, limitée aux documents en vigueur. */
+    @GetMapping("/bibliotheque")
+    @PreAuthorize("hasAnyRole('ADMINISTRATEUR', 'AUDITEUR', 'DECLARANT')")
+    public PageResponse<DocumentItem> bibliotheque(
+            @RequestParam(defaultValue = "") String q,
+            @RequestParam(required = false) Long processusId,
+            @RequestParam(defaultValue = "") String type,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int taille,
+            Authentication authentication) {
+        return service.listerBibliotheque(utilisateurCourant(authentication), q, processusId, type, page, taille);
+    }
+
+    @GetMapping("/bibliotheque/{id}")
+    @PreAuthorize("hasAnyRole('ADMINISTRATEUR', 'AUDITEUR', 'DECLARANT')")
+    public DocumentItem detailBibliotheque(@PathVariable Long id, Authentication authentication) {
+        return service.detailBibliotheque(id, utilisateurCourant(authentication));
+    }
+
+    @GetMapping("/bibliotheque/{id}/fichier")
+    @PreAuthorize("hasAnyRole('ADMINISTRATEUR', 'AUDITEUR', 'DECLARANT')")
+    public ResponseEntity<org.springframework.core.io.Resource> fichierBibliotheque(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "false") boolean telecharger,
+            Authentication authentication) {
+        DocumentQualiteService.FichierLu f = service.lireFichierBibliotheque(id, utilisateurCourant(authentication));
+        ContentDisposition disposition = (!telecharger && f.affichable() ? ContentDisposition.inline()
+                : ContentDisposition.attachment()).filename(f.nom(), StandardCharsets.UTF_8).build();
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(f.mime()))
+                .header(HttpHeaders.CONTENT_DISPOSITION, disposition.toString())
+                .header("X-Content-Type-Options", "nosniff")
+                .body(f.ressource());
+    }
+
     @GetMapping("/statistiques")
     public Statistiques statistiques(Authentication authentication) {
         return service.statistiques(utilisateurCourant(authentication));
